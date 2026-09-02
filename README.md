@@ -84,20 +84,29 @@ Cada ciclo vira `data/backups/<impressora>/<timestamp>.tar.gz` com um
 `data/blobs/`: oito máquinas imprimem em boa parte os mesmos arquivos, e sem a
 deduplicação a retenção de 7 dias encheria o disco.
 
+### Só copia impressora ociosa
+
+**Nenhum backup roda numa máquina que está trabalhando** — vale para o ciclo
+agendado, para o botão manual e para a recuperação. Puxar um gigabyte de G-code
+do Raspberry Pi no meio de uma peça disputa CPU e rede com o Klipper, e o preço
+é stutter na impressão.
+
+Quem não está ociosa não é recusada: entra numa fila e é copiada assim que a
+impressão terminar. Ociosa significa ociosa mesmo — pausada, em atenção e
+offline também esperam. O card mostra `NA FILA — AGUARDANDO FICAR OCIOSA` e o
+botão de backup manual responde dizendo que vai rodar depois.
+
+Se uma impressora nunca abre uma janela ociosa, isso não fica em silêncio: depois
+de dois intervalos na fila, um alerta de severidade média avisa.
+
 ### Recuperação ao religar
 
-O ciclo agendado só alcança quem estava ligado na hora, e numa fazenda caseira
-as máquinas passam dias desligadas. Por isso, **toda vez que uma impressora
-reaparece na rede o sistema confere o último backup dela**: se já passou de
-`BACKUP_INTERVALO_HORAS` (24 h por padrão), um backup é feito na hora e um alerta
-de severidade baixa registra que a máquina tinha ficado para trás.
-
-Duas cautelas nesse caminho:
-
-- espera o Klipper terminar de subir antes de perguntar qualquer coisa;
-- **não baixa G-code de uma máquina que está imprimindo** — puxar um gigabyte do
-  Raspberry Pi no meio de uma peça causa stutter. O trabalho fica pendente e sai
-  quando ela ficar ociosa.
+O ciclo agendado só alcança quem estava ligado na hora, e numa fazenda caseira as
+máquinas passam dias desligadas. Por isso, **toda vez que uma impressora reaparece
+na rede o sistema confere o último backup dela**: se já passou de
+`BACKUP_INTERVALO_HORAS` (24 h por padrão), ela entra na fila — e é copiada assim
+que estiver ociosa, com um alerta de severidade baixa registrando que tinha ficado
+para trás. Antes de perguntar qualquer coisa, espera o Klipper terminar de subir.
 
 Quando a fazenda inteira religa junto, os backups saem um de cada vez.
 

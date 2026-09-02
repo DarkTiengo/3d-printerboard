@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Upload } from 'lucide-react';
+import { Clock, Download, Upload } from 'lucide-react';
 import type { BackupCard, User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
 import { api } from '../lib/api';
@@ -36,15 +36,28 @@ export function Backups({ usuario }: { usuario: User }) {
 
   const rodarTodas = useMutation({
     mutationFn: api.rodarBackupTodas,
-    onSuccess: () => {
-      setAviso('Ciclo de backup iniciado. Os cards atualizam conforme cada máquina termina.');
+    onSuccess: (r) => {
+      // só as ociosas começam agora: dizer isso evita o usuário achar que travou
+      const partes = [`${r.iniciados} em andamento`];
+      if (r.adiados > 0) partes.push(`${r.adiados} imprimindo (serão copiadas ao ficarem ociosas)`);
+      if (r.offline > 0) partes.push(`${r.offline} offline`);
+      setAviso(`Backup: ${partes.join(' · ')}.`);
       setTimeout(() => void qc.invalidateQueries({ queryKey: ['backups'] }), 3000);
-    }
+    },
+    onError: (err) => setAviso(err instanceof Error ? err.message : 'Falha ao iniciar o backup.')
   });
 
   const rodarUma = useMutation({
     mutationFn: (id: string) => api.rodarBackup(id),
-    onSuccess: () => setTimeout(() => void qc.invalidateQueries({ queryKey: ['backups'] }), 3000)
+    onSuccess: (r) => {
+      setAviso(
+        r.resultado === 'adiado'
+          ? `${r.nome} está imprimindo — o backup vai rodar assim que ela ficar ociosa.`
+          : `Backup de ${r.nome} iniciado.`
+      );
+      setTimeout(() => void qc.invalidateQueries({ queryKey: ['backups'] }), 3000);
+    },
+    onError: (err) => setAviso(err instanceof Error ? err.message : 'Falha ao iniciar o backup.')
   });
 
   const numeros = [
@@ -192,6 +205,23 @@ function CardBackup({
           </div>
         ))}
       </dl>
+
+      {card.pendente && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            letterSpacing: '0.06em',
+            color: 'var(--color-accent-400)'
+          }}
+        >
+          <Clock size={12} strokeWidth={2} aria-hidden />
+          NA FILA — AGUARDANDO FICAR OCIOSA
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <IconButton

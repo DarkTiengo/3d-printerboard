@@ -30,7 +30,6 @@ describe('backupVencido', () => {
   });
 
   it('respeita um intervalo customizado', () => {
-    // com janela de 6 h, um backup de 8 h atrás já venceu
     expect(backupVencido(horasAtras(8), 6, AGORA)).toBe(true);
     expect(backupVencido(horasAtras(8), 12, AGORA)).toBe(false);
   });
@@ -40,8 +39,7 @@ describe('backupVencido', () => {
   });
 
   it('não considera vencido um backup do futuro (relógio do host adiantado)', () => {
-    const futuro = new Date(AGORA + 3_600_000).toISOString();
-    expect(backupVencido(futuro, 24, AGORA)).toBe(false);
+    expect(backupVencido(new Date(AGORA + 3_600_000).toISOString(), 24, AGORA)).toBe(false);
   });
 });
 

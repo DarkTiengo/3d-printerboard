@@ -137,6 +137,8 @@ export type BackupCard = {
   perfis: string; // 'hoje 03:00'
   firmware: string; // 'Klipper v0.12 · há 6 d'
   gcode: string; // '42 arq. · 1,1 GB'
+  /** Na fila, esperando a impressora ficar ociosa para ser copiada. */
+  pendente: boolean;
 };
 
 export type BackupResumo = {

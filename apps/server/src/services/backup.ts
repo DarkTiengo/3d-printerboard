@@ -330,16 +330,9 @@ function descreverFirmware(status: Record<string, any>): string {
   return '—';
 }
 
-/** Backup de todas as impressoras com backup ligado, uma de cada vez. */
-export async function rodarBackupDeTodas(): Promise<void> {
-  const alvos = listarPrinters().filter((p) => p.backupEnabled);
-  logger.info(`ciclo de backup: ${alvos.length} impressoras`);
-  // sequencial de propósito: paralelo satura a rede da fazenda e o disco do host
-  for (const p of alvos) {
-    await rodarBackup(p.id);
-  }
+/** Marca o fim de um ciclo — o número "último ciclo" da tela de Backups. */
+export function registrarCiclo(): void {
   setSetting('ultimo_ciclo', new Date().toISOString());
-  await coletarLixo();
   emitirMudanca();
 }
 
@@ -465,9 +458,19 @@ export function listarSnapshots(printerId?: string): BackupSnapshot[] {
   return rows.map((r) => snapshotDeRun(r.id)!).filter(Boolean);
 }
 
+/**
+ * Quem está na fila esperando ficar ociosa. Injetado pela agenda de backup —
+ * é ela que guarda a fila, e importá-la aqui daria import circular.
+ */
+let ehPendente: (printerId: string) => boolean = () => false;
+export function definirVerificadorDePendencia(fn: (printerId: string) => boolean): void {
+  ehPendente = fn;
+}
+
 export function cardsDeBackup(): BackupCard[] {
   return listarPrinters().map((cfg: PrinterConfig) => {
     const run = ultimoRun(cfg.id);
+    const pendente = ehPendente(cfg.id);
     if (!run) {
       return {
         printerId: cfg.id,
@@ -475,7 +478,8 @@ export function cardsDeBackup(): BackupCard[] {
         estado: 'NUNCA' as BackupEstado,
         perfis: 'nunca',
         firmware: '—',
-        gcode: '—'
+        gcode: '—',
+        pendente
       };
     }
     return {
@@ -484,7 +488,8 @@ export function cardsDeBackup(): BackupCard[] {
       estado: run.status as BackupEstado,
       perfis: quandoCurto(run.started_at + 'Z'),
       firmware: run.firmware ?? '—',
-      gcode: `${run.gcode_resumo ?? '0 arq.'} · ${fmtBytes(run.bytes)}`
+      gcode: `${run.gcode_resumo ?? '0 arq.'} · ${fmtBytes(run.bytes)}`,
+      pendente
     };
   });
 }

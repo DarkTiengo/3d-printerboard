@@ -9,8 +9,8 @@ import { criarApp } from './app.js';
 import { hub, ligarFarmAoHub } from './routes/stream.js';
 import { ligarGeradorDeAlertas, aoCriarAlerta, criarAlerta } from './services/alerts.js';
 import { ligarMotorDaFila, aoMudarFila, listarFila } from './services/queue.js';
-import { aoMudarBackup, cardsDeBackup, resumoDeBackup, rodarBackupDeTodas } from './services/backup.js';
-import { ligarVerificadorDeBackup } from './services/backup-guard.js';
+import { aoMudarBackup, cardsDeBackup, resumoDeBackup } from './services/backup.js';
+import { ligarAgendaDeBackup, rodarCicloCompleto } from './services/backup-agenda.js';
 import { criarClienteMock, criarHttpMock, semearImpressoras } from './moonraker/mock.js';
 import { farmPrinterNome } from './lib/util.js';
 
@@ -33,7 +33,7 @@ async function main(): Promise<void> {
   ligarFarmAoHub();
   ligarGeradorDeAlertas();
   ligarMotorDaFila();
-  ligarVerificadorDeBackup();
+  ligarAgendaDeBackup();
 
   aoCriarAlerta((alerta) => hub.publicar({ tipo: 'alerta', alerta }));
   aoMudarFila(() => hub.publicar({ tipo: 'fila', fila: listarFila() }));
@@ -45,7 +45,8 @@ async function main(): Promise<void> {
   if (cron.validate(config.backupCron)) {
     cron.schedule(config.backupCron, () => {
       logger.info('ciclo de backup agendado disparado');
-      void rodarBackupDeTodas();
+      // quem estiver imprimindo entra na fila e é copiada ao ficar ociosa
+      rodarCicloCompleto('ciclo');
     });
     logger.info(`backup agendado: ${config.backupCron}`);
   } else {

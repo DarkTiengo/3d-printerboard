@@ -2,14 +2,14 @@ import type { FastifyInstance } from 'fastify';
 import type { RestorePayload } from '@3dfarm/shared';
 import {
   cardsDeBackup,
+  coletarLixo,
   listarSnapshots,
-  resumoDeBackup,
   restaurar,
-  rodarBackup,
-  rodarBackupDeTodas,
-  coletarLixo
+  resumoDeBackup
 } from '../services/backup.js';
+import { pedirBackup, rodarCicloCompleto } from '../services/backup-agenda.js';
 import { exigirLogin, exigirPermissao } from '../lib/guard.js';
+import { acharPrinter } from '../services/printers.repo.js';
 import { logger } from '../lib/logger.js';
 
 export async function rotasBackups(app: FastifyInstance): Promise<void> {
@@ -22,20 +22,37 @@ export async function rotasBackups(app: FastifyInstance): Promise<void> {
     listarSnapshots(req.query.printer)
   );
 
-  /** Backup da fazenda inteira. Responde na hora; o ciclo roda em background. */
+  /**
+   * Backup da fazenda inteira. Só as ociosas começam agora; as que estão
+   * imprimindo entram na fila e são copiadas quando terminarem — a resposta
+   * diz exatamente quantas caíram em cada caso.
+   */
   app.post('/api/backups/rodar', { preHandler: exigirPermissao('rodarBackup') }, async (req) => {
     logger.info({ por: req.sessao!.usuario }, 'backup manual da fazenda');
-    void rodarBackupDeTodas();
-    return { ok: true, iniciado: true };
+    const r = rodarCicloCompleto('manual');
+    return {
+      ok: true,
+      iniciados: r.iniciados.length,
+      adiados: r.adiados.length,
+      offline: r.offline.length,
+      adiadasIds: r.adiados
+    };
   });
 
   app.post<{ Params: { id: string } }>(
     '/api/backups/:id/rodar',
     { preHandler: exigirPermissao('rodarBackup') },
-    async (req) => {
+    async (req, reply) => {
+      const cfg = acharPrinter(req.params.id);
+      if (!cfg) return reply.code(404).send({ erro: 'impressora não encontrada' });
+
       logger.info({ printer: req.params.id, por: req.sessao!.usuario }, 'backup manual');
-      void rodarBackup(req.params.id);
-      return { ok: true, iniciado: true };
+      const resultado = pedirBackup(req.params.id, 'manual');
+
+      if (resultado === 'offline') {
+        return reply.code(503).send({ erro: 'impressora offline' });
+      }
+      return { ok: true, resultado, nome: cfg.nome };
     }
   );
 

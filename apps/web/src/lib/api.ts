@@ -118,8 +118,12 @@ export const api = {
   backups: () => get<{ resumo: BackupResumo; cards: BackupCard[] }>('/api/backups'),
   snapshots: (printer?: string) =>
     get<BackupSnapshot[]>(`/api/backups/snapshots${printer ? `?printer=${encodeURIComponent(printer)}` : ''}`),
-  rodarBackupTodas: () => post<{ ok: true }>('/api/backups/rodar'),
-  rodarBackup: (id: string) => post<{ ok: true }>(`/api/backups/${id}/rodar`),
+  rodarBackupTodas: () =>
+    post<{ ok: true; iniciados: number; adiados: number; offline: number; adiadasIds: string[] }>(
+      '/api/backups/rodar'
+    ),
+  rodarBackup: (id: string) =>
+    post<{ ok: true; resultado: 'iniciado' | 'adiado'; nome: string }>(`/api/backups/${id}/rodar`),
   restaurar: (snapshotId: number, destinoPrinterId: string) =>
     post<{ ok: true; arquivos: number }>('/api/backups/restaurar', { snapshotId, destinoPrinterId, confirmar: true })
 };
