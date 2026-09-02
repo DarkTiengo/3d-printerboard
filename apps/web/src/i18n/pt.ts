@@ -231,7 +231,7 @@ export const pt = {
     apiKey: 'API KEY (OPCIONAL)',
     apiKeyPlaceholder: 'em branco se o Moonraker não exige',
     cameraUrl: 'URL DA CÂMERA (OPCIONAL)',
-    cameraPlaceholder: 'http://ender-a.local/webcam/?action=stream',
+    cameraPlaceholder: 'detectada sozinha ao testar a conexão',
     incluirBackup: 'Incluir no backup diário',
     testar: 'Testar conexão',
     testando: 'Testando…',
@@ -240,7 +240,10 @@ export const pt = {
     testeCameraFalhou: (erro: string) => ` A impressora respondeu, mas a câmera não: ${erro}`,
     testeFalhou: (erro: string) => `Não conectou: ${erro}`,
     testeErro: 'Falha no teste.',
-    naoSalvou: 'Não foi possível salvar.'
+    naoSalvou: 'Não foi possível salvar.',
+    cameraDescoberta: (nome: string) => `Câmera detectada automaticamente (${nome}).`,
+    cameraSemDeteccao: ' Nenhuma câmera detectada — dá para preencher a URL na mão.',
+    previaCamera: 'Prévia da câmera'
   },
 
   erros: {

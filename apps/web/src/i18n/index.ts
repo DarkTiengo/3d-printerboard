@@ -2,22 +2,38 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { pt, type Dicionario } from './pt';
 import { en } from './en';
+import { es } from './es';
+import { fr } from './fr';
+import { it } from './it';
 
-export type Idioma = 'pt' | 'en';
+export type Idioma = 'en' | 'pt' | 'es' | 'fr' | 'it';
 
-const DICIONARIOS: Record<Idioma, Dicionario> = { pt, en };
+const DICIONARIOS: Record<Idioma, Dicionario> = { en, pt, es, fr, it };
+
+const LOCALES: Record<Idioma, string> = {
+  en: 'en-US',
+  pt: 'pt-BR',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  it: 'it-IT'
+};
 const CHAVE = 'printerboard.idioma';
 
 /** Primeira escolha: o que já foi salvo; depois, o idioma do navegador. */
 function idiomaInicial(): Idioma {
   try {
-    const salvo = localStorage.getItem(CHAVE);
-    if (salvo === 'pt' || salvo === 'en') return salvo;
+    const salvo = localStorage.getItem(CHAVE) as Idioma | null;
+    if (salvo && salvo in DICIONARIOS) return salvo;
   } catch {
     /* modo privado sem storage */
   }
-  const navegador = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : '';
-  return navegador.startsWith('pt') ? 'pt' : 'en';
+  // o navegador manda em ordem de preferência; a primeira que conhecemos vence
+  const preferidas = typeof navigator !== 'undefined' ? (navigator.languages ?? [navigator.language]) : [];
+  for (const tag of preferidas) {
+    const base = String(tag).toLowerCase().split('-')[0] as Idioma;
+    if (base in DICIONARIOS) return base;
+  }
+  return 'en';
 }
 
 type Estado = {
@@ -42,7 +58,8 @@ export function useT(): Dicionario {
   return DICIONARIOS[useIdioma((s) => s.idioma)];
 }
 
-export const IDIOMAS: Idioma[] = ['pt', 'en'];
+/** Ordem em que aparecem no menu. */
+export const IDIOMAS: Idioma[] = ['en', 'pt', 'es', 'fr', 'it'];
 
 export function nomeDoIdioma(i: Idioma): string {
   return DICIONARIOS[i].idioma.nome;
@@ -56,11 +73,11 @@ export function codigoDoIdioma(i: Idioma): string {
 export function useLangDoDocumento(): void {
   const idioma = useIdioma((s) => s.idioma);
   useEffect(() => {
-    document.documentElement.lang = idioma === 'pt' ? 'pt-BR' : 'en';
+    document.documentElement.lang = LOCALES[idioma];
   }, [idioma]);
 }
 
 /** Locale para Intl — datas e números seguem o idioma escolhido. */
 export function localeDe(i: Idioma): string {
-  return i === 'pt' ? 'pt-BR' : 'en-US';
+  return LOCALES[i];
 }

@@ -1,4 +1,10 @@
-import { localeDe, useIdioma } from './index';
+import { localeDe, useIdioma, type Idioma } from './index';
+
+/** Palavras que aparecem coladas a números formatados, fora dos dicionários. */
+const NUNCA: Record<Idioma, string> = { en: 'never', pt: 'nunca', es: 'nunca', fr: 'jamais', it: 'mai' };
+const AGORA: Record<Idioma, string> = { en: 'just now', pt: 'agora', es: 'ahora', fr: 'à l’instant', it: 'adesso' };
+const HOJE: Record<Idioma, string> = { en: 'today', pt: 'hoje', es: 'hoy', fr: 'aujourd’hui', it: 'oggi' };
+const DESLIGADO: Record<Idioma, string> = { en: 'off', pt: 'desligado', es: 'apagado', fr: 'éteint', it: 'spento' };
 
 /**
  * Formatação sensível ao idioma.
@@ -14,9 +20,10 @@ export function useFormato(): Formatador {
   return criarFormatador(idioma);
 }
 
-function criarFormatador(idioma: 'pt' | 'en') {
+function criarFormatador(idioma: Idioma) {
   const locale = localeDe(idioma);
-  const pt = idioma === 'pt';
+  // relógio de 24 h em todos menos o inglês americano
+  const doze = idioma === 'en';
 
   /** 4470 → '1h 14m'. Neutro o bastante para os dois idiomas. */
   function duracao(segundos: number | null | undefined): string {
@@ -29,12 +36,12 @@ function criarFormatador(idioma: 'pt' | 'en') {
 
   /** ISO → 'há 6 min' / '6 min ago', via Intl.RelativeTimeFormat. */
   function quando(iso: string | null | undefined, agora = Date.now()): string {
-    if (!iso) return pt ? 'nunca' : 'never';
+    if (!iso) return NUNCA[idioma];
     const ms = agora - new Date(iso).getTime();
     if (!Number.isFinite(ms)) return '—';
 
     const min = Math.floor(ms / 60000);
-    if (min < 1) return pt ? 'agora' : 'just now';
+    if (min < 1) return AGORA[idioma];
 
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
     if (min < 60) return rtf.format(-min, 'minute');
@@ -46,7 +53,7 @@ function criarFormatador(idioma: 'pt' | 'en') {
 
   /** ISO → 'hoje 03:00' quando é hoje, senão o relativo. */
   function quandoCurto(iso: string | null | undefined, agora = Date.now()): string {
-    if (!iso) return pt ? 'nunca' : 'never';
+    if (!iso) return NUNCA[idioma];
     const d = new Date(iso);
     if (!Number.isFinite(d.getTime())) return '—';
 
@@ -57,8 +64,8 @@ function criarFormatador(idioma: 'pt' | 'en') {
       d.getDate() === hoje.getDate();
 
     if (mesmoDia) {
-      const hora = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: !pt }).format(d);
-      return `${pt ? 'hoje' : 'today'} ${hora}`;
+      const hora = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: doze }).format(d);
+      return `${HOJE[idioma]} ${hora}`;
     }
     return quando(iso, agora);
   }
@@ -90,7 +97,7 @@ function criarFormatador(idioma: 'pt' | 'en') {
   /** Alvo zerado é aquecedor desligado, não 0 °C. */
   function alvo(v: number | null | undefined): string {
     if (v == null || !Number.isFinite(v)) return '—';
-    if (v <= 0) return pt ? 'desligado' : 'off';
+    if (v <= 0) return DESLIGADO[idioma];
     return `${Math.round(v)} °C`;
   }
 

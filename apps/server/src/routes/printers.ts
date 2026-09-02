@@ -11,26 +11,11 @@ import {
 } from '../services/printers.repo.js';
 import { exigirLogin, exigirPermissao } from '../lib/guard.js';
 import { logger } from '../lib/logger.js';
-import { agenteDaFazenda } from '../lib/http-agent.js';
+import { capturarUmQuadro, descobrirCamera } from '../lib/camera-probe.js';
 
-/** Abre o stream da câmera só o suficiente para saber se vem imagem. */
-async function testarCamera(url: string): Promise<{ ok: boolean; erro?: string }> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 6_000);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal, dispatcher: agenteDaFazenda });
-    if (!res.ok) return { ok: false, erro: `respondeu ${res.status}` };
-    const tipo = res.headers.get('content-type') ?? '';
-    void res.body?.cancel();
-    if (!/image|multipart/i.test(tipo)) {
-      return { ok: false, erro: `não parece um stream de vídeo (${tipo || 'sem tipo'})` };
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, erro: err instanceof Error ? err.message : 'sem resposta' };
-  } finally {
-    clearTimeout(timer);
-  }
+/** JPEG → data URL, para a prévia viajar junto da resposta do teste. */
+function paraDataUrl(jpeg: Buffer): string {
+  return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
 }
 
 function validarEntrada(body: Partial<PrinterConfigInput>): string | null {
@@ -251,11 +236,48 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       });
       try {
         const info = await http.testar();
-        // a câmera é opcional, então falha nela não reprova a impressora
-        let camera: { ok: boolean; erro?: string } | null = null;
+        const cabecalhos: Record<string, string> = apiKey ? { 'X-Api-Key': apiKey } : {};
+
+        /*
+         * A câmera é opcional e nunca reprova a impressora. Se a pessoa
+         * informou uma URL, testamos aquela; se não, perguntamos ao Moonraker
+         * o que ele tem configurado e só então tentamos os caminhos
+         * convencionais. O quadro capturado volta junto, para o formulário
+         * mostrar a prévia em vez de só afirmar que deu certo.
+         */
+        let camera: {
+          ok: boolean;
+          erro?: string;
+          url?: string;
+          nome?: string;
+          descoberta?: boolean;
+          preview?: string;
+        } | null = null;
+
         if (req.body.cameraUrl) {
-          camera = await testarCamera(req.body.cameraUrl);
+          try {
+            const { jpeg } = await capturarUmQuadro(req.body.cameraUrl);
+            camera = { ok: true, url: req.body.cameraUrl, preview: paraDataUrl(jpeg) };
+          } catch (err) {
+            camera = { ok: false, erro: err instanceof Error ? err.message : 'sem resposta' };
+          }
+        } else {
+          const achada = await descobrirCamera(req.body.moonrakerUrl, cabecalhos);
+          if (achada) {
+            camera = {
+              ok: true,
+              url: achada.camera.url,
+              nome: achada.camera.nome,
+              descoberta: true,
+              preview: paraDataUrl(achada.jpeg)
+            };
+            logger.info(
+              { url: achada.camera.url, origem: achada.camera.origem },
+              'câmera descoberta durante o teste de conexão'
+            );
+          }
         }
+
         return { ...info, ok: true as const, camera };
       } catch (err) {
         return reply.code(200).send({ ok: false, erro: err instanceof Error ? err.message : 'falha na conexão' });

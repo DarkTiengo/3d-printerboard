@@ -119,8 +119,17 @@ export const api = {
       versao?: string;
       hostname?: string;
       erro?: string;
-      /** null quando não há câmera configurada para testar */
-      camera?: { ok: boolean; erro?: string } | null;
+      /** null quando não havia URL informada e nada foi descoberto */
+      camera?: {
+        ok: boolean;
+        erro?: string;
+        /** a URL que respondeu — pode ter sido descoberta pelo servidor */
+        url?: string;
+        nome?: string;
+        descoberta?: boolean;
+        /** um quadro em data URL, para a prévia no formulário */
+        preview?: string;
+      } | null;
     }>('/api/config/printers/testar', p),
 
   // arquivos e fila

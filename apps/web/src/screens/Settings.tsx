@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plug, Plus, Trash2, X } from 'lucide-react';
 import type { PrinterConfig } from '@3dfarm/shared';
@@ -38,9 +38,16 @@ export function Settings() {
   const { data: printers, isLoading } = useQuery({ queryKey: ['configPrinters'], queryFn: api.configPrinters });
 
   const [editando, setEditando] = useState<Rascunho | null>(null);
+  /* a mutação é criada uma vez; sem refs o callback fecharia sobre o rascunho
+     de quando o diálogo abriu, e o preenchimento automático escreveria por
+     cima do que a pessoa digitou depois */
+  const rascunhoRef = useRef<Rascunho>(VAZIO);
+  const aoMudarRef = useRef<(r: Rascunho) => void>(() => {});
+  rascunhoRef.current = editando ?? VAZIO;
+  aoMudarRef.current = setEditando;
   const [removendo, setRemovendo] = useState<PrinterConfig | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [teste, setTeste] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [teste, setTeste] = useState<{ ok: boolean; texto: string; preview?: string } | null>(null);
 
   const invalidar = () => {
     void qc.invalidateQueries({ queryKey: ['configPrinters'] });
@@ -84,20 +91,35 @@ export function Settings() {
         cameraUrl: r.cameraUrl || null,
         backupEnabled: r.backupEnabled
       }),
-    onSuccess: (res) => {
+    onSuccess: (res, enviado) => {
       if (!res.ok) {
         setTeste({ ok: false, texto: t.gestao.testeFalhou(res.erro ?? '') });
         return;
       }
-      // a câmera é opcional: se ela falhar, a impressora ainda está conectada
-      const extra = !res.camera
-        ? ''
-        : res.camera.ok
-          ? t.gestao.testeCameraOk
-          : t.gestao.testeCameraFalhou(res.camera.erro ?? '');
+
+      const base = t.gestao.testeOk(res.hostname ?? '?', res.versao ?? '?');
+      const cam = res.camera;
+
+      // nenhuma câmera informada e nenhuma encontrada: a impressora está ok
+      if (!cam) {
+        setTeste({ ok: true, texto: base + (enviado.cameraUrl ? '' : t.gestao.cameraSemDeteccao) });
+        return;
+      }
+
+      if (!cam.ok) {
+        setTeste({ ok: false, texto: base + t.gestao.testeCameraFalhou(cam.erro ?? '') });
+        return;
+      }
+
+      // descoberta: preenche o campo vazio em vez de fazer a pessoa digitar
+      if (cam.descoberta && cam.url && !rascunhoRef.current.cameraUrl.trim()) {
+        aoMudarRef.current({ ...rascunhoRef.current, cameraUrl: cam.url });
+      }
+
       setTeste({
-        ok: res.camera ? res.camera.ok : true,
-        texto: t.gestao.testeOk(res.hostname ?? '?', res.versao ?? '?') + extra
+        ok: true,
+        texto: base + (cam.descoberta ? ` ${t.gestao.cameraDescoberta(cam.nome ?? 'webcam')}` : t.gestao.testeCameraOk),
+        preview: cam.preview
       });
     },
     onError: (e) => setTeste({ ok: false, texto: e instanceof Error ? e.message : t.gestao.testeErro })
@@ -247,7 +269,7 @@ function Formulario({
   t: Dicionario;
   rascunho: Rascunho;
   erro: string | null;
-  teste: { ok: boolean; texto: string } | null;
+  teste: { ok: boolean; texto: string; preview?: string } | null;
   salvando: boolean;
   testando: boolean;
   aoMudar: (r: Rascunho) => void;
@@ -255,10 +277,13 @@ function Formulario({
   aoSalvar: () => void;
   aoFechar: () => void;
 }) {
+  // guarda a última URL já testada, para o blur não repetir o mesmo teste
+  const testadaRef = useRef<string>('');
+
   const campo = (
     rotulo: string,
     chave: 'nome' | 'moonrakerUrl' | 'apiKey' | 'cameraUrl',
-    props: { placeholder?: string; mono?: boolean; type?: string; dica?: string } = {}
+    props: { placeholder?: string; mono?: boolean; type?: string; dica?: string; aoSair?: () => void } = {}
   ) => (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span className="mono">{rotulo}</span>
@@ -266,6 +291,7 @@ function Formulario({
         value={rascunho[chave]}
         type={props.type ?? 'text'}
         onChange={(e) => aoMudar({ ...rascunho, [chave]: e.target.value })}
+        onBlur={props.aoSair}
         placeholder={props.placeholder}
         spellCheck={false}
         style={{
@@ -327,12 +353,21 @@ function Formulario({
         {campo(t.gestao.url, 'moonrakerUrl', {
           placeholder: t.gestao.urlPlaceholder,
           mono: true,
-          dica: t.gestao.urlDica
+          dica: t.gestao.urlDica,
+          // sair do campo com uma URL nova já dispara o teste: é o que
+          // descobre a câmera sem a pessoa precisar clicar em nada
+          aoSair: () => {
+            const url = rascunho.moonrakerUrl.trim();
+            if (!url || url === 'http://' || url === testadaRef.current) return;
+            if (!/^https?:\/\/[^/]+/i.test(url)) return;
+            testadaRef.current = url;
+            aoTestar();
+          }
         })}
 
         {/* O teste fica logo abaixo da URL, com rótulo: é aqui que ele serve,
             enquanto a pessoa ainda está digitando o endereço. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -6, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={aoTestar}
@@ -349,10 +384,13 @@ function Formulario({
               fontFamily: 'var(--font-heading)',
               fontWeight: 800,
               fontSize: 12,
+              // sem isto, "Tester la connexion" quebra em duas linhas
+              whiteSpace: 'nowrap',
+              flex: 'none',
               cursor: testando ? 'progress' : 'pointer'
             }}
           >
-            <Plug size={14} strokeWidth={2} aria-hidden />
+            <Plug size={14} strokeWidth={2} aria-hidden style={{ flex: 'none' }} />
             {testando ? t.gestao.testando : t.gestao.testar}
           </button>
 
@@ -361,18 +399,44 @@ function Formulario({
               role="status"
               style={{
                 display: 'inline-flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 gap: 7,
                 fontFamily: 'var(--font-mono)',
                 fontSize: 11,
+                lineHeight: 1.5,
                 color: teste.ok ? 'var(--color-accent-400)' : 'var(--color-accent)'
               }}
             >
-              {teste.ok ? <Check size={13} strokeWidth={3} aria-hidden /> : <X size={13} strokeWidth={3} aria-hidden />}
+              {teste.ok ? (
+                <Check size={13} strokeWidth={3} aria-hidden style={{ marginTop: 2, flex: 'none' }} />
+              ) : (
+                <X size={13} strokeWidth={3} aria-hidden style={{ marginTop: 2, flex: 'none' }} />
+              )}
               {teste.texto}
             </span>
           )}
         </div>
+
+        {/* Um quadro real vale mais que "a câmera respondeu": mostra o ângulo,
+            o foco e se é a máquina certa, antes de salvar. */}
+        {teste?.preview && (
+          <figure style={{ margin: 0 }}>
+            <img
+              src={teste.preview}
+              alt={t.gestao.previaCamera}
+              style={{
+                width: 220,
+                aspectRatio: '4 / 3',
+                objectFit: 'cover',
+                border: '2px solid var(--color-neutral-700)',
+                display: 'block'
+              }}
+            />
+            <figcaption className="mono" style={{ marginTop: 6 }}>
+              {t.gestao.previaCamera}
+            </figcaption>
+          </figure>
+        )}
 
         {campo(t.gestao.apiKey, 'apiKey', {
           placeholder: t.gestao.apiKeyPlaceholder,

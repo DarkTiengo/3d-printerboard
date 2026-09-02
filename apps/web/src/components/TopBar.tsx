@@ -3,11 +3,12 @@ import { Archive, Clock, FileText, LayoutGrid, LogOut, OctagonX, SlidersHorizont
 import type { User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
 import { useUi, type Tela } from '../store/ui';
-import { IDIOMAS, codigoDoIdioma, nomeDoIdioma, useIdioma, useT } from '../i18n';
+import { useT } from '../i18n';
+import { SeletorIdioma } from './SeletorIdioma';
 import { usePrinters, usePrintersVisiveis } from '../store/printers';
 import { IconButton } from './IconButton';
 import { Confirm } from './Confirm';
-import { Tooltip } from './Tooltip';
+
 import { api } from '../lib/api';
 
 const ABAS: { tela: Tela; Icone: typeof LayoutGrid }[] = [
@@ -35,8 +36,6 @@ const ROTULO_ABA: Record<Tela, keyof ReturnType<typeof useT>['barra']> = {
  */
 export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void }) {
   const t = useT();
-  const idioma = useIdioma((s) => s.idioma);
-  const definirIdioma = useIdioma((s) => s.definirIdioma);
   const tela = useUi((s) => s.tela);
   const irPara = useUi((s) => s.irPara);
   const printers = usePrintersVisiveis();
@@ -107,11 +106,7 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
           {!conectado && t.barra.semConexao}
         </span>
 
-        <SeletorDeIdioma
-          idioma={idioma}
-          aoTrocar={definirIdioma}
-          rotulo={t.idioma.trocar}
-        />
+        <SeletorIdioma />
 
         {pode(usuario.role, 'gerirImpressoras') && (
           <IconButton
@@ -161,46 +156,3 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
   );
 }
 
-/**
- * Troca de idioma. Com dois idiomas um botão que alterna é mais direto que um
- * menu, e o código visível ("PT"/"EN") já diz onde se está.
- */
-function SeletorDeIdioma({
-  idioma,
-  aoTrocar,
-  rotulo
-}: {
-  idioma: (typeof IDIOMAS)[number];
-  aoTrocar: (i: (typeof IDIOMAS)[number]) => void;
-  rotulo: string;
-}) {
-  const proximo = IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length];
-
-  return (
-    <Tooltip texto={`${rotulo} — ${nomeDoIdioma(proximo)}`}>
-      <button
-        type="button"
-        onClick={() => aoTrocar(proximo)}
-        aria-label={`${rotulo} — ${nomeDoIdioma(proximo)}`}
-        style={{
-          width: 40,
-          height: 40,
-          flex: 'none',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 999,
-          border: '1px solid var(--color-neutral-700)',
-          background: 'transparent',
-          color: 'var(--color-neutral-300)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          letterSpacing: '0.06em',
-          cursor: 'pointer'
-        }}
-      >
-        {codigoDoIdioma(idioma)}
-      </button>
-    </Tooltip>
-  );
-}

@@ -232,7 +232,7 @@ export const en: Dicionario = {
     apiKey: 'API KEY (OPTIONAL)',
     apiKeyPlaceholder: 'leave blank unless Moonraker requires one',
     cameraUrl: 'CAMERA URL (OPTIONAL)',
-    cameraPlaceholder: 'http://ender-a.local/webcam/?action=stream',
+    cameraPlaceholder: 'detected automatically when you test the connection',
     incluirBackup: 'Include in the daily backup',
     testar: 'Test connection',
     testando: 'Testing…',
@@ -241,7 +241,10 @@ export const en: Dicionario = {
     testeCameraFalhou: (erro: string) => ` The printer answered, but the camera did not: ${erro}`,
     testeFalhou: (erro: string) => `Not connected: ${erro}`,
     testeErro: 'Test failed.',
-    naoSalvou: 'Could not save.'
+    naoSalvou: 'Could not save.',
+    cameraDescoberta: (nome: string) => `Camera detected automatically (${nome}).`,
+    cameraSemDeteccao: ' No camera detected — you can fill the URL in by hand.',
+    previaCamera: 'Camera preview'
   },
 
   erros: {

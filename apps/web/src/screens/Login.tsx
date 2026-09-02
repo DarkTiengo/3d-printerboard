@@ -3,7 +3,8 @@ import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
 import type { User } from '@3dfarm/shared';
 import { ApiError, api } from '../lib/api';
 import { Ponto } from '../components/Tag';
-import { IDIOMAS, codigoDoIdioma, nomeDoIdioma, useIdioma, useT } from '../i18n';
+import { useT } from '../i18n';
+import { SeletorIdioma } from '../components/SeletorIdioma';
 import s from './Login.module.css';
 
 type Estatistica = { rotulo: string; valor: string };
@@ -12,8 +13,6 @@ const CHAVE_USUARIO = 'printerboard.usuario';
 
 export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
   const t = useT();
-  const idioma = useIdioma((s) => s.idioma);
-  const definirIdioma = useIdioma((s) => s.definirIdioma);
   const [usuario, setUsuario] = useState(() => {
     try {
       return localStorage.getItem(CHAVE_USUARIO) ?? '';
@@ -134,26 +133,7 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
             <h2 className={s.titulo}>{t.login.titulo}</h2>
           </div>
           {/* o idioma precisa poder mudar antes de entrar */}
-          <button
-            type="button"
-            onClick={() => definirIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}
-            aria-label={`${t.idioma.trocar} — ${nomeDoIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}`}
-            title={nomeDoIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}
-            style={{
-              flex: 'none',
-              padding: '7px 14px',
-              borderRadius: 999,
-              border: '1px solid var(--color-neutral-700)',
-              background: 'transparent',
-              color: 'var(--color-neutral-300)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              letterSpacing: '0.06em',
-              cursor: 'pointer'
-            }}
-          >
-            {codigoDoIdioma(idioma)}
-          </button>
+          <SeletorIdioma />
         </div>
 
         <div className={s.campos}>

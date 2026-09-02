@@ -50,8 +50,12 @@ Settings button in the top bar (admin only) → **+**. For each machine:
 | API key | leave blank unless Moonraker requires one |
 | Camera URL | `http://ender-a.local/webcam/?action=stream` |
 
-**Test connection** sits right under the URL field. It checks the printer and,
-if you filled it in, the camera too — before you save anything.
+**Test connection** sits right under the URL field, and runs on its own as soon
+as you leave that field. It checks the printer, and then **finds the camera for
+you**: it asks Moonraker which webcams it has configured (`/server/webcams/list`,
+which is where Mainsail and Fluidd store them), falls back to the conventional
+crowsnest paths, fills the camera field in, and shows **a real frame** so you can
+confirm the angle and that it is the machine you think it is — before saving.
 
 ### .local addresses (mDNS)
 
@@ -75,10 +79,15 @@ temperatures, jog, macros), or the queue when nothing is selected.
 
 ## Language
 
-The interface ships in **English and Brazilian Portuguese**. The toggle sits in
-the top bar and on the sign-in screen; the choice is remembered per browser, and
-the first visit follows your browser's language. Dates, numbers and relative
-times follow the selected locale.
+The interface ships in **English, Brazilian Portuguese, Spanish, French and
+Italian**. The picker sits in the top bar and on the sign-in screen; the choice
+is remembered per browser, and the first visit follows your browser's language
+list. Dates, numbers, clock format and relative times follow the selected
+locale.
+
+Adding a language is one file: copy `apps/web/src/i18n/en.ts`, translate the
+values, and register it in `apps/web/src/i18n/index.ts`. The dictionary is typed
+against the Portuguese one, so the compiler tells you if a key is missing.
 
 ## Roles
 
