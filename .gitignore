@@ -10,3 +10,7 @@ apps/web/tsconfig.tsbuildinfo
 
 # pacote de design original — o conteúdo já está extraído em design/
 3D Print Farm Manager Template.zip
+
+# cookie jars de teste com curl
+*.txt
+!design/*.txt
