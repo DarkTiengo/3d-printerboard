@@ -1,0 +1,26 @@
+{
+  "name": "3dfarm",
+  "private": true,
+  "version": "0.1.0",
+  "description": "3D Printerboard — gerenciador de fazenda de impressão 3D",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:server": "npm run dev -w @3dfarm/server",
+    "dev:web": "npm run dev -w @3dfarm/web",
+    "build": "npm run build -w @3dfarm/shared && npm run build -w @3dfarm/web && npm run build -w @3dfarm/server",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "start": "npm start -w @3dfarm/server"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.2": true
+  }
+}

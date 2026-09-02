@@ -1,0 +1,19 @@
+services:
+  printerboard:
+    build: .
+    image: 3dfarm/printerboard:0.1.0
+    container_name: printerboard
+    restart: unless-stopped
+    ports:
+      - '${PORT:-8080}:8080'
+    env_file:
+      - .env
+    # O processo roda sem root. Estes precisam ser o dono de ./data — deixe nos
+    # padrões se o seu usuário for uid 1000, senão ajuste no .env com `id -u`/`id -g`.
+    user: '${PUID:-1000}:${PGID:-1000}'
+    volumes:
+      # banco, backups, frames de alerta e miniaturas
+      - ./data:/data
+    # a fazenda vive na rede local: sem isso o container não enxerga
+    # os hosts .local nem faz mDNS para achar as impressoras
+    network_mode: ${NETWORK_MODE:-bridge}

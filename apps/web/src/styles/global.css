@@ -1,0 +1,118 @@
+/*
+ * Reset e base do app.
+ *
+ * O Modernist é um sistema de tema claro; aqui ele roda invertido (design/README.md
+ * § Sistema visual): o papel `--color-text` vira fundo e a tinta `--color-bg` vira
+ * texto. Não troque esses dois nomes — eles são os tokens originais do sistema.
+ */
+
+:root {
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  --barra-altura: 72px;
+  --painel-largura: 360px;
+  --lista-alertas: 420px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* O anel azul padrão do navegador não existe neste design. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+a {
+  color: var(--color-accent-400);
+  text-underline-offset: 3px;
+}
+a:hover {
+  color: var(--color-accent-300);
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  margin: 0;
+}
+
+/* Rótulo mono em caixa alta — repete em todas as telas. */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-400);
+}
+
+/* Barras de rolagem discretas, para não brigar com o fundo escuro. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-700) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-800);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-700);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Placeholder listrado do protótipo — usado só onde ainda não há imagem real. */
+.listrado {
+  background: repeating-linear-gradient(45deg, #3a3737 0 6px, #302d2d 6px 12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

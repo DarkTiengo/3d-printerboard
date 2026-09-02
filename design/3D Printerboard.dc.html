@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-1658ff0d-218f-412b-b1ed-1addb2a79d25/styles.css">
+<script src="_ds/modernist-1658ff0d-218f-412b-b1ed-1addb2a79d25/_ds_bundle.js"></script>
+<style>
+html, body { margin: 0; height: 100%; background: var(--color-text); }
+a { color: var(--color-accent-400); }
+a:hover { color: var(--color-accent-300); }
+::selection { background: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+</style>
+</helmet>
+
+<sc-if value="{{ deslogado }}" hint-placeholder-val="{{ true }}">
+  <div style="height:100vh;display:flex;background:var(--color-text);color:var(--color-bg);font-family:var(--font-body);overflow:hidden">
+    <div style="flex:1;min-width:0;position:relative;border-right:2px solid var(--color-neutral-700);display:flex;flex-direction:column;justify-content:space-between;gap:32px;padding:clamp(28px,4vh,56px) clamp(32px,4vw,56px);overflow:hidden">
+      <div class="grayscale" style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#2b2928 0 10px,#232120 10px 20px)"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:12px">
+        <span style="width:12px;height:12px;background:var(--color-accent)"></span>
+        <span style="font-family:var(--font-heading);font-weight:800;font-size:20px;letter-spacing:.02em">3D PRINTERBOARD</span>
+      </div>
+      <div style="position:relative;max-width:620px">
+        <h1 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:clamp(38px,5.2vw,64px);line-height:1.02;letter-spacing:-.02em;text-wrap:pretty">Toda a fazenda em uma tela só.</h1>
+        <p style="margin:clamp(14px,2vh,22px) 0 0;font-size:16px;line-height:1.6;color:var(--color-neutral-300);max-width:480px;text-wrap:pretty">Câmeras ao vivo, controle de impressão, biblioteca de arquivos e backup diário das configurações de cada máquina.</p>
+      </div>
+      <div style="position:relative;flex:none;display:flex;gap:2px;background:var(--color-neutral-700);border:2px solid var(--color-neutral-700)">
+        <sc-for list="{{ loginStats }}" as="s" hint-placeholder-count="3">
+          <div style="flex:1;background:var(--color-text);padding:clamp(11px,1.6vh,16px) 18px">
+            <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">{{ s.rotulo }}</div>
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(20px,2.4vw,26px);margin-top:4px">{{ s.valor }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="width:520px;flex:none;display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,4vh,56px) clamp(36px,4vw,64px);gap:clamp(18px,2.6vh,28px);overflow:auto">
+      <div>
+        <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:var(--color-neutral-400)">ACESSO AO SERVIDOR</div>
+        <h2 style="margin:10px 0 0;font-family:var(--font-heading);font-weight:800;font-size:34px;letter-spacing:-.01em">Entrar</h2>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <label style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">USUÁRIO</span>
+          <input value="{{ usuario }}" onChange="{{ setUsuario }}" placeholder="operador" style="background:transparent;border:1px solid var(--color-neutral-700);border-radius:10px;color:var(--color-bg);font-family:var(--font-body);font-size:15px;padding:13px 14px;outline:none" style-focus="border-color:var(--color-accent)">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">SENHA</span>
+          <input type="password" value="{{ senha }}" onChange="{{ setSenha }}" placeholder="••••••••" style="background:transparent;border:1px solid var(--color-neutral-700);border-radius:10px;color:var(--color-bg);font-family:var(--font-body);font-size:15px;padding:13px 14px;outline:none" style-focus="border-color:var(--color-accent)">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ENDEREÇO DO SERVIDOR</span>
+          <input value="{{ servidor }}" onChange="{{ setServidor }}" placeholder="http://fazenda.local:7125" style="background:transparent;border:1px solid var(--color-neutral-700);border-radius:10px;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:14px;padding:13px 14px;outline:none" style-focus="border-color:var(--color-accent)">
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <button onClick="{{ toggleLembrar }}" style="display:flex;align-items:center;gap:9px;border:0;background:transparent;color:var(--color-neutral-300);font-family:var(--font-body);font-size:13px;cursor:pointer;padding:0">
+          <span style="{{ estiloCheck }}">
+            <sc-if value="{{ lembrar }}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+            </sc-if>
+          </span>
+          <span>Manter conectado</span>
+        </button>
+        <a href="#" style="font-size:13px">Esqueci a senha</a>
+      </div>
+
+      <button onClick="{{ entrar }}" style="display:flex;align-items:center;justify-content:center;gap:10px;background:var(--color-accent);color:var(--color-bg);border:0;border-radius:999px;font-family:var(--font-heading);font-weight:800;font-size:15px;padding:15px 20px;cursor:pointer" style-hover="background:var(--color-accent-400)">
+        <span>Entrar</span>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+      </button>
+
+      <div style="display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400);border-top:1px solid var(--color-neutral-800);padding-top:18px">
+        <span style="width:7px;height:7px;background:var(--color-accent)"></span>
+        <span>SERVIDOR ONLINE · 8 HOSTS RESPONDENDO</span>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ logado }}">
+<div style="height:100vh;display:flex;flex-direction:column;background:var(--color-text);color:var(--color-bg);font-family:var(--font-body);overflow:hidden">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 22px;border-bottom:2px solid var(--color-neutral-700);flex:none">
+    <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">3D PRINTERBOARD</div>
+    <div style="display:flex;gap:4px;flex:1 1 auto;min-width:0;flex-wrap:wrap">
+      <button onClick="{{ goDash }}" title="Painel" style="{{ tab.dash }}" style-hover="background:var(--color-neutral-900)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+      </button>
+      <button onClick="{{ goCams }}" title="Câmeras" style="{{ tab.cams }}" style-hover="background:var(--color-neutral-900)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>
+      </button>
+      <button onClick="{{ goFiles }}" title="Arquivos" style="{{ tab.files }}" style-hover="background:var(--color-neutral-900)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+      </button>
+      <button onClick="{{ goBackup }}" title="Backups" style="{{ tab.backup }}" style-hover="background:var(--color-neutral-900)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"></rect><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"></path><path d="M10 12h4"></path></svg>
+      </button>
+      <button onClick="{{ goAlerts }}" title="Alertas" style="{{ tab.alerts }}" style-hover="background:var(--color-neutral-900)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </button>
+    </div>
+    <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400);white-space:nowrap;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis">{{ resumo }}</span>
+    <button title="Parada de emergência" style="display:inline-flex;align-items:center;justify-content:center;background:var(--color-accent);color:var(--color-bg);border:0;border-radius:999px;width:40px;height:40px;cursor:pointer;flex:none" style-hover="background:var(--color-accent-400)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 8.5-7 7"></path><path d="m8.5 8.5 7 7"></path><path d="M2.586 16.726A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2h6.624a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586z"></path></svg>
+      </button>
+  </div>
+
+  <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;min-height:0">
+      <div style="flex:1;padding:2px;overflow:auto;min-width:0">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px">
+          <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+            <div onClick="{{ p.onSelect }}" style="{{ p.tileStyle }}">
+              <div class="grayscale" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+              <span style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">
+                <span style="width:7px;height:7px;background:{{ p.dot }}"></span>{{ p.cam }}
+              </span>
+              <span style="position:absolute;top:8px;right:8px;color:var(--color-neutral-300)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" x2="14" y1="3" y2="10"></line><line x1="3" x2="10" y1="21" y2="14"></line></svg>
+              </span>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(transparent,rgba(32,30,29,.92) 55%)">
+                <div style="display:flex;align-items:baseline;gap:10px">
+                  <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;flex:1">{{ p.nome }}</span>
+                  <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.pctLabel }}</span>
+                </div>
+                <div style="height:3px;background:var(--color-neutral-800)"><div style="height:3px;width:{{ p.pctCss }};background:var(--color-accent)"></div></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="width:360px;flex:none;border-left:2px solid var(--color-neutral-700);display:flex;flex-direction:column;min-height:0">
+        <sc-if value="{{ semSel }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;min-height:0">
+            <div style="display:flex;align-items:center;gap:8px;padding:16px 18px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"></path><path d="M3 6h18"></path><path d="M3 18h12"></path></svg>
+              FILA — 7 TRABALHOS
+            </div>
+            <div style="overflow:auto">
+              <sc-for list="{{ fila }}" as="q" hint-placeholder-count="5">
+                <div style="padding:14px 18px;border-bottom:1px solid var(--color-neutral-800)">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.arquivo }}</div>
+                  <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ q.destino }} · {{ q.tempo }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding:18px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-500);line-height:1.6">CLIQUE EM UMA CÂMERA PARA ABRIR O CONTROLE DA IMPRESSORA</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ temSel }}">
+          <div style="display:flex;flex-direction:column;min-height:0;overflow:auto">
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:2px solid var(--color-neutral-700)">
+              <span style="width:8px;height:8px;flex:none;background:{{ sel.dot }}"></span>
+              <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sel.nome }}</span>
+              <span style="font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ sel.tagBg }};color:{{ sel.tagFg }}">{{ sel.statusCurto }}</span>
+              <button onClick="{{ fecharSel }}" title="Fechar" style="border:0;border-radius:999px;background:transparent;color:var(--color-neutral-400);cursor:pointer;padding:4px;display:flex" style-hover="color:var(--color-bg)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+            </div>
+
+            <div style="position:relative;border-bottom:1px solid var(--color-neutral-800)">
+              <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+              <span style="position:absolute;bottom:8px;left:10px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ sel.cam }}</span>
+            </div>
+
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--color-neutral-800)">
+              <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sel.job }}</div>
+              <div style="height:5px;background:var(--color-neutral-800)"><div style="height:5px;width:{{ sel.pctCss }};background:var(--color-accent)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">
+                <span>{{ sel.pctLabel }} · CAMADA {{ sel.camada }}</span><span>{{ sel.restante }}</span>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button onClick="{{ sel.onPause }}" title="Pausar" style="{{ sel.stylePause }}" style-hover="background:var(--color-neutral-900)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="14" y="4" width="4" height="16" rx="1"></rect><rect x="6" y="4" width="4" height="16" rx="1"></rect></svg>
+                </button>
+                <button onClick="{{ sel.onResume }}" title="Continuar" style="{{ sel.styleResume }}" style-hover="background:var(--color-accent-400)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                </button>
+                <button onClick="{{ sel.onCancel }}" title="Cancelar" style="{{ sel.styleCancel }}" style-hover="background:var(--color-neutral-900)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+              </div>
+            </div>
+
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--color-neutral-800)">
+              <sc-for list="{{ tempsCurtas }}" as="t" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:12px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-neutral-400)"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>
+                  <span style="flex:1;font-family:var(--font-heading);font-weight:800;font-size:12px">{{ t.item }}</span>
+                  <span>{{ t.atual }}</span>
+                  <span style="color:var(--color-neutral-500)">/ {{ t.alvo }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="padding:14px 16px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--color-neutral-800)">
+              <div style="display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,32px);gap:3px">
+                <span></span>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg></button>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="m8 7 4-4 4 4"></path><path d="m8 17 4 4 4-4"></path></svg></button>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></button>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+                <span></span>
+                <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path></svg></button>
+                <span></span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">PASSO (MM)</div>
+                <div style="display:flex;gap:3px">
+                  <sc-for list="{{ passos }}" as="s" hint-placeholder-count="4">
+                    <button onClick="{{ s.on }}" style="{{ s.style }}" style-hover="background:var(--color-neutral-900)">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-top:2px">X 118 Y 92 Z 16,8</div>
+              </div>
+            </div>
+
+            <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <sc-for list="{{ macrosCurtos }}" as="m" hint-placeholder-count="4">
+                <button style="display:flex;align-items:center;gap:7px;text-align:left;border:1px solid var(--color-neutral-700);border-radius:999px;background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;padding:9px 12px;cursor:pointer" style-hover="background:var(--color-neutral-900)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-accent)"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+                  <span>{{ m }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isCams }}">
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;min-height:0">
+        <sc-for list="{{ printersQuad }}" as="p" hint-placeholder-count="4">
+          <div style="position:relative;overflow:hidden">
+            <div class="grayscale" style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+            <span style="position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">
+              <span style="width:7px;height:7px;background:{{ p.dot }}"></span>{{ p.cam }}
+            </span>
+            <div style="position:absolute;bottom:12px;left:12px;right:12px;display:flex;align-items:flex-end;gap:12px">
+              <div style="flex:1">
+                <div style="font-family:var(--font-heading);font-weight:800;font-size:17px">{{ p.nome }}</div>
+                <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.pctLabel }} · {{ p.restante }}</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button onClick="{{ p.onPause }}" title="Pausar" style="{{ p.stylePause }}" style-hover="background:var(--color-neutral-900)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="14" y="4" width="4" height="16" rx="1"></rect><rect x="6" y="4" width="4" height="16" rx="1"></rect></svg>
+                </button>
+                <button onClick="{{ p.onResume }}" title="Continuar" style="{{ p.styleResume }}" style-hover="background:var(--color-accent-400)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+                </button>
+                <button onClick="{{ p.onCancel }}" title="Cancelar" style="{{ p.styleCancel }}" style-hover="background:var(--color-neutral-900)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:none;display:flex;gap:2px;border-top:2px solid var(--color-neutral-700);overflow:auto">
+        <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+          <div onClick="{{ p.onSelect }}" style="{{ p.stripStyle }}">
+            <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+            <span style="position:absolute;bottom:6px;left:6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isFiles }}">
+    <div style="flex:1;padding:22px;overflow:auto">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">
+        <sc-for list="{{ files }}" as="f" hint-placeholder-count="7">
+          <div style="border:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+            <div class="grayscale" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px);display:flex;align-items:flex-end;padding:10px">
+              <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">PRÉVIA DA PEÇA</span>
+            </div>
+            <div style="padding:14px;display:flex;flex-direction:column;gap:10px;flex:1">
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ f.nome }}</div>
+              <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ f.perfil }}</div>
+              <div style="display:flex;gap:14px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300);margin-top:auto">
+                <span>{{ f.tempo }}</span><span>{{ f.filamento }}</span><span>{{ f.impressoes }}×</span>
+              </div>
+              <button title="Enviar para a fila" style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;background:var(--color-accent);color:var(--color-bg);border:0;border-radius:999px;cursor:pointer" style-hover="background:var(--color-accent-400)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+              </button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isBackup }}">
+    <div style="flex:1;padding:22px;overflow:auto;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;align-items:center;gap:40px;border-bottom:2px solid var(--color-neutral-700);padding-bottom:16px">
+        <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ROTINA</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">Diária 03:00</div></div>
+        <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ÚLTIMO CICLO</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">há 2 h</div></div>
+        <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ARMAZENADO</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">3,4 GB</div></div>
+        <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FALHAS</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px;color:var(--color-accent-400)">1</div></div>
+        <span style="flex:1"></span>
+        <button title="Backup agora" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--color-accent);color:var(--color-bg);border:0;border-radius:999px;cursor:pointer" style-hover="background:var(--color-accent-400)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">
+        <sc-for list="{{ backups }}" as="b" hint-placeholder-count="8">
+          <div style="border:2px solid var(--color-neutral-700);padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <span style="font-family:var(--font-heading);font-weight:800;font-size:16px;flex:1">{{ b.nome }}</span>
+              <span style="font-family:ui-monospace,monospace;font-size:10px;padding:2px 5px;background:{{ b.tagBg }};color:{{ b.tagFg }}">{{ b.estado }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">
+              <div style="display:flex;justify-content:space-between"><span>PERFIS</span><span>{{ b.perfis }}</span></div>
+              <div style="display:flex;justify-content:space-between"><span>FIRMWARE / CALIBRAÇÃO</span><span>{{ b.firmware }}</span></div>
+              <div style="display:flex;justify-content:space-between"><span>G-CODE</span><span>{{ b.gcode }}</span></div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button title="Backup agora" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--color-neutral-700);border-radius:999px;background:transparent;color:var(--color-bg);cursor:pointer" style-hover="background:var(--color-neutral-900)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg>
+              </button>
+              <button title="Restaurar em…" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--color-neutral-700);border-radius:999px;background:transparent;color:var(--color-bg);cursor:pointer" style-hover="background:var(--color-neutral-900)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg>
+              </button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAlerts }}">
+    <div style="flex:1;display:flex;min-height:0">
+      <div style="width:420px;flex:none;border-right:2px solid var(--color-neutral-700);overflow:auto">
+        <sc-for list="{{ alerts }}" as="al" hint-placeholder-count="7">
+          <div onClick="{{ al.on }}" style="{{ al.rowStyle }}" style-hover="background:var(--color-neutral-900)">
+            <span style="width:8px;height:8px;flex:none;margin-top:5px;background:{{ al.cor }}"></span>
+            <div style="flex:1">
+              <div style="font-family:var(--font-heading);font-weight:800;font-size:13px">{{ al.titulo }}</div>
+              <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ al.quando }} · {{ al.impressora }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:18px;min-width:0;overflow:auto">
+        <div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">{{ alertaSel.quando }} · {{ alertaSel.impressora }}</div>
+          <h4 style="margin:8px 0 0;font-family:var(--font-heading);font-weight:800;font-size:28px;color:var(--color-bg)">{{ alertaSel.titulo }}</h4>
+        </div>
+        <div style="font-size:14px;max-width:520px;text-wrap:pretty;color:var(--color-neutral-300)">{{ alertaSel.detalhe }}</div>
+        <div class="grayscale" style="aspect-ratio:16/9;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px);display:flex;align-items:flex-end;padding:12px;max-width:520px">
+          <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ alertaSel.frame }}</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button title="Resolver" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:var(--color-accent);color:var(--color-bg);border:0;border-radius:999px;cursor:pointer" style-hover="background:var(--color-accent-400)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          </button>
+          <button title="Abrir impressora" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--color-neutral-700);border-radius:999px;background:transparent;color:var(--color-bg);cursor:pointer" style-hover="background:var(--color-neutral-900)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;printerCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:8,&quot;min&quot;:4,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Fazenda&quot;}}">
+class Component extends DCLogic {
+  base = [
+    { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, restante: '1h 14m', camada: '84/210', status: 'imprimindo' },
+    { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, restante: '3h 02m', camada: '61/196', status: 'imprimindo' },
+    { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, restante: '0h 08m', camada: '188/200', status: 'imprimindo' },
+    { id: 'P04', nome: 'Prusa MK4', job: 'caixa_junction_v2.gcode', pct: 0, restante: '—', camada: '0/142', status: 'ociosa' },
+    { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, restante: '1h 41m', camada: '96/204', status: 'imprimindo' },
+    { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, restante: 'parado', camada: '18/150', status: 'atenção' },
+    { id: 'P07', nome: 'Sovol SV06', job: 'pé_antivibração.gcode', pct: 66, restante: '0h 52m', camada: '58/88', status: 'imprimindo' },
+    { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, restante: 'pausada', camada: '24/120', status: 'pausada' }
+  ];
+
+  state = {
+    tela: 'dash', alerta: 0, st: {}, sel: 'P01', passo: '1',
+    auth: false, usuario: '', senha: '', servidor: 'http://fazenda.local:7125', lembrar: true
+  };
+
+  status(p) { return this.state.st[p.id] || p.status; }
+
+  set(id, status) {
+    this.setState(s => {
+      const st = Object.assign({}, s.st);
+      st[id] = status;
+      return { st: st };
+    });
+  }
+
+  tag(status) {
+    if (status === 'imprimindo') return { bg: 'var(--color-accent)', fg: 'var(--color-bg)', curto: 'IMPRIMINDO' };
+    if (status === 'atenção') return { bg: 'var(--color-accent-700)', fg: 'var(--color-bg)', curto: 'ATENÇÃO' };
+    if (status === 'pausada') return { bg: 'var(--color-neutral-700)', fg: 'var(--color-bg)', curto: 'PAUSADA' };
+    if (status === 'cancelada') return { bg: 'var(--color-neutral-800)', fg: 'var(--color-neutral-300)', curto: 'CANCELADA' };
+    return { bg: 'var(--color-neutral-800)', fg: 'var(--color-neutral-300)', curto: 'OCIOSA' };
+  }
+
+  ctrl(kind, enabled) {
+    const base = 'flex:1;display:inline-flex;align-items:center;justify-content:center;height:34px;border-radius:999px;font-family:var(--font-heading);font-weight:800;font-size:11px;cursor:pointer;';
+    if (!enabled) return base + 'border:1px solid var(--color-neutral-800);background:transparent;color:var(--color-neutral-700);cursor:not-allowed;pointer-events:none;';
+    if (kind === 'resume') return base + 'border:0;background:var(--color-accent);color:var(--color-bg);';
+    return base + 'border:1px solid var(--color-neutral-600);background:rgba(32,30,29,.6);color:var(--color-bg);';
+  }
+
+  tabStyle(active) {
+    return 'display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;border:0;border-radius:999px;'
+      + (active ? 'background:var(--color-accent);color:var(--color-bg);' : 'background:transparent;color:var(--color-neutral-300);');
+  }
+
+  renderVals() {
+    const n = this.props.printerCount ?? 8;
+    const tela = this.state.tela;
+    const go = k => () => this.setState({ tela: k });
+
+    const printers = this.base.slice(0, n).map(p => {
+      const status = this.status(p);
+      const t = this.tag(status);
+      const rodando = status === 'imprimindo' || status === 'atenção';
+      const parada = status === 'pausada';
+      const pct = status === 'cancelada' || status === 'ociosa' ? 0 : p.pct;
+      const selecionada = this.state.sel === p.id;
+      return Object.assign({}, p, {
+        cam: 'CAM ' + p.id,
+        pctCss: pct + '%',
+        pctLabel: pct + '%',
+        restante: status === 'cancelada' ? 'cancelada' : (parada ? 'pausada' : p.restante),
+        tagBg: t.bg, tagFg: t.fg, statusCurto: t.curto,
+        dot: status === 'atenção' ? 'var(--color-accent-700)' : (rodando ? 'var(--color-accent)' : 'var(--color-neutral-600)'),
+        onSelect: () => this.setState({ sel: p.id }),
+        tileStyle: 'position:relative;cursor:pointer;outline:'
+          + (selecionada ? '2px solid var(--color-accent)' : '2px solid transparent') + ';outline-offset:-2px;',
+        stripStyle: 'width:150px;flex:none;position:relative;cursor:pointer;outline:'
+          + (selecionada ? '2px solid var(--color-accent)' : '2px solid transparent') + ';outline-offset:-2px;',
+        onPause: () => this.set(p.id, 'pausada'),
+        onResume: () => this.set(p.id, 'imprimindo'),
+        onCancel: () => this.set(p.id, 'cancelada'),
+        stylePause: this.ctrl('pause', rodando),
+        styleResume: this.ctrl('resume', parada),
+        styleCancel: this.ctrl('cancel', rodando || parada)
+      });
+    });
+
+    const files = [
+      { nome: 'suporte_camera_v3', perfil: 'PLA 0.20 / 3 paredes', tempo: '4h 10m', filamento: '86 g', impressoes: '12' },
+      { nome: 'clipe_cabo_x12', perfil: 'PETG 0.24 / 2 paredes', tempo: '4h 25m', filamento: '54 g', impressoes: '31' },
+      { nome: 'engrenagem_z_final', perfil: 'PETG 0.16 / 4 paredes', tempo: '2h 40m', filamento: '41 g', impressoes: '5' },
+      { nome: 'caixa_junction_v2', perfil: 'PLA 0.28 / draft', tempo: '1h 55m', filamento: '62 g', impressoes: '3' },
+      { nome: 'ventoinha_duto', perfil: 'ABS 0.20 / câmara 45°', tempo: '3h 12m', filamento: '48 g', impressoes: '9' },
+      { nome: 'pé_antivibração', perfil: 'TPU 0.20 / 8 mm/s', tempo: '1h 20m', filamento: '22 g', impressoes: '24' },
+      { nome: 'chaveiro_lote_24', perfil: 'PLA 0.20 / batch', tempo: '6h 05m', filamento: '110 g', impressoes: '18' }
+    ];
+
+    const backupsBase = [
+      { estado: 'OK', perfis: 'hoje 03:00', firmware: 'Klipper v0.12 · há 6 d', gcode: '42 arq. · 1,1 GB' },
+      { estado: 'OK', perfis: 'hoje 03:00', firmware: 'Klipper v0.12 · há 6 d', gcode: '38 arq. · 0,9 GB' },
+      { estado: 'OK', perfis: 'hoje 03:01', firmware: 'firmware 1.7.2 · há 2 d', gcode: '51 arq. · 1,4 GB' },
+      { estado: 'OK', perfis: 'hoje 03:01', firmware: 'MK4 6.1.3 · há 11 d', gcode: '17 arq. · 0,4 GB' },
+      { estado: 'OK', perfis: 'hoje 03:02', firmware: 'Klipper v0.12 · há 6 d', gcode: '29 arq. · 0,7 GB' },
+      { estado: 'FALHOU', perfis: 'há 4 d', firmware: 'Marlin 2.1.2 · há 4 d', gcode: '12 arq. · 0,3 GB' },
+      { estado: 'OK', perfis: 'hoje 03:02', firmware: 'Marlin 2.1.2 · há 9 d', gcode: '21 arq. · 0,5 GB' },
+      { estado: 'PARCIAL', perfis: 'hoje 03:03', firmware: 'firmware 1.4.0 · há 3 d', gcode: '9 arq. · 0,2 GB' }
+    ];
+    const backups = printers.map((p, i) => {
+      const b = backupsBase[i % backupsBase.length];
+      const ok = b.estado === 'OK';
+      return Object.assign({ nome: p.nome }, b, {
+        tagBg: ok ? 'var(--color-neutral-800)' : 'var(--color-accent)',
+        tagFg: ok ? 'var(--color-neutral-300)' : 'var(--color-bg)'
+      });
+    });
+
+    const alertBase = [
+      { titulo: 'Falha de extrusão detectada', impressora: 'Ender 5 Plus', quando: 'há 6 min', sev: 'alta', detalhe: 'A camada 84 saiu sem material por 3 camadas consecutivas. A impressão foi pausada automaticamente e a mesa mantida a 58° para retomada.', frame: 'FRAME DO ALERTA — CAM P06' },
+      { titulo: 'Backup diário falhou', impressora: 'Ender 5 Plus', quando: 'há 2 h', sev: 'alta', detalhe: 'O host não respondeu na janela de 03:00. Perfis e G-code da máquina estão 4 dias atrasados em relação às demais.', frame: 'CAPTURA DO LOG DE BACKUP' },
+      { titulo: 'Filamento acabando', impressora: 'Bambu P1S', quando: 'há 3 h', sev: 'media', detalhe: 'Estimativa de 38 g restantes no carretel contra 41 g necessários para concluir engrenagem_z_final.gcode.', frame: 'FRAME DO SENSOR — CAM P03' },
+      { titulo: 'Impressão concluída', impressora: 'Sovol SV06', quando: 'há 5 h', sev: 'baixa', detalhe: 'pé_antivibração.gcode concluído em 1h 18m, 4 % abaixo da estimativa.', frame: 'FRAME FINAL — CAM P07' },
+      { titulo: 'Firmware desatualizado', impressora: 'Prusa MK4', quando: 'ontem', sev: 'media', detalhe: 'Versão instalada 6.1.3; disponível 6.2.0. O backup de calibração já foi arquivado antes da atualização.', frame: 'PAINEL DA IMPRESSORA' },
+      { titulo: 'Retomada após queda de energia', impressora: 'Voron 0.2', quando: 'ontem', sev: 'baixa', detalhe: 'Retomada automática na camada 212 após 40 s sem energia. Sem deslocamento visível na peça.', frame: 'FRAME DA RETOMADA — CAM P05' },
+      { titulo: 'Câmera offline', impressora: 'Bambu A1 mini', quando: 'há 2 d', sev: 'media', detalhe: 'Stream sem resposta por 12 min; voltou sozinha. Vale checar a fonte USB do hub.', frame: 'ÚLTIMO FRAME RECEBIDO' }
+    ];
+    const cores = { alta: 'var(--color-accent)', media: 'var(--color-accent-700)', baixa: 'var(--color-neutral-600)' };
+    const alerts = alertBase.map((al, i) => Object.assign({}, al, {
+      cor: cores[al.sev],
+      on: () => this.setState({ alerta: i }),
+      rowStyle: 'display:flex;gap:12px;padding:15px 18px;border-bottom:1px solid var(--color-neutral-800);cursor:pointer;text-align:left;'
+        + (this.state.alerta === i ? 'background:var(--color-neutral-900);' : 'background:transparent;')
+    }));
+
+    const sel = printers.find(p => p.id === this.state.sel);
+    const ativas = printers.filter(p => p.statusCurto === 'IMPRIMINDO' || p.statusCurto === 'ATENÇÃO').length;
+    const atencao = printers.filter(p => p.statusCurto === 'ATENÇÃO').length;
+
+    return {
+      printers: printers,
+      printersQuad: printers.slice(0, 4),
+      files: files, backups: backups, alerts: alerts,
+      alertaSel: alerts[this.state.alerta] || alerts[0],
+      sel: sel, temSel: !!sel, semSel: !sel,
+      fecharSel: () => this.setState({ sel: null }),
+      fila: [
+        { arquivo: 'clipe_cabo_x12.gcode', destino: 'Prusa MK4', tempo: '4h 25m' },
+        { arquivo: 'caixa_junction_v2.gcode', destino: 'próxima livre', tempo: '1h 55m' },
+        { arquivo: 'chaveiro_lote_24.gcode', destino: 'Bambu A1 mini', tempo: '6h 05m' },
+        { arquivo: 'suporte_camera_v3.gcode', destino: 'próxima livre', tempo: '4h 10m' },
+        { arquivo: 'pé_antivibração.gcode', destino: 'Sovol SV06', tempo: '1h 20m' }
+      ],
+      tempsCurtas: [
+        { item: 'Bico', atual: '210,4 °C', alvo: '210 °C' },
+        { item: 'Mesa', atual: '59,8 °C', alvo: '60 °C' }
+      ],
+      macrosCurtos: ['HOME ALL', 'BED MESH', 'PURGE LINE', 'PARK HEAD'],
+      passos: ['0.1', '1', '10', '100'].map(v => ({
+        label: v,
+        on: () => this.setState({ passo: v }),
+        style: 'text-align:center;border:0;border-radius:999px;font-family:ui-monospace,monospace;font-size:11px;padding:7px 12px;cursor:pointer;'
+          + (this.state.passo === v ? 'background:var(--color-accent);color:var(--color-bg);' : 'background:var(--color-neutral-800);color:var(--color-neutral-300);')
+      })),
+      jogStyle: 'display:flex;align-items:center;justify-content:center;border:1px solid var(--color-neutral-700);border-radius:8px;background:transparent;color:var(--color-bg);cursor:pointer;padding:0;',
+      resumo: ativas + ' ativas · fila 7 · ' + atencao + ' atenção',
+      isDash: tela === 'dash', isCams: tela === 'cams', isFiles: tela === 'files',
+      isBackup: tela === 'backup', isAlerts: tela === 'alerts',
+      goDash: go('dash'), goCams: go('cams'), goFiles: go('files'), goBackup: go('backup'), goAlerts: go('alerts'),
+      logado: this.state.auth,
+      deslogado: !this.state.auth,
+      entrar: () => this.setState({ auth: true }),
+      usuario: this.state.usuario,
+      senha: this.state.senha,
+      servidor: this.state.servidor,
+      lembrar: this.state.lembrar,
+      setUsuario: e => this.setState({ usuario: e.target.value }),
+      setSenha: e => this.setState({ senha: e.target.value }),
+      setServidor: e => this.setState({ servidor: e.target.value }),
+      toggleLembrar: () => this.setState(s => ({ lembrar: !s.lembrar })),
+      estiloCheck: 'width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:5px;'
+        + (this.state.lembrar
+          ? 'background:var(--color-accent);color:var(--color-bg);border:1px solid var(--color-accent);'
+          : 'background:transparent;border:1px solid var(--color-neutral-600);'),
+      loginStats: [
+        { rotulo: 'IMPRESSORAS', valor: '8' },
+        { rotulo: 'ARQUIVOS', valor: '214' },
+        { rotulo: 'ÚLTIMO BACKUP', valor: 'há 2 h' }
+      ],
+      tab: {
+        dash: this.tabStyle(tela === 'dash'), cams: this.tabStyle(tela === 'cams'),
+        files: this.tabStyle(tela === 'files'), backup: this.tabStyle(tela === 'backup'),
+        alerts: this.tabStyle(tela === 'alerts')
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>

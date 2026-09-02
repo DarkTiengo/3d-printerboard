@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+.env
+*.log
+.DS_Store
+
+# artefato do tsc -b
+apps/web/tsconfig.tsbuildinfo
+
+# pacote de design original — o conteúdo já está extraído em design/
+3D Print Farm Manager Template.zip

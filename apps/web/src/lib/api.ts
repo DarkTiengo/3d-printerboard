@@ -1,0 +1,143 @@
+import type {
+  Alert,
+  BackupCard,
+  BackupResumo,
+  BackupSnapshot,
+  GcodeFile,
+  Printer,
+  PrinterConfig,
+  QueueJob,
+  Role,
+  User
+} from '@3dfarm/shared';
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+/**
+ * Base da API.
+ *
+ * Sempre a mesma origem: o app é servido pelo próprio agregador, então o
+ * endereço do servidor é, por definição, de onde esta página veio. Caminhos
+ * relativos também mantêm o cookie de sessão e o proxy de câmera na origem
+ * única — sem CORS e sem conteúdo misto.
+ */
+export function urlDaApi(caminho: string): string {
+  return caminho;
+}
+
+async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(urlDaApi(caminho), {
+      credentials: 'include',
+      headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+      ...init
+    });
+  } catch {
+    // rede caiu ou o endereço do servidor está errado — a tela de login trata
+    throw new ApiError('Não foi possível falar com o servidor.', 0);
+  }
+
+  if (res.status === 204) return undefined as T;
+
+  const texto = await res.text();
+  const corpo = texto ? safeJson(texto) : null;
+
+  if (!res.ok) {
+    throw new ApiError(corpo?.erro ?? `Erro ${res.status}`, res.status);
+  }
+  return corpo as T;
+}
+
+function safeJson(texto: string): any {
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return null;
+  }
+}
+
+const get = <T,>(c: string) => pedir<T>(c);
+const post = <T,>(c: string, body?: unknown) =>
+  pedir<T>(c, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) });
+const put = <T,>(c: string, body?: unknown) =>
+  pedir<T>(c, { method: 'PUT', body: body === undefined ? undefined : JSON.stringify(body) });
+const del = <T,>(c: string) => pedir<T>(c, { method: 'DELETE' });
+
+export const api = {
+  // auth
+  login: (usuario: string, senha: string, lembrar: boolean) =>
+    post<{ usuario: User }>('/api/auth/login', { usuario, senha, lembrar }),
+  logout: () => post<{ ok: true }>('/api/auth/logout'),
+  eu: () => get<{ usuario: User }>('/api/auth/eu'),
+
+  // usuários
+  usuarios: () => get<User[]>('/api/usuarios'),
+  criarUsuario: (usuario: string, senha: string, role: Role) => post<User>('/api/usuarios', { usuario, senha, role }),
+  trocarSenha: (id: number, senha: string) => put<{ ok: true }>(`/api/usuarios/${id}/senha`, { senha }),
+  removerUsuario: (id: number) => del<{ ok: true }>(`/api/usuarios/${id}`),
+
+  // impressoras
+  printers: () => get<Printer[]>('/api/printers'),
+  resumo: () => get<{ ativas: number; fila: number; atencao: number; alertasAbertos: number; texto: string }>('/api/resumo'),
+  pausar: (id: string) => post<{ ok: true }>(`/api/printers/${id}/pause`),
+  continuar: (id: string) => post<{ ok: true }>(`/api/printers/${id}/resume`),
+  cancelar: (id: string) => post<{ ok: true }>(`/api/printers/${id}/cancel`),
+  jog: (id: string, eixo: 'X' | 'Y' | 'Z', passo: number) => post<{ ok: true }>(`/api/printers/${id}/jog`, { eixo, passo }),
+  home: (id: string) => post<{ ok: true }>(`/api/printers/${id}/home`),
+  gcode: (id: string, script: string) => post<{ ok: true }>(`/api/printers/${id}/gcode`, { script }),
+  paradaEmergencia: () => post<{ ok: boolean; total: number; falhas: string[] }>('/api/emergency-stop'),
+
+  // gestão
+  configPrinters: () => get<PrinterConfig[]>('/api/config/printers'),
+  criarPrinter: (p: Partial<PrinterConfig>) => post<PrinterConfig>('/api/config/printers', p),
+  atualizarPrinter: (id: string, p: Partial<PrinterConfig>) => put<PrinterConfig>(`/api/config/printers/${id}`, p),
+  removerPrinter: (id: string) => del<{ ok: true }>(`/api/config/printers/${id}`),
+  testarPrinter: (p: Partial<PrinterConfig>) =>
+    post<{ ok: boolean; versao?: string; hostname?: string; erro?: string }>('/api/config/printers/testar', p),
+
+  // arquivos e fila
+  arquivos: () => get<GcodeFile[]>('/api/arquivos'),
+  fila: () => get<QueueJob[]>('/api/fila'),
+  enfileirar: (arquivo: string, destino: string | null) => post<QueueJob>('/api/fila', { arquivo, destino }),
+  cancelarJob: (id: number) => del<QueueJob>(`/api/fila/${id}`),
+
+  // alertas
+  alertas: () => get<Alert[]>('/api/alertas'),
+  resolverAlerta: (id: number) => post<Alert>(`/api/alertas/${id}/resolver`),
+
+  // backups
+  backups: () => get<{ resumo: BackupResumo; cards: BackupCard[] }>('/api/backups'),
+  snapshots: (printer?: string) =>
+    get<BackupSnapshot[]>(`/api/backups/snapshots${printer ? `?printer=${encodeURIComponent(printer)}` : ''}`),
+  rodarBackupTodas: () => post<{ ok: true }>('/api/backups/rodar'),
+  rodarBackup: (id: string) => post<{ ok: true }>(`/api/backups/${id}/rodar`),
+  restaurar: (snapshotId: number, destinoPrinterId: string) =>
+    post<{ ok: true; arquivos: number }>('/api/backups/restaurar', { snapshotId, destinoPrinterId, confirmar: true })
+};
+
+/** URL do stream MJPEG de uma câmera, na taxa pedida. */
+export function urlCamera(printerId: string, fps: number): string {
+  return urlDaApi(`/api/printers/${printerId}/camera?fps=${fps}`);
+}
+
+/**
+ * `maxIdade` diz ao servidor o quão velho o quadro em cache pode ser: um tile
+ * pedindo 2 vezes por segundo aceita 400 ms, e assim vários espectadores da
+ * mesma câmera compartilham o mesmo quadro sem tráfego extra para a máquina.
+ */
+export function urlSnapshot(printerId: string, cacheBuster?: number, maxIdade?: number): string {
+  const q = new URLSearchParams();
+  if (cacheBuster) q.set('t', String(cacheBuster));
+  if (maxIdade) q.set('maxIdade', String(maxIdade));
+  const sufixo = q.toString() ? `?${q}` : '';
+  return urlDaApi(`/api/printers/${printerId}/snapshot${sufixo}`);
+}

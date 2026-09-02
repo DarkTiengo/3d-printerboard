@@ -1,0 +1,282 @@
+/* Tela de login — design/README.md § 1. Duas colunas em 100vh. */
+
+.tela {
+  height: 100vh;
+  display: flex;
+  background: var(--color-text);
+  color: var(--color-bg);
+  overflow: hidden;
+}
+
+/* ── coluna da foto ──────────────────────────────────────────────────────── */
+
+.foto {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  border-right: 2px solid var(--color-neutral-700);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(28px, 4vh, 56px) clamp(32px, 4vw, 56px);
+  overflow: hidden;
+}
+
+.fotoFundo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* fotografia em preto e branco, sem tingimento — § Ativos do README */
+  filter: grayscale(1) contrast(1.08);
+}
+
+/* Véu escuro: sem ele a chamada de 64px some sobre as áreas claras da foto. */
+.fotoVeu {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(32, 30, 29, 0.92) 0%,
+    rgba(32, 30, 29, 0.74) 45%,
+    rgba(32, 30, 29, 0.52) 100%
+  );
+}
+
+.camada {
+  position: relative;
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marcaQuadrado {
+  width: 12px;
+  height: 12px;
+  background: var(--color-accent);
+  flex: none;
+}
+
+.marcaTexto {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+
+.chamadaBloco {
+  max-width: 620px;
+}
+
+.chamada {
+  font-size: clamp(38px, 5.2vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: pretty;
+}
+
+.subChamada {
+  margin: clamp(14px, 2vh, 22px) 0 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-neutral-300);
+  max-width: 480px;
+  text-wrap: pretty;
+}
+
+/* Faixa de três números: o gap de 2px sobre neutral-700 faz o papel da linha. */
+.numeros {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  background: var(--color-neutral-700);
+  border: 2px solid var(--color-neutral-700);
+}
+
+.numero {
+  flex: 1;
+  background: var(--color-text);
+  padding: clamp(11px, 1.6vh, 16px) 18px;
+  min-width: 0;
+}
+
+.numeroRotulo {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-400);
+}
+
+.numeroValor {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(20px, 2.4vw, 26px);
+  margin-top: 4px;
+}
+
+/* ── coluna do formulário ────────────────────────────────────────────────── */
+
+.form {
+  width: 520px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(28px, 4vh, 56px) clamp(36px, 4vw, 64px);
+  gap: clamp(18px, 2.6vh, 28px);
+  overflow: auto;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--color-neutral-400);
+}
+
+.titulo {
+  margin-top: 10px;
+  font-size: 34px;
+  letter-spacing: -0.01em;
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campoRotulo {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-400);
+}
+
+.entrada {
+  background: transparent;
+  border: 1px solid var(--color-neutral-700);
+  border-radius: 10px;
+  color: var(--color-bg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 13px 14px;
+  width: 100%;
+}
+.entrada::placeholder {
+  color: var(--color-neutral-600);
+}
+.entrada:focus {
+  border-color: var(--color-accent);
+}
+.entrada:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.entradaErro {
+  border-color: var(--color-accent);
+}
+
+.linhaOpcoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lembrar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: var(--color-neutral-300);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.check {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid var(--color-neutral-600);
+  flex: none;
+}
+
+.checkMarcado {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.entrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 15px;
+  padding: 15px 20px;
+  cursor: pointer;
+  width: 100%;
+}
+.entrar:hover:not(:disabled) {
+  background: var(--color-accent-400);
+}
+.entrar:disabled {
+  background: var(--color-neutral-800);
+  color: var(--color-neutral-500);
+  cursor: progress;
+}
+
+.erro {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-accent-400);
+  border-left: 2px solid var(--color-accent);
+  padding-left: 10px;
+  text-wrap: pretty;
+}
+
+.rodape {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-neutral-500);
+}
+
+/* Abaixo de 900px a foto sai: a coluna do formulário é o que importa. */
+@media (max-width: 900px) {
+  .foto {
+    display: none;
+  }
+  .form {
+    width: 100%;
+  }
+}

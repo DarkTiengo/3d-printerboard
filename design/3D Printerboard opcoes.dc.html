@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/modernist-1658ff0d-218f-412b-b1ed-1addb2a79d25/styles.css">
+<script src="_ds/modernist-1658ff0d-218f-412b-b1ed-1addb2a79d25/_ds_bundle.js"></script>
+<style>
+body { margin: 0; background: var(--color-text); }
+a { color: var(--color-accent-400); }
+a:hover { color: var(--color-accent-300); }
+::selection { background: color-mix(in srgb, var(--color-accent) 40%, transparent); }
+</style>
+</helmet>
+
+<section style="display:flex;gap:64px;align-items:flex-start;flex-wrap:wrap;padding:56px 56px 0;background:var(--color-text);font-family:var(--font-body);color:var(--color-bg)">
+  <div id="3a" style="width:1520px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--color-neutral-700);padding-bottom:10px">
+      <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.08em;background:var(--color-accent);color:var(--color-bg);padding:3px 8px">3A</span>
+      <h4 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-bg)">Estrutura de painéis, no espírito do Mainsail</h4>
+      <span style="font-size:12px;color:var(--color-neutral-400)">barra superior com parada de emergência, painéis empilhados de trabalho, ferramentas, macros e cabeça de impressão</span>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;gap:36px">
+      <div style="width:1080px;height:880px;border:2px solid var(--color-neutral-700);background:var(--color-text);display:flex;overflow:hidden">
+        <div style="width:210px;flex:none;border-right:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+          <div style="padding:18px;border-bottom:2px solid var(--color-neutral-700)">
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:16px;line-height:1.1">3D PRINTERBOARD</div>
+            <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-top:5px">8 HOSTS / KLIPPER</div>
+          </div>
+          <div style="padding:14px 18px;border-bottom:2px solid var(--color-neutral-700);display:flex;align-items:center;gap:8px">
+            <span style="width:8px;height:8px;background:var(--color-accent)"></span>
+            <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;flex:1">{{ ativa.nome }}</span>
+            <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">▾</span>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ navC }}" as="item" hint-placeholder-count="6">
+              <button onClick="{{ item.on }}" style="{{ item.style }}" style-hover="background:var(--color-neutral-900)">{{ item.label }}</button>
+            </sc-for>
+          </div>
+          <div style="margin-top:auto;border-top:2px solid var(--color-neutral-700);padding:14px 18px;display:flex;flex-direction:column;gap:6px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">
+            <div style="display:flex;justify-content:space-between"><span>MCU</span><span>18 %</span></div>
+            <div style="display:flex;justify-content:space-between"><span>HOST</span><span>0,42 LOAD</span></div>
+            <div style="display:flex;justify-content:space-between"><span>UPTIME</span><span>6 d 04 h</span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:2px solid var(--color-neutral-700)">
+            <h4 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-bg)">{{ tituloC }}</h4>
+            <span style="font-family:ui-monospace,monospace;font-size:11px;padding:3px 7px;background:{{ ativa.tagBg }};color:{{ ativa.tagFg }}">{{ ativa.statusCurto }}</span>
+            <span style="flex:1"></span>
+            <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ resumo }}</span>
+            <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:12px;letter-spacing:.04em;padding:10px 13px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">PARADA DE EMERGÊNCIA</button>
+          </div>
+
+          <sc-if value="{{ cDash }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:18px;overflow:auto;display:flex;flex-direction:column;gap:18px">
+
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:2px solid var(--color-neutral-700)">
+                  <span style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">TRABALHO ATUAL</span>
+                  <span style="flex:1"></span>
+                  <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">CAMADA 84 / 210</span>
+                </div>
+                <div style="display:flex;gap:16px;padding:16px">
+                  <div class="grayscale" style="width:132px;height:132px;flex:none;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px);display:flex;align-items:flex-end;padding:6px">
+                    <span style="font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">MINIATURA G-CODE</span>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ativa.job }}</div>
+                    <div style="height:6px;background:var(--color-neutral-800)"><div style="height:6px;width:{{ ativa.pctCss }};background:var(--color-accent)"></div></div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-family:ui-monospace,monospace;font-size:11px">
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">PROGRESSO</div><div style="font-size:14px">{{ ativa.pctLabel }}</div></div>
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">RESTANTE</div><div style="font-size:14px">{{ ativa.restante }}</div></div>
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">FILAMENTO</div><div style="font-size:14px">86 g</div></div>
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">ALTURA Z</div><div style="font-size:14px">16,8 mm</div></div>
+                    </div>
+                    <div style="display:flex;gap:8px;max-width:420px">
+                      <button onClick="{{ ativa.onPause }}" style="{{ ativa.stylePause }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                      <button onClick="{{ ativa.onResume }}" style="{{ ativa.styleResume }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                      <button onClick="{{ ativa.onCancel }}" style="{{ ativa.styleCancel }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+                <div style="border:2px solid var(--color-neutral-700)">
+                  <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FERRAMENTAS</div>
+                  <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                      <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                        <th style="text-align:left;padding:8px 14px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">ITEM</th>
+                        <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">ATUAL</th>
+                        <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">ALVO</th>
+                        <th style="text-align:left;padding:8px 14px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">POT.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <sc-for list="{{ temps }}" as="t" hint-placeholder-count="4">
+                        <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                          <td style="padding:9px 14px;font-family:var(--font-heading);font-weight:800;font-size:12px">{{ t.item }}</td>
+                          <td style="padding:9px 6px;font-family:ui-monospace,monospace;font-size:12px">{{ t.atual }}</td>
+                          <td style="padding:9px 6px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-400)">{{ t.alvo }}</td>
+                          <td style="padding:9px 14px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-400)">{{ t.pot }}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                  <div style="display:flex;gap:6px;padding:12px 14px;border-top:1px solid var(--color-neutral-800)">
+                    <sc-for list="{{ presets }}" as="ps" hint-placeholder-count="4">
+                      <button style="flex:1;text-align:left;border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 9px;cursor:pointer" style-hover="background:var(--color-neutral-900)">{{ ps }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div style="border:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+                  <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">TEMPERATURA — ÚLTIMOS 20 MIN</div>
+                  <div style="flex:1;padding:14px;display:flex;align-items:flex-end;gap:3px;min-height:150px">
+                    <sc-for list="{{ chart }}" as="c" hint-placeholder-count="24">
+                      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%">
+                        <div style="height:{{ c.bico }};background:var(--color-accent)"></div>
+                        <div style="height:{{ c.mesa }};background:var(--color-neutral-600)"></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:16px;padding:10px 14px;border-top:1px solid var(--color-neutral-800);font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">
+                    <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:3px;background:var(--color-accent)"></span>BICO</span>
+                    <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:3px;background:var(--color-neutral-600)"></span>MESA</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">MACROS</div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:14px">
+                  <sc-for list="{{ macros }}" as="m" hint-placeholder-count="6">
+                    <button style="text-align:left;border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.04em;padding:10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">{{ m }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">CABEÇA DE IMPRESSÃO</div>
+                <div style="display:flex;gap:24px;padding:16px;align-items:flex-start">
+                  <div style="display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,40px);gap:4px">
+                    <span></span>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Y+</button>
+                    <span></span>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">X−</button>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">HOME</button>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">X+</button>
+                    <span></span>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Y−</button>
+                    <span></span>
+                  </div>
+                  <div style="display:grid;grid-template-rows:repeat(3,40px);gap:4px;width:52px">
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Z+</button>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Z0</button>
+                    <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Z−</button>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+                    <div>
+                      <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-bottom:6px">PASSO (MM)</div>
+                      <div style="display:flex;gap:4px">
+                        <sc-for list="{{ passos }}" as="s" hint-placeholder-count="4">
+                          <button style="{{ s.style }}" style-hover="background:var(--color-neutral-900)">{{ s.label }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-family:ui-monospace,monospace;font-size:11px">
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">POSIÇÃO</div><div style="font-size:13px">X 118 Y 92 Z 16,8</div></div>
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">VELOCIDADE</div><div style="font-size:13px">100 %</div></div>
+                      <div><div style="color:var(--color-neutral-400);font-size:10px">FLUXO</div><div style="font-size:13px">100 %</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cCams }}">
+            <div style="padding:18px;overflow:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-content:start">
+              <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+                <div style="border:2px solid var(--color-neutral-700)">
+                  <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:2px solid var(--color-neutral-700)">
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;flex:1">{{ p.nome }}</span>
+                    <span style="font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ p.tagBg }};color:{{ p.tagFg }}">{{ p.statusCurto }}</span>
+                  </div>
+                  <div style="position:relative">
+                    <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                    <span style="position:absolute;bottom:8px;left:10px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ p.cam }} · {{ p.pctLabel }} · {{ p.restante }}</span>
+                  </div>
+                  <div style="display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--color-neutral-800)">
+                    <button onClick="{{ p.onPause }}" style="{{ p.stylePause }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                    <button onClick="{{ p.onResume }}" style="{{ p.styleResume }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                    <button onClick="{{ p.onCancel }}" style="{{ p.styleCancel }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cFiles }}">
+            <div style="padding:18px;overflow:auto">
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:2px solid var(--color-neutral-700)">
+                  <span style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400);flex:1">ARQUIVOS G-CODE / RAIZ</span>
+                  <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:6px 10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Nova pasta</button>
+                  <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 10px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Enviar</button>
+                </div>
+                <table style="width:100%;border-collapse:collapse">
+                  <thead>
+                    <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                      <th style="text-align:left;padding:8px 14px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">MINIATURA</th>
+                      <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">NOME</th>
+                      <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">TEMPO</th>
+                      <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">FILAMENTO</th>
+                      <th style="text-align:left;padding:8px 6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-500)">IMPRESSÕES</th>
+                      <th style="text-align:left;padding:8px 14px"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{ files }}" as="f" hint-placeholder-count="7">
+                      <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                        <td style="padding:10px 14px"><div class="grayscale" style="width:44px;height:44px;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div></td>
+                        <td style="padding:10px 6px"><div style="font-family:var(--font-heading);font-weight:800;font-size:13px">{{ f.nome }}</div><div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ f.perfil }}</div></td>
+                        <td style="padding:10px 6px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.tempo }}</td>
+                        <td style="padding:10px 6px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.filamento }}</td>
+                        <td style="padding:10px 6px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.impressoes }}</td>
+                        <td style="padding:10px 14px"><button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 11px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Imprimir</button></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cBackup }}">
+            <div style="padding:18px;overflow:auto;display:flex;flex-direction:column;gap:18px">
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ROTINA DE BACKUP</div>
+                <div style="display:flex;align-items:center;gap:16px;padding:14px">
+                  <div style="flex:1">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:15px">Diário às 03:00 — printer.cfg, macros, firmware e G-code</div>
+                    <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-top:4px">ÚLTIMO CICLO HÁ 2 H · 3,4 GB · 1 FALHA</div>
+                  </div>
+                  <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Configurar</button>
+                  <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:11px;padding:8px 11px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Backup agora</button>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+                <sc-for list="{{ backups }}" as="b" hint-placeholder-count="8">
+                  <div style="border:2px solid var(--color-neutral-700)">
+                    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:2px solid var(--color-neutral-700)">
+                      <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;flex:1">{{ b.nome }}</span>
+                      <span style="font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ b.tagBg }};color:{{ b.tagFg }}">{{ b.estado }}</span>
+                    </div>
+                    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:7px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">
+                      <div style="display:flex;justify-content:space-between"><span>PERFIS</span><span>{{ b.perfis }}</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>FIRMWARE</span><span>{{ b.firmware }}</span></div>
+                      <div style="display:flex;justify-content:space-between"><span>G-CODE</span><span>{{ b.gcode }}</span></div>
+                    </div>
+                    <div style="display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--color-neutral-800)">
+                      <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Backup agora</button>
+                      <button style="border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Restaurar em…</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cAlerts }}">
+            <div style="padding:18px;overflow:auto">
+              <div style="border:2px solid var(--color-neutral-700)">
+                <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">HISTÓRICO E ALERTAS</div>
+                <sc-for list="{{ alerts }}" as="al" hint-placeholder-count="7">
+                  <div style="display:flex;gap:14px;padding:14px;border-bottom:1px solid var(--color-neutral-800)">
+                    <span style="width:8px;height:8px;flex:none;margin-top:6px;background:{{ al.cor }}"></span>
+                    <div style="flex:1">
+                      <div style="font-family:var(--font-heading);font-weight:800;font-size:14px">{{ al.titulo }}</div>
+                      <div style="font-size:12px;color:var(--color-neutral-400)">{{ al.detalhe }}</div>
+                    </div>
+                    <div style="text-align:right;white-space:nowrap;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">
+                      <div>{{ al.quando }}</div>
+                      <div>{{ al.impressora }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cConsole }}">
+            <div style="padding:18px;overflow:auto;display:flex;flex-direction:column;gap:14px">
+              <div style="border:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+                <div style="padding:11px 14px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">CONSOLE</div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:5px;font-family:ui-monospace,monospace;font-size:12px">
+                  <sc-for list="{{ consoleLines }}" as="l" hint-placeholder-count="10">
+                    <div style="display:flex;gap:12px">
+                      <span style="color:var(--color-neutral-500);white-space:nowrap">{{ l.hora }}</span>
+                      <span style="color:{{ l.cor }}">{{ l.texto }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--color-neutral-800)">
+                  <input placeholder="digite um comando G-code" style="flex:1;background:transparent;border:1px solid var(--color-neutral-700);color:var(--color-bg);font-family:ui-monospace,monospace;font-size:12px;padding:8px 10px;border-radius:0">
+                  <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:11px;padding:8px 12px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Enviar</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;border:2px solid var(--color-neutral-700);background:var(--color-text);height:844px;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:16px 18px;border-bottom:2px solid var(--color-neutral-700);display:flex;align-items:center;gap:10px">
+          <div style="flex:1">
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:17px">{{ ativa.nome }}</div>
+            <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-top:3px">{{ ativa.job }}</div>
+          </div>
+          <span style="font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ ativa.tagBg }};color:{{ ativa.tagFg }}">{{ ativa.statusCurto }}</span>
+        </div>
+        <div style="flex:1;overflow:auto;display:flex;flex-direction:column">
+          <div style="position:relative;border-bottom:2px solid var(--color-neutral-700)">
+            <div class="grayscale" style="aspect-ratio:16/9;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+            <span style="position:absolute;bottom:8px;left:10px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ ativa.cam }}</span>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;border-bottom:2px solid var(--color-neutral-700)">
+            <div style="display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)"><span>CAMADA 84 / 210</span><span>{{ ativa.pctLabel }} · {{ ativa.restante }}</span></div>
+            <div style="height:6px;background:var(--color-neutral-800)"><div style="height:6px;width:{{ ativa.pctCss }};background:var(--color-accent)"></div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <button onClick="{{ ativa.onPause }}" style="{{ ativa.stylePauseMob }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+              <button onClick="{{ ativa.onResume }}" style="{{ ativa.styleResumeMob }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+              <button onClick="{{ ativa.onCancel }}" style="{{ ativa.styleCancelMob }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+            </div>
+          </div>
+          <div style="padding:14px 18px;border-bottom:2px solid var(--color-neutral-700);display:flex;flex-direction:column;gap:9px">
+            <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FERRAMENTAS</div>
+            <sc-for list="{{ temps }}" as="t" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px;font-family:ui-monospace,monospace;font-size:12px">
+                <span style="flex:1;font-family:var(--font-heading);font-weight:800;font-size:12px">{{ t.item }}</span>
+                <span>{{ t.atual }}</span>
+                <span style="color:var(--color-neutral-400)">/ {{ t.alvo }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:14px 18px;display:flex;flex-direction:column;gap:9px">
+            <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">MACROS</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ macros }}" as="m" hint-placeholder-count="6">
+                <button style="text-align:left;border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;padding:10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">{{ m }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);border-top:2px solid var(--color-neutral-700)">
+          <div style="padding:15px 4px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:10px;background:var(--color-accent);color:var(--color-bg)">PAINEL</div>
+          <div style="padding:15px 4px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:10px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">CÂM.</div>
+          <div style="padding:15px 4px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:10px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">ARQ.</div>
+          <div style="padding:15px 4px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:10px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">CONS.</div>
+          <div style="padding:15px 4px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:10px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">HIST.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display:flex;gap:64px;align-items:flex-start;flex-wrap:wrap;padding:56px;background:var(--color-text);font-family:var(--font-body);color:var(--color-bg)">
+
+  <div id="2a" style="width:1520px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--color-neutral-700);padding-bottom:10px">
+      <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.08em;background:var(--color-accent);color:var(--color-bg);padding:3px 8px">2A</span>
+      <h4 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-bg)">Escuro — rail lateral</h4>
+      <span style="font-size:12px;color:var(--color-neutral-400)">navegação à esquerda, grade de câmeras com pausar / continuar / cancelar em cada impressora</span>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;gap:36px">
+      <div style="width:1080px;height:880px;border:2px solid var(--color-neutral-700);background:var(--color-text);display:flex;overflow:hidden">
+        <div style="width:196px;flex:none;border-right:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+          <div style="padding:20px 18px;border-bottom:2px solid var(--color-neutral-700)">
+            <div style="font-family:var(--font-heading);font-weight:800;font-size:17px;line-height:1.1">3D PRINTERBOARD</div>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ navA }}" as="item" hint-placeholder-count="5">
+              <button onClick="{{ item.on }}" style="{{ item.style }}" style-hover="background:var(--color-neutral-900)">{{ item.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div style="display:flex;align-items:center;gap:20px;padding:18px 22px;border-bottom:2px solid var(--color-neutral-700)">
+            <h4 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:24px;flex:1;color:var(--color-bg)">{{ tituloA }}</h4>
+            <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ resumo }}</span>
+            <button style="background:var(--color-accent);color:var(--color-bg);border:0;padding:9px 14px;font-family:var(--font-heading);font-weight:800;font-size:13px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Enviar arquivo</button>
+          </div>
+
+          <sc-if value="{{ aDash }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:22px;overflow:auto">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px">
+                <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+                  <div style="border:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+                    <div style="position:relative">
+                      <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                      <span style="position:absolute;top:8px;left:8px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+                      <span style="position:absolute;top:8px;right:8px;font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ p.tagBg }};color:{{ p.tagFg }}">{{ p.statusCurto }}</span>
+                    </div>
+                    <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+                      <div style="display:flex;align-items:baseline;gap:8px">
+                        <span style="font-family:var(--font-heading);font-weight:800;font-size:14px;flex:1">{{ p.nome }}</span>
+                        <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ p.restante }}</span>
+                      </div>
+                      <div style="font-size:12px;color:var(--color-neutral-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.job }}</div>
+                      <div style="height:4px;background:var(--color-neutral-800)">
+                        <div style="height:4px;width:{{ p.pctCss }};background:var(--color-accent)"></div>
+                      </div>
+                      <div style="display:flex;gap:6px">
+                        <button onClick="{{ p.onPause }}" style="{{ p.stylePause }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                        <button onClick="{{ p.onResume }}" style="{{ p.styleResume }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                        <button onClick="{{ p.onCancel }}" style="{{ p.styleCancel }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                      </div>
+                      <sc-if value="{{ showTemps }}">
+                        <div style="display:flex;gap:12px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">
+                          <span>BICO {{ p.nozzle }}</span><span>MESA {{ p.mesa }}</span>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aCams }}">
+            <div style="padding:22px;overflow:auto">
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:22px">
+                <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+                  <div style="border:2px solid var(--color-neutral-700)">
+                    <div style="position:relative">
+                      <div class="grayscale" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                      <span style="position:absolute;top:10px;left:10px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+                      <span style="position:absolute;bottom:10px;left:10px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.pctLabel }} · {{ p.restante }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:2px solid var(--color-neutral-700)">
+                      <span style="font-family:var(--font-heading);font-weight:800;font-size:14px;flex:1">{{ p.nome }}</span>
+                      <button onClick="{{ p.onPause }}" style="{{ p.stylePause }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                      <button onClick="{{ p.onResume }}" style="{{ p.styleResume }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                      <button onClick="{{ p.onCancel }}" style="{{ p.styleCancel }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aFiles }}">
+            <div style="padding:22px;overflow:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--color-neutral-700)">
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ARQUIVO</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">TEMPO EST.</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FILAMENTO</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">IMPRESSÕES</th>
+                    <th style="text-align:left;padding:10px 12px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ files }}" as="f" hint-placeholder-count="7">
+                    <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                      <td style="padding:12px"><div style="font-family:var(--font-heading);font-weight:800;font-size:14px">{{ f.nome }}</div><div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ f.perfil }}</div></td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.tempo }}</td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.filamento }}</td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ f.impressoes }}</td>
+                      <td style="padding:12px"><button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 11px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Imprimir</button></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aBackup }}">
+            <div style="padding:22px;overflow:auto;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:center;gap:16px;border:2px solid var(--color-neutral-700);padding:16px 18px">
+                <div style="flex:1">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:16px">Backup automático diário — 03:00</div>
+                  <div style="font-size:12px;color:var(--color-neutral-400)">Perfis de fatiamento, firmware e calibração, e todo G-code enviado nos últimos 30 dias.</div>
+                </div>
+                <button style="border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:12px;padding:9px 12px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Configurar</button>
+                <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:12px;padding:10px 12px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Backup agora</button>
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--color-neutral-700)">
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">IMPRESSORA</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">PERFIS</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FIRMWARE / CALIBRAÇÃO</th>
+                    <th style="text-align:left;padding:10px 12px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">G-CODE</th>
+                    <th style="text-align:left;padding:10px 12px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ backups }}" as="b" hint-placeholder-count="8">
+                    <tr style="border-bottom:1px solid var(--color-neutral-800)">
+                      <td style="padding:12px;font-family:var(--font-heading);font-weight:800">{{ b.nome }}</td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ b.perfis }}</td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ b.firmware }}</td>
+                      <td style="padding:12px;font-family:ui-monospace,monospace;font-size:12px;color:var(--color-neutral-300)">{{ b.gcode }}</td>
+                      <td style="padding:12px"><button style="border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 11px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Restaurar em…</button></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ aAlerts }}">
+            <div style="padding:22px;overflow:auto;display:flex;flex-direction:column">
+              <sc-for list="{{ alerts }}" as="al" hint-placeholder-count="7">
+                <div style="display:flex;gap:16px;padding:16px 4px;border-bottom:1px solid var(--color-neutral-800)">
+                  <span style="width:8px;height:8px;flex:none;margin-top:6px;background:{{ al.cor }}"></span>
+                  <div style="flex:1">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ al.titulo }}</div>
+                    <div style="font-size:12px;color:var(--color-neutral-400)">{{ al.detalhe }}</div>
+                  </div>
+                  <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400);white-space:nowrap">{{ al.quando }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;border:2px solid var(--color-neutral-700);background:var(--color-text);height:844px;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:18px;border-bottom:2px solid var(--color-neutral-700)">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:22px">3D Printerboard</div>
+          <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400);margin-top:4px">{{ resumo }}</div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px">
+          <sc-for list="{{ printersMobile }}" as="p" hint-placeholder-count="4">
+            <div style="border:2px solid var(--color-neutral-700)">
+              <div style="position:relative">
+                <div class="grayscale" style="aspect-ratio:16/9;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                <span style="position:absolute;top:8px;left:8px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+              </div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;flex:1">{{ p.nome }}</span>
+                  <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ p.pctLabel }}</span>
+                </div>
+                <div style="height:4px;background:var(--color-neutral-800)"><div style="height:4px;width:{{ p.pctCss }};background:var(--color-accent)"></div></div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                  <button onClick="{{ p.onPause }}" style="{{ p.stylePauseMob }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                  <button onClick="{{ p.onResume }}" style="{{ p.styleResumeMob }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                  <button onClick="{{ p.onCancel }}" style="{{ p.styleCancelMob }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:2px solid var(--color-neutral-700)">
+          <div style="padding:16px 6px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:11px;background:var(--color-accent);color:var(--color-bg)">PAINEL</div>
+          <div style="padding:16px 6px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:11px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">CÂMERAS</div>
+          <div style="padding:16px 6px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:11px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">ARQUIVOS</div>
+          <div style="padding:16px 6px;text-align:center;font-family:var(--font-heading);font-weight:800;font-size:11px;border-left:1px solid var(--color-neutral-800);color:var(--color-neutral-300)">ALERTAS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="2b" style="width:1520px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--color-neutral-700);padding-bottom:10px">
+      <span style="font-family:var(--font-heading);font-weight:800;font-size:13px;letter-spacing:.08em;background:var(--color-accent);color:var(--color-bg);padding:3px 8px">2B</span>
+      <h4 style="margin:0;font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-bg)">Escuro — parede de câmeras</h4>
+      <span style="font-size:12px;color:var(--color-neutral-400)">abas no topo, imagem sem moldura e controles sobre o feed</span>
+    </div>
+
+    <div style="display:flex;align-items:flex-start;gap:36px">
+      <div style="width:1080px;height:880px;border:2px solid var(--color-neutral-700);background:var(--color-text);display:flex;flex-direction:column;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:24px;padding:18px 22px;border-bottom:2px solid var(--color-neutral-700)">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">3D PRINTERBOARD</div>
+          <div style="display:flex;gap:4px;flex:1">
+            <button onClick="{{ goBDash }}" style="{{ bTab.dash }}" style-hover="background:var(--color-neutral-900)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>
+              <span>Painel</span>
+            </button>
+            <button onClick="{{ goBCams }}" style="{{ bTab.cams }}" style-hover="background:var(--color-neutral-900)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14"></rect></svg>
+              <span>Câmeras</span>
+            </button>
+            <button onClick="{{ goBFiles }}" style="{{ bTab.files }}" style-hover="background:var(--color-neutral-900)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6v18h12V7z"></path><path d="M14 3v4h4"></path></svg>
+              <span>Arquivos</span>
+            </button>
+            <button onClick="{{ goBBackup }}" style="{{ bTab.backup }}" style-hover="background:var(--color-neutral-900)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4"></rect><path d="M5 8v12h14V8"></path><path d="M10 13h4"></path></svg>
+              <span>Backups</span>
+            </button>
+            <button onClick="{{ goBAlerts }}" style="{{ bTab.alerts }}" style-hover="background:var(--color-neutral-900)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+              <span>Alertas</span>
+            </button>
+          </div>
+          <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ resumo }}</span>
+        </div>
+
+        <sc-if value="{{ bDash }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;display:flex;min-height:0">
+            <div style="flex:1;padding:2px;overflow:auto;min-width:0">
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px">
+                <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+                  <div onClick="{{ p.onSelect }}" style="{{ p.tileStyle }}">
+                    <div class="grayscale" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                    <span style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:6px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">
+                      <span style="width:7px;height:7px;background:{{ p.dot }}"></span>{{ p.cam }}
+                    </span>
+                    <span style="position:absolute;top:8px;right:8px;color:var(--color-neutral-300)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"></path><path d="M9 21H3v-6"></path><path d="M21 3l-8 8"></path><path d="M3 21l8-8"></path></svg>
+                    </span>
+                    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(transparent,rgba(32,30,29,.92) 55%)">
+                      <div style="display:flex;align-items:baseline;gap:10px">
+                        <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;flex:1">{{ p.nome }}</span>
+                        <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.pctLabel }}</span>
+                      </div>
+                      <div style="height:3px;background:var(--color-neutral-800)"><div style="height:3px;width:{{ p.pctCss }};background:var(--color-accent)"></div></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="width:340px;flex:none;border-left:2px solid var(--color-neutral-700);display:flex;flex-direction:column;min-height:0">
+              <sc-if value="{{ semSel }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;min-height:0">
+                  <div style="display:flex;align-items:center;gap:8px;padding:16px 18px;border-bottom:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h10"></path></svg>
+                    FILA — 7 TRABALHOS
+                  </div>
+                  <div style="overflow:auto">
+                    <sc-for list="{{ fila }}" as="q" hint-placeholder-count="5">
+                      <div style="padding:14px 18px;border-bottom:1px solid var(--color-neutral-800)">
+                        <div style="font-family:var(--font-heading);font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ q.arquivo }}</div>
+                        <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ q.destino }} · {{ q.tempo }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="padding:18px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-500);line-height:1.6">CLIQUE EM UMA CÂMERA PARA ABRIR O CONTROLE DA IMPRESSORA</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ temSel }}">
+                <div style="display:flex;flex-direction:column;min-height:0;overflow:auto">
+                  <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:2px solid var(--color-neutral-700)">
+                    <span style="width:8px;height:8px;flex:none;background:{{ sel.dot }}"></span>
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sel.nome }}</span>
+                    <span style="font-family:ui-monospace,monospace;font-size:9px;padding:2px 5px;background:{{ sel.tagBg }};color:{{ sel.tagFg }}">{{ sel.statusCurto }}</span>
+                    <button onClick="{{ fecharSel }}" style="border:0;background:transparent;color:var(--color-neutral-400);cursor:pointer;padding:2px;display:flex" style-hover="color:var(--color-bg)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14"></path><path d="M19 5L5 19"></path></svg>
+                    </button>
+                  </div>
+
+                  <div style="position:relative;border-bottom:1px solid var(--color-neutral-800)">
+                    <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                    <span style="position:absolute;bottom:8px;left:10px;font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ sel.cam }}</span>
+                  </div>
+
+                  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--color-neutral-800)">
+                    <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sel.job }}</div>
+                    <div style="height:5px;background:var(--color-neutral-800)"><div style="height:5px;width:{{ sel.pctCss }};background:var(--color-accent)"></div></div>
+                    <div style="display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">
+                      <span>{{ sel.pctLabel }} · CAMADA 84/210</span><span>{{ sel.restante }}</span>
+                    </div>
+                    <div style="display:flex;gap:6px">
+                      <button onClick="{{ sel.onPause }}" style="{{ sel.stylePause }}" style-hover="background:var(--color-neutral-900)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect></svg>
+                        <span>Pausar</span>
+                      </button>
+                      <button onClick="{{ sel.onResume }}" style="{{ sel.styleResume }}" style-hover="background:var(--color-accent-400)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"></path></svg>
+                        <span>Continuar</span>
+                      </button>
+                      <button onClick="{{ sel.onCancel }}" style="{{ sel.styleCancel }}" style-hover="background:var(--color-neutral-900)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l14 14"></path><path d="M19 5L5 19"></path></svg>
+                        <span>Cancelar</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--color-neutral-800)">
+                    <sc-for list="{{ tempsCurtas }}" as="t" hint-placeholder-count="2">
+                      <div style="display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:12px">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-neutral-400)"><path d="M12 3v11"></path><circle cx="12" cy="18" r="3"></circle></svg>
+                        <span style="flex:1;font-family:var(--font-heading);font-weight:800;font-size:12px">{{ t.item }}</span>
+                        <span>{{ t.atual }}</span>
+                        <span style="color:var(--color-neutral-500)">/ {{ t.alvo }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+
+                  <div style="padding:14px 16px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--color-neutral-800)">
+                    <div style="display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,32px);gap:3px">
+                      <span></span>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg></button>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9l8-6 8 6v11H4z"></path></svg></button>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"></path><path d="M12 5l-7 7 7 7"></path></svg></button>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path></svg></button>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg></button>
+                      <span></span>
+                      <button style="{{ jogStyle }}" style-hover="background:var(--color-neutral-900)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"></path><path d="M5 12l7 7 7-7"></path></svg></button>
+                      <span></span>
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                      <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">PASSO (MM)</div>
+                      <div style="display:flex;gap:3px">
+                        <sc-for list="{{ passos }}" as="s" hint-placeholder-count="4">
+                          <button style="{{ s.style }}" style-hover="background:var(--color-neutral-900)">{{ s.label }}</button>
+                        </sc-for>
+                      </div>
+                      <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400);margin-top:2px">X 118 Y 92 Z 16,8</div>
+                    </div>
+                  </div>
+
+                  <div style="padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                    <sc-for list="{{ macrosCurtos }}" as="m" hint-placeholder-count="4">
+                      <button style="display:flex;align-items:center;gap:7px;text-align:left;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:ui-monospace,monospace;font-size:10px;padding:9px;cursor:pointer" style-hover="background:var(--color-neutral-900)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--color-accent)"><path d="M13 2L5 14h6l-1 8 8-12h-6z"></path></svg>
+                        <span>{{ m }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bCams }}">
+          <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+            <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;min-height:0">
+              <sc-for list="{{ printersQuad }}" as="p" hint-placeholder-count="4">
+                <div style="position:relative;overflow:hidden">
+                  <div class="grayscale" style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                  <span style="position:absolute;top:12px;left:12px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+                  <div style="position:absolute;bottom:12px;left:12px;right:12px;display:flex;align-items:flex-end;gap:12px">
+                    <div style="flex:1">
+                      <div style="font-family:var(--font-heading);font-weight:800;font-size:17px">{{ p.nome }}</div>
+                      <div style="font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">{{ p.pctLabel }} · {{ p.restante }}</div>
+                    </div>
+                    <div style="display:flex;gap:6px">
+                      <button onClick="{{ p.onPause }}" style="{{ p.stylePause }}" style-hover="background:var(--color-neutral-900)">Pausar</button>
+                      <button onClick="{{ p.onResume }}" style="{{ p.styleResume }}" style-hover="background:var(--color-accent-400)">Continuar</button>
+                      <button onClick="{{ p.onCancel }}" style="{{ p.styleCancel }}" style-hover="background:var(--color-neutral-900)">Cancelar</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:none;display:flex;gap:2px;border-top:2px solid var(--color-neutral-700);overflow:auto">
+              <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+                <div style="width:150px;flex:none;position:relative">
+                  <div class="grayscale" style="aspect-ratio:16/10;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+                  <span style="position:absolute;bottom:6px;left:6px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bFiles }}">
+          <div style="flex:1;padding:22px;overflow:auto">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+              <sc-for list="{{ files }}" as="f" hint-placeholder-count="7">
+                <div style="border:2px solid var(--color-neutral-700);display:flex;flex-direction:column">
+                  <div class="grayscale" style="aspect-ratio:4/3;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px);display:flex;align-items:flex-end;padding:10px">
+                    <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">PRÉVIA DA PEÇA</span>
+                  </div>
+                  <div style="padding:14px;display:flex;flex-direction:column;gap:10px;flex:1">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:15px">{{ f.nome }}</div>
+                    <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ f.perfil }}</div>
+                    <div style="display:flex;gap:14px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300);margin-top:auto">
+                      <span>{{ f.tempo }}</span><span>{{ f.filamento }}</span><span>{{ f.impressoes }}×</span>
+                    </div>
+                    <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:12px;padding:9px 12px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Enviar para a fila</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bBackup }}">
+          <div style="flex:1;padding:22px;overflow:auto;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;gap:40px;border-bottom:2px solid var(--color-neutral-700);padding-bottom:16px">
+              <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ROTINA</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">Diária 03:00</div></div>
+              <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ÚLTIMO CICLO</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">há 2 h</div></div>
+              <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">ARMAZENADO</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px">3,4 GB</div></div>
+              <div><div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">FALHAS</div><div style="font-family:var(--font-heading);font-weight:800;font-size:22px;color:var(--color-accent-400)">1</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px">
+              <sc-for list="{{ backups }}" as="b" hint-placeholder-count="8">
+                <div style="border:2px solid var(--color-neutral-700);padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;align-items:baseline;gap:8px">
+                    <span style="font-family:var(--font-heading);font-weight:800;font-size:16px;flex:1">{{ b.nome }}</span>
+                    <span style="font-family:ui-monospace,monospace;font-size:10px;padding:2px 5px;background:{{ b.tagBg }};color:{{ b.tagFg }}">{{ b.estado }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-300)">
+                    <div style="display:flex;justify-content:space-between"><span>PERFIS</span><span>{{ b.perfis }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span>FIRMWARE / CALIBRAÇÃO</span><span>{{ b.firmware }}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span>G-CODE</span><span>{{ b.gcode }}</span></div>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <button style="border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Backup agora</button>
+                    <button style="border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:11px;padding:7px 10px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Restaurar em…</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ bAlerts }}">
+          <div style="flex:1;display:flex;min-height:0">
+            <div style="width:400px;flex:none;border-right:2px solid var(--color-neutral-700);overflow:auto">
+              <sc-for list="{{ alerts }}" as="al" hint-placeholder-count="7">
+                <div onClick="{{ al.on }}" style="{{ al.rowStyle }}" style-hover="background:var(--color-neutral-900)">
+                  <span style="width:8px;height:8px;flex:none;margin-top:5px;background:{{ al.cor }}"></span>
+                  <div style="flex:1">
+                    <div style="font-family:var(--font-heading);font-weight:800;font-size:13px">{{ al.titulo }}</div>
+                    <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ al.quando }} · {{ al.impressora }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="flex:1;padding:28px;display:flex;flex-direction:column;gap:18px;min-width:0">
+              <div>
+                <div style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:var(--color-neutral-400)">{{ alertaSel.quando }} · {{ alertaSel.impressora }}</div>
+                <h4 style="margin:8px 0 0;font-family:var(--font-heading);font-weight:800;font-size:28px;color:var(--color-bg)">{{ alertaSel.titulo }}</h4>
+              </div>
+              <div style="font-size:14px;max-width:520px;text-wrap:pretty;color:var(--color-neutral-300)">{{ alertaSel.detalhe }}</div>
+              <div class="grayscale" style="aspect-ratio:16/9;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px);display:flex;align-items:flex-end;padding:12px;max-width:520px">
+                <span style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-300)">{{ alertaSel.frame }}</span>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button style="background:var(--color-accent);color:var(--color-bg);border:0;font-family:var(--font-heading);font-weight:800;font-size:12px;padding:10px 14px;cursor:pointer;text-align:left" style-hover="background:var(--color-accent-400)">Resolver</button>
+                <button style="border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);font-family:var(--font-heading);font-weight:800;font-size:12px;padding:10px 14px;cursor:pointer" style-hover="background:var(--color-neutral-900)">Abrir impressora</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:390px;flex:none;border:2px solid var(--color-neutral-700);background:var(--color-text);height:844px;display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:18px;border-bottom:2px solid var(--color-neutral-700);display:flex;align-items:baseline;gap:10px">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:20px;flex:1">Parede</div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:var(--color-neutral-400)">{{ resumo }}</div>
+        </div>
+        <div style="flex:1;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:2px;align-content:start">
+          <sc-for list="{{ printers }}" as="p" hint-placeholder-count="8">
+            <div style="position:relative">
+              <div class="grayscale" style="aspect-ratio:3/4;background:repeating-linear-gradient(45deg,#3a3737 0 6px,#302d2d 6px 12px)"></div>
+              <span style="position:absolute;top:8px;left:8px;font-family:ui-monospace,monospace;font-size:9px;color:var(--color-neutral-300)">{{ p.cam }}</span>
+              <div style="position:absolute;bottom:0;left:0;right:0;padding:8px;background:linear-gradient(transparent,rgba(32,30,29,.92) 60%)">
+                <div style="font-family:var(--font-heading);font-weight:800;font-size:12px">{{ p.nome }}</div>
+                <div style="height:3px;background:var(--color-neutral-800);margin-top:5px"><div style="height:3px;width:{{ p.pctCss }};background:var(--color-accent)"></div></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding:16px 18px;border-top:2px solid var(--color-neutral-700);font-family:ui-monospace,monospace;font-size:11px;color:var(--color-neutral-400)">{{ resumo }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTemps&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Dados&quot;},&quot;printerCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:8,&quot;min&quot;:4,&quot;max&quot;:8,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Dados&quot;}}">
+class Component extends DCLogic {
+  base = [
+    { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, restante: '1h 14m', nozzle: '210°', mesa: '60°', status: 'imprimindo' },
+    { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, restante: '3h 02m', nozzle: '208°', mesa: '60°', status: 'imprimindo' },
+    { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, restante: '0h 08m', nozzle: '245°', mesa: '80°', status: 'imprimindo' },
+    { id: 'P04', nome: 'Prusa MK4', job: 'caixa_junction_v2.gcode', pct: 0, restante: '—', nozzle: '25°', mesa: '24°', status: 'ociosa' },
+    { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, restante: '1h 41m', nozzle: '235°', mesa: '100°', status: 'imprimindo' },
+    { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, restante: 'parado', nozzle: '182°', mesa: '58°', status: 'atenção' },
+    { id: 'P07', nome: 'Sovol SV06', job: 'pé_antivibração.gcode', pct: 66, restante: '0h 52m', nozzle: '212°', mesa: '62°', status: 'imprimindo' },
+    { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, restante: 'pausada', nozzle: '215°', mesa: '55°', status: 'pausada' }
+  ];
+
+  state = { a: 'dash', b: 'dash', c: 'dash', alerta: 0, st: {}, sel: 'P01' };
+
+  status(p) { return this.state.st[p.id] || p.status; }
+
+  set(id, status) {
+    this.setState(s => {
+      const st = Object.assign({}, s.st);
+      st[id] = status;
+      return { st: st };
+    });
+  }
+
+  tag(status) {
+    if (status === 'imprimindo') return { bg: 'var(--color-accent)', fg: 'var(--color-bg)', curto: 'IMPRIMINDO' };
+    if (status === 'atenção') return { bg: 'var(--color-accent-700)', fg: 'var(--color-bg)', curto: 'ATENÇÃO' };
+    if (status === 'pausada') return { bg: 'var(--color-neutral-700)', fg: 'var(--color-bg)', curto: 'PAUSADA' };
+    if (status === 'cancelada') return { bg: 'var(--color-neutral-800)', fg: 'var(--color-neutral-300)', curto: 'CANCELADA' };
+    return { bg: 'var(--color-neutral-800)', fg: 'var(--color-neutral-300)', curto: 'OCIOSA' };
+  }
+
+  ctrl(kind, enabled, size) {
+    const pad = size === 'mob' ? '10px 8px' : '6px 9px';
+    const fs = size === 'mob' ? '12px' : '11px';
+    const base = 'flex:1;display:inline-flex;align-items:center;gap:6px;text-align:left;font-family:var(--font-heading);font-weight:800;font-size:' + fs
+      + ';padding:' + pad + ';cursor:pointer;';
+    if (!enabled) return base + 'border:1px solid var(--color-neutral-800);background:transparent;color:var(--color-neutral-700);cursor:not-allowed;pointer-events:none;';
+    if (kind === 'resume') return base + 'border:0;background:var(--color-accent);color:var(--color-bg);';
+    return base + 'border:1px solid var(--color-neutral-600);background:transparent;color:var(--color-bg);';
+  }
+
+  navItem(label, active, on) {
+    return {
+      label: label, on: on,
+      style: 'text-align:left;cursor:pointer;border:0;border-bottom:1px solid var(--color-neutral-800);padding:13px 18px;font-family:var(--font-heading);font-weight:800;font-size:13px;'
+        + (active ? 'background:var(--color-accent);color:var(--color-bg);' : 'background:transparent;color:var(--color-neutral-300);')
+    };
+  }
+
+  tabItem(label, active, on) {
+    return {
+      label: label, on: on,
+      style: 'display:inline-flex;align-items:center;gap:7px;text-align:left;cursor:pointer;border:0;padding:9px 14px;font-family:var(--font-heading);font-weight:800;font-size:13px;'
+        + (active ? 'background:var(--color-accent);color:var(--color-bg);' : 'background:transparent;color:var(--color-neutral-300);')
+    };
+  }
+
+  renderVals() {
+    const showTemps = this.props.showTemps ?? false;
+    const n = this.props.printerCount ?? 8;
+
+    const printers = this.base.slice(0, n).map(p => {
+      const status = this.status(p);
+      const t = this.tag(status);
+      const rodando = status === 'imprimindo' || status === 'atenção';
+      const parada = status === 'pausada';
+      const pct = status === 'cancelada' || status === 'ociosa' ? 0 : p.pct;
+      const restante = status === 'cancelada' ? 'cancelada' : (parada ? 'pausada' : p.restante);
+      return Object.assign({}, p, {
+        cam: 'CAM ' + p.id,
+        pctCss: pct + '%',
+        pctLabel: pct + '%',
+        restante: restante,
+        tagBg: t.bg, tagFg: t.fg, statusCurto: t.curto,
+        dot: status === 'atenção' ? 'var(--color-accent-700)' : (rodando ? 'var(--color-accent)' : 'var(--color-neutral-600)'),
+        onSelect: () => this.setState({ sel: p.id }),
+        tileStyle: 'position:relative;cursor:pointer;outline:'
+          + (this.state.sel === p.id ? '2px solid var(--color-accent)' : '2px solid transparent') + ';outline-offset:-2px;',
+        onPause: () => this.set(p.id, 'pausada'),
+        onResume: () => this.set(p.id, 'imprimindo'),
+        onCancel: () => this.set(p.id, 'cancelada'),
+        stylePause: this.ctrl('pause', rodando, 'desk'),
+        styleResume: this.ctrl('resume', parada, 'desk'),
+        styleCancel: this.ctrl('cancel', rodando || parada, 'desk'),
+        stylePauseMob: this.ctrl('pause', rodando, 'mob'),
+        styleResumeMob: this.ctrl('resume', parada, 'mob'),
+        styleCancelMob: this.ctrl('cancel', rodando || parada, 'mob')
+      });
+    });
+
+    const files = [
+      { nome: 'suporte_camera_v3', perfil: 'PLA 0.20 / 3 paredes', tempo: '4h 10m', filamento: '86 g', impressoes: '12' },
+      { nome: 'clipe_cabo_x12', perfil: 'PETG 0.24 / 2 paredes', tempo: '4h 25m', filamento: '54 g', impressoes: '31' },
+      { nome: 'engrenagem_z_final', perfil: 'PETG 0.16 / 4 paredes', tempo: '2h 40m', filamento: '41 g', impressoes: '5' },
+      { nome: 'caixa_junction_v2', perfil: 'PLA 0.28 / draft', tempo: '1h 55m', filamento: '62 g', impressoes: '3' },
+      { nome: 'ventoinha_duto', perfil: 'ABS 0.20 / câmara 45°', tempo: '3h 12m', filamento: '48 g', impressoes: '9' },
+      { nome: 'pé_antivibração', perfil: 'TPU 0.20 / 8 mm/s', tempo: '1h 20m', filamento: '22 g', impressoes: '24' },
+      { nome: 'chaveiro_lote_24', perfil: 'PLA 0.20 / batch', tempo: '6h 05m', filamento: '110 g', impressoes: '18' }
+    ];
+
+    const backupsBase = [
+      { estado: 'OK', perfis: 'hoje 03:00', firmware: 'Klipper v0.12 · há 6 d', gcode: '42 arq. · 1,1 GB' },
+      { estado: 'OK', perfis: 'hoje 03:00', firmware: 'Klipper v0.12 · há 6 d', gcode: '38 arq. · 0,9 GB' },
+      { estado: 'OK', perfis: 'hoje 03:01', firmware: 'firmware 1.7.2 · há 2 d', gcode: '51 arq. · 1,4 GB' },
+      { estado: 'OK', perfis: 'hoje 03:01', firmware: 'MK4 6.1.3 · há 11 d', gcode: '17 arq. · 0,4 GB' },
+      { estado: 'OK', perfis: 'hoje 03:02', firmware: 'Klipper v0.12 · há 6 d', gcode: '29 arq. · 0,7 GB' },
+      { estado: 'FALHOU', perfis: 'há 4 d', firmware: 'Marlin 2.1.2 · há 4 d', gcode: '12 arq. · 0,3 GB' },
+      { estado: 'OK', perfis: 'hoje 03:02', firmware: 'Marlin 2.1.2 · há 9 d', gcode: '21 arq. · 0,5 GB' },
+      { estado: 'PARCIAL', perfis: 'hoje 03:03', firmware: 'firmware 1.4.0 · há 3 d', gcode: '9 arq. · 0,2 GB' }
+    ];
+    const backups = printers.map((p, i) => {
+      const b = backupsBase[i % backupsBase.length];
+      const ok = b.estado === 'OK';
+      return Object.assign({ nome: p.nome }, b, {
+        tagBg: ok ? 'var(--color-neutral-800)' : 'var(--color-accent)',
+        tagFg: ok ? 'var(--color-neutral-300)' : 'var(--color-bg)'
+      });
+    });
+
+    const alertBase = [
+      { titulo: 'Falha de extrusão detectada', impressora: 'Ender 5 Plus', quando: 'há 6 min', sev: 'alta', detalhe: 'A camada 84 saiu sem material por 3 camadas consecutivas. A impressão foi pausada automaticamente e a mesa mantida a 58° para retomada.', frame: 'FRAME DO ALERTA — CAM P06' },
+      { titulo: 'Backup diário falhou', impressora: 'Ender 5 Plus', quando: 'há 2 h', sev: 'alta', detalhe: 'O host não respondeu na janela de 03:00. Perfis e G-code da máquina estão 4 dias atrasados em relação às demais.', frame: 'CAPTURA DO LOG DE BACKUP' },
+      { titulo: 'Filamento acabando', impressora: 'Bambu P1S', quando: 'há 3 h', sev: 'media', detalhe: 'Estimativa de 38 g restantes no carretel contra 41 g necessários para concluir engrenagem_z_final.gcode.', frame: 'FRAME DO SENSOR — CAM P03' },
+      { titulo: 'Impressão concluída', impressora: 'Sovol SV06', quando: 'há 5 h', sev: 'baixa', detalhe: 'pé_antivibração.gcode concluído em 1h 18m, 4 % abaixo da estimativa.', frame: 'FRAME FINAL — CAM P07' },
+      { titulo: 'Firmware desatualizado', impressora: 'Prusa MK4', quando: 'ontem', sev: 'media', detalhe: 'Versão instalada 6.1.3; disponível 6.2.0. O backup de calibração já foi arquivado antes da atualização.', frame: 'PAINEL DA IMPRESSORA' },
+      { titulo: 'Retomada após queda de energia', impressora: 'Voron 0.2', quando: 'ontem', sev: 'baixa', detalhe: 'Retomada automática na camada 212 após 40 s sem energia. Sem deslocamento visível na peça.', frame: 'FRAME DA RETOMADA — CAM P05' },
+      { titulo: 'Câmera offline', impressora: 'Bambu A1 mini', quando: 'há 2 d', sev: 'media', detalhe: 'Stream sem resposta por 12 min; voltou sozinha. Vale checar a fonte USB do hub.', frame: 'ÚLTIMO FRAME RECEBIDO' }
+    ];
+    const cores = { alta: 'var(--color-accent)', media: 'var(--color-accent-700)', baixa: 'var(--color-neutral-600)' };
+    const alerts = alertBase.map((al, i) => Object.assign({}, al, {
+      cor: cores[al.sev],
+      on: () => this.setState({ alerta: i }),
+      rowStyle: 'display:flex;gap:12px;padding:15px 18px;border-bottom:1px solid var(--color-neutral-800);cursor:pointer;text-align:left;'
+        + (this.state.alerta === i ? 'background:var(--color-neutral-900);' : 'background:transparent;')
+    }));
+
+    const titulos = { dash: 'Painel da fazenda', cams: 'Câmeras ao vivo', files: 'Arquivos de impressão', backup: 'Backup das impressoras', alerts: 'Alertas e histórico' };
+    const goA = k => () => this.setState({ a: k });
+    const goB = k => () => this.setState({ b: k });
+    const goC = k => () => this.setState({ c: k });
+    const a = this.state.a, b = this.state.b;
+    const ativas = printers.filter(p => p.statusCurto === 'IMPRIMINDO' || p.statusCurto === 'ATENÇÃO').length;
+    const atencao = printers.filter(p => p.statusCurto === 'ATENÇÃO').length;
+
+    return {
+      printers: printers,
+      printersMobile: printers.slice(0, 4),
+      printersQuad: printers.slice(0, 4),
+      files: files, backups: backups, alerts: alerts,
+      alertaSel: alerts[this.state.alerta] || alerts[0],
+      fila: [
+        { arquivo: 'clipe_cabo_x12.gcode', destino: 'Prusa MK4', tempo: '4h 25m' },
+        { arquivo: 'caixa_junction_v2.gcode', destino: 'próxima livre', tempo: '1h 55m' },
+        { arquivo: 'chaveiro_lote_24.gcode', destino: 'Bambu A1 mini', tempo: '6h 05m' },
+        { arquivo: 'suporte_camera_v3.gcode', destino: 'próxima livre', tempo: '4h 10m' },
+        { arquivo: 'pé_antivibração.gcode', destino: 'Sovol SV06', tempo: '1h 20m' }
+      ],
+      showTemps: showTemps,
+      resumo: ativas + ' ativas · fila 7 · ' + atencao + ' atenção',
+      tituloA: titulos[a],
+      aDash: a === 'dash', aCams: a === 'cams', aFiles: a === 'files', aBackup: a === 'backup', aAlerts: a === 'alerts',
+      bDash: b === 'dash', bCams: b === 'cams', bFiles: b === 'files', bBackup: b === 'backup', bAlerts: b === 'alerts',
+      navA: [
+        this.navItem('Painel', a === 'dash', goA('dash')),
+        this.navItem('Câmeras', a === 'cams', goA('cams')),
+        this.navItem('Arquivos', a === 'files', goA('files')),
+        this.navItem('Backups', a === 'backup', goA('backup')),
+        this.navItem('Alertas', a === 'alerts', goA('alerts'))
+      ],
+      sel: printers.find(p => p.id === this.state.sel),
+      temSel: !!printers.find(p => p.id === this.state.sel),
+      semSel: !printers.find(p => p.id === this.state.sel),
+      fecharSel: () => this.setState({ sel: null }),
+      goBDash: goB('dash'), goBCams: goB('cams'), goBFiles: goB('files'), goBBackup: goB('backup'), goBAlerts: goB('alerts'),
+      bTab: {
+        dash: this.tabItem('', b === 'dash').style, cams: this.tabItem('', b === 'cams').style,
+        files: this.tabItem('', b === 'files').style, backup: this.tabItem('', b === 'backup').style,
+        alerts: this.tabItem('', b === 'alerts').style
+      },
+      tempsCurtas: [
+        { item: 'Bico', atual: '210,4 °C', alvo: '210 °C' },
+        { item: 'Mesa', atual: '59,8 °C', alvo: '60 °C' }
+      ],
+      macrosCurtos: ['HOME ALL', 'BED MESH', 'PURGE LINE', 'PARK HEAD'],
+      jogStyle: 'display:flex;align-items:center;justify-content:center;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-bg);cursor:pointer;padding:0;',
+      ativa: printers[0],
+      tituloC: titulos[this.state.c] || 'Console',
+      cDash: this.state.c === 'dash', cCams: this.state.c === 'cams', cFiles: this.state.c === 'files',
+      cBackup: this.state.c === 'backup', cAlerts: this.state.c === 'alerts', cConsole: this.state.c === 'console',
+      navC: [
+        this.navItem('Painel', this.state.c === 'dash', goC('dash')),
+        this.navItem('Console', this.state.c === 'console', goC('console')),
+        this.navItem('Arquivos G-code', this.state.c === 'files', goC('files')),
+        this.navItem('Câmeras', this.state.c === 'cams', goC('cams')),
+        this.navItem('Backups', this.state.c === 'backup', goC('backup')),
+        this.navItem('Histórico', this.state.c === 'alerts', goC('alerts'))
+      ],
+      temps: [
+        { item: 'Extrusora', atual: '210,4 °C', alvo: '210 °C', pot: '38 %' },
+        { item: 'Mesa', atual: '59,8 °C', alvo: '60 °C', pot: '21 %' },
+        { item: 'Câmara', atual: '31,2 °C', alvo: '—', pot: '—' },
+        { item: 'MCU', atual: '42,0 °C', alvo: '—', pot: '—' }
+      ],
+      presets: ['PLA', 'PETG', 'ABS', 'DESLIGAR'],
+      macros: ['HOME ALL', 'BED MESH', 'PURGE LINE', 'LOAD FILAMENT', 'UNLOAD FILAMENT', 'PARK HEAD'],
+      passos: [
+        { label: '0.1', style: 'text-align:left;border:0;background:var(--color-neutral-800);color:var(--color-neutral-300);font-family:ui-monospace,monospace;font-size:11px;padding:7px 11px;cursor:pointer' },
+        { label: '1', style: 'text-align:left;border:0;background:var(--color-accent);color:var(--color-bg);font-family:ui-monospace,monospace;font-size:11px;padding:7px 11px;cursor:pointer' },
+        { label: '10', style: 'text-align:left;border:0;background:var(--color-neutral-800);color:var(--color-neutral-300);font-family:ui-monospace,monospace;font-size:11px;padding:7px 11px;cursor:pointer' },
+        { label: '100', style: 'text-align:left;border:0;background:var(--color-neutral-800);color:var(--color-neutral-300);font-family:ui-monospace,monospace;font-size:11px;padding:7px 11px;cursor:pointer' }
+      ],
+      chart: Array.from({ length: 24 }, (_, i) => ({
+        bico: (52 + Math.round(14 * Math.sin(i / 2.1))) + '%',
+        mesa: (17 + Math.round(3 * Math.sin(i / 3.4))) + '%'
+      })),
+      consoleLines: [
+        { hora: '21:04:12', texto: '// Klipper state: ready', cor: 'var(--color-neutral-400)' },
+        { hora: '21:04:12', texto: 'SET_HEATER_TEMPERATURE HEATER=extruder TARGET=210', cor: 'var(--color-bg)' },
+        { hora: '21:04:19', texto: '// bed_mesh: loaded profile "default"', cor: 'var(--color-neutral-400)' },
+        { hora: '21:05:02', texto: 'SDCARD_PRINT_FILE FILENAME=suporte_camera_v3.gcode', cor: 'var(--color-bg)' },
+        { hora: '21:05:03', texto: '// Print started — 210 layers', cor: 'var(--color-neutral-400)' },
+        { hora: '21:38:44', texto: '!! Extruder heater not heating at expected rate (P06)', cor: 'var(--color-accent-400)' },
+        { hora: '21:38:45', texto: '// Pause triggered by runout_sensor', cor: 'var(--color-neutral-400)' },
+        { hora: '22:10:06', texto: 'M117 layer 84/210', cor: 'var(--color-bg)' },
+        { hora: '22:10:31', texto: '// filament_switch_sensor: filament present', cor: 'var(--color-neutral-400)' },
+        { hora: '22:11:00', texto: 'GET_POSITION', cor: 'var(--color-bg)' }
+      ],
+      navB: [
+        this.tabItem('Painel', b === 'dash', goB('dash')),
+        this.tabItem('Câmeras', b === 'cams', goB('cams')),
+        this.tabItem('Arquivos', b === 'files', goB('files')),
+        this.tabItem('Backups', b === 'backup', goB('backup')),
+        this.tabItem('Alertas', b === 'alerts', goB('alerts'))
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

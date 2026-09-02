@@ -1,0 +1,115 @@
+/*
+ * Botões só-ícone. Exceção deliberada ao Modernist: são arredondados
+ * (design/README.md § Estrutura). Três variantes, medidas do § Formatos.
+ */
+
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-bg);
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.base:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Ação primária: 40×40, fundo vermelho. */
+.primaria {
+  width: 40px;
+  height: 40px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+.primaria:hover {
+  background: var(--color-accent-400);
+  border-color: var(--color-accent-400);
+}
+
+/* Ação secundária: borda fina, fundo transparente. */
+.secundaria {
+  width: 40px;
+  height: 40px;
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-300);
+}
+.secundaria:hover {
+  background: var(--color-neutral-900);
+  color: var(--color-bg);
+}
+
+/* Aba ativa da barra superior. */
+.abaAtiva {
+  width: 40px;
+  height: 40px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+.abaInativa {
+  width: 40px;
+  height: 40px;
+  color: var(--color-neutral-300);
+}
+.abaInativa:hover {
+  background: var(--color-neutral-900);
+  color: var(--color-bg);
+}
+
+.pequeno {
+  width: 36px;
+  height: 36px;
+}
+
+.desabilitado {
+  border-color: var(--color-neutral-800);
+  color: var(--color-neutral-700);
+  background: transparent;
+}
+
+/* Controle de impressão: pílula que divide a linha em três. */
+.controle {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--color-neutral-600);
+  background: rgba(32, 30, 29, 0.6);
+  color: var(--color-bg);
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 11px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.controle:hover {
+  background: var(--color-neutral-900);
+}
+
+/* Continuar é a única ação em vermelho da linha de controles. */
+.controlePrimario {
+  border: 0;
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+.controlePrimario:hover {
+  background: var(--color-accent-400);
+}
+
+.controleDesabilitado {
+  border: 1px solid var(--color-neutral-800);
+  background: transparent;
+  color: var(--color-neutral-700);
+  cursor: not-allowed;
+  pointer-events: none;
+}
