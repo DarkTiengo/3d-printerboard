@@ -3,6 +3,7 @@ import { MjpegDemuxer } from '../lib/mjpeg.js';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 import { acharPrinter } from './printers.repo.js';
+import { agenteDaFazenda } from '../lib/http-agent.js';
 
 type Assinante = {
   fps: number;
@@ -192,7 +193,7 @@ class CameraHub extends EventEmitter {
 
     void (async () => {
       try {
-        const res = await fetch(fonte.url, { signal: abort.signal });
+        const res = await fetch(fonte.url, { signal: abort.signal, dispatcher: agenteDaFazenda });
         if (!res.ok || !res.body) throw new Error(`câmera respondeu ${res.status}`);
 
         fonte.tentativas = 0;

@@ -3,7 +3,8 @@ import type { Printer } from '@3dfarm/shared';
 import { CameraFeed } from './CameraFeed';
 import { ProgressBar } from './ProgressBar';
 import { Ponto } from './Tag';
-import { corDoPonto, estiloStatus } from '../lib/status';
+import { corDoPonto, rotuloStatus } from '../lib/status';
+import { useT } from '../i18n';
 import { IconButton } from './IconButton';
 
 /**
@@ -23,7 +24,8 @@ export function CameraTile({
   aoSelecionar: () => void;
   aoExpandir: () => void;
 }) {
-  const tag = estiloStatus(printer.status);
+  const t = useT();
+  const rotulo = rotuloStatus(printer.status, t);
 
   return (
     <div
@@ -40,7 +42,7 @@ export function CameraTile({
           printerId={printer.id}
           temCamera={printer.temTaCamera}
           fps={fps}
-          alt={`Câmera de ${printer.nome} — ${tag.curto.toLowerCase()}`}
+          alt={`${t.painel.cameraDe(printer.nome)} — ${rotulo.toLowerCase()}`}
         />
       </div>
 
@@ -48,7 +50,7 @@ export function CameraTile({
         type="button"
         onClick={aoSelecionar}
         aria-pressed={selecionada}
-        aria-label={`Selecionar ${printer.nome} — ${tag.curto.toLowerCase()}, ${printer.pct}%`}
+        aria-label={t.painel.selecionar(printer.nome, rotulo.toLowerCase(), printer.pct)}
         style={{
           position: 'absolute',
           inset: 0,
@@ -77,7 +79,7 @@ export function CameraTile({
 
       <div style={{ position: 'absolute', top: 6, right: 6 }}>
         <IconButton
-          rotulo={`Abrir ${printer.nome} em tela cheia`}
+          rotulo={t.painel.expandir(printer.nome)}
           variante="secundaria"
           pequeno
           onClick={aoExpandir}
@@ -118,7 +120,7 @@ export function CameraTile({
               color: 'var(--color-neutral-300)'
             }}
           >
-            {printer.online ? `${printer.pct}%` : 'OFFLINE'}
+            {printer.online ? `${printer.pct}%` : t.status.offline}
           </span>
         </div>
         <div style={{ marginTop: 7 }}>

@@ -8,12 +8,13 @@ services:
       - '${PORT:-8080}:8080'
     env_file:
       - .env
-    # O processo roda sem root. Estes precisam ser o dono de ./data — deixe nos
-    # padrões se o seu usuário for uid 1000, senão ajuste no .env com `id -u`/`id -g`.
+    # The process does not run as root. These must own ./data — keep the
+    # defaults if your user is uid 1000, otherwise set them in .env
+    # using `id -u` / `id -g`.
     user: '${PUID:-1000}:${PGID:-1000}'
     volumes:
-      # banco, backups, frames de alerta e miniaturas
+      # database, backups, alert frames and thumbnails
       - ./data:/data
-    # a fazenda vive na rede local: sem isso o container não enxerga
-    # os hosts .local nem faz mDNS para achar as impressoras
+    # the farm lives on the LAN: without host networking the container cannot
+    # reach .local hosts, because mDNS multicast does not cross the bridge
     network_mode: ${NETWORK_MODE:-bridge}

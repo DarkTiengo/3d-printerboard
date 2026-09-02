@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import type { Alert, Printer, Severidade } from '@3dfarm/shared';
-import { quando } from '@3dfarm/shared';
+
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 import { farm } from '../services/farm.js';
@@ -10,6 +10,7 @@ import { logger } from '../lib/logger.js';
 
 type Row = {
   id: number;
+  codigo: string | null;
   printer_id: string | null;
   printer_name: string;
   severity: Severidade;
@@ -25,10 +26,10 @@ type Row = {
 function paraAlert(r: Row): Alert {
   return {
     id: r.id,
+    codigo: r.codigo ?? '',
     titulo: r.title,
     impressora: r.printer_name,
     printerId: r.printer_id,
-    quando: quando(r.created_at + 'Z'),
     criadoEm: r.created_at + 'Z',
     sev: r.severity,
     detalhe: r.detail,
@@ -62,6 +63,8 @@ export type NovoAlerta = {
   printerId: string | null;
   printerNome: string;
   sev: Severidade;
+  /** chave estável do tipo — é o que o front usa para traduzir o título */
+  codigo: string;
   titulo: string;
   detalhe: string;
   frameLabel?: string;
@@ -84,13 +87,14 @@ export async function criarAlerta(novo: NovoAlerta): Promise<Alert | null> {
 
   const info = db
     .prepare(
-      `INSERT INTO alerts (printer_id, printer_name, severity, title, detail, frame_label, dedupe_key)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO alerts (printer_id, printer_name, severity, codigo, title, detail, frame_label, dedupe_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       novo.printerId,
       novo.printerNome,
       novo.sev,
+      novo.codigo,
       novo.titulo,
       novo.detalhe,
       novo.frameLabel ?? '',
@@ -147,9 +151,10 @@ export function ligarGeradorDeAlertas(): void {
         printerId: atual.id,
         printerNome: nomeCurto(atual),
         sev: 'alta',
+        codigo: 'erro_impressao',
         titulo: 'Impressão interrompida por erro',
         detalhe: `${atual.job} parou na camada ${atual.camada}. O Klipper reportou erro e a impressão não avança. Verifique a máquina antes de retomar.`,
-        frameLabel: `FRAME DO ALERTA — CAM ${atual.id}`,
+        frameLabel: `CAM ${atual.id}`,
         dedupeKey: `erro:${atual.id}:${atual.job}`,
         capturarFrame: true
       });
@@ -160,13 +165,14 @@ export function ligarGeradorDeAlertas(): void {
         printerId: atual.id,
         printerNome: nomeCurto(atual),
         sev: 'alta',
+        codigo: 'impressora_offline',
         titulo: 'Impressora fora do ar',
         detalhe: `O host do Moonraker parou de responder. ${
           anterior.status === 'imprimindo'
             ? `Havia uma impressão em ${anterior.pct}% (${anterior.job}) — ela pode ter continuado sem monitoramento.`
             : 'A máquina estava ociosa.'
         }`,
-        frameLabel: `ÚLTIMO ESTADO — ${atual.id}`,
+        frameLabel: `CAM ${atual.id}`,
         dedupeKey: `offline:${atual.id}`
       });
     }
@@ -176,9 +182,10 @@ export function ligarGeradorDeAlertas(): void {
         printerId: atual.id,
         printerNome: nomeCurto(atual),
         sev: 'baixa',
+        codigo: 'impressao_concluida',
         titulo: 'Impressão concluída',
         detalhe: `${anterior.job} terminou em ${nomeCurto(atual)}. A mesa segue ocupada até a peça ser retirada.`,
-        frameLabel: `FRAME FINAL — CAM ${atual.id}`,
+        frameLabel: `CAM ${atual.id}`,
         capturarFrame: true
       });
     }
@@ -195,9 +202,10 @@ export function ligarGeradorDeAlertas(): void {
         printerId,
         printerNome: nomeCurto(p),
         sev: 'media',
+        codigo: 'filamento_acabando',
         titulo: 'Filamento acabando',
         detalhe: texto.trim(),
-        frameLabel: `FRAME DO SENSOR — CAM ${printerId}`,
+        frameLabel: `CAM ${printerId}`,
         dedupeKey: `filamento:${printerId}`,
         capturarFrame: true
       });
@@ -210,9 +218,10 @@ export function ligarGeradorDeAlertas(): void {
       printerId,
       printerNome: p ? nomeCurto(p) : printerId,
       sev: 'media',
-      titulo: 'Câmera offline',
+      codigo: 'camera_offline',
+        titulo: 'Câmera offline',
       detalhe: `O stream parou de responder (${motivo}). A impressão continua, mas sem imagem. Vale checar a alimentação do hub USB.`,
-      frameLabel: 'ÚLTIMO FRAME RECEBIDO',
+      frameLabel: `CAM ${printerId}`,
       dedupeKey: `camera:${printerId}`
     });
   });

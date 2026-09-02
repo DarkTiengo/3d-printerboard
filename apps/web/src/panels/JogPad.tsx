@@ -2,6 +2,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, House, MoveVertical } from '
 import { useUi } from '../store/ui';
 import { api } from '../lib/api';
 import { Tooltip } from '../components/Tooltip';
+import { useT } from '../i18n';
 
 const PASSOS = ['0.1', '1', '10', '100'];
 
@@ -33,6 +34,7 @@ export function JogPad({
   posicao: { x: number; y: number; z: number } | null;
   desabilitado: boolean;
 }) {
+  const t = useT();
   const passo = useUi((s) => s.passo);
   const definirPasso = useUi((s) => s.definirPasso);
 
@@ -63,22 +65,22 @@ export function JogPad({
 
   return (
     <section style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="mono">CABEÇA DE IMPRESSÃO</div>
+      <div className="mono">{t.impressora.cabeca}</div>
 
       <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 38px)', gap: 4 }}>
           {vazio}
-          {botao('Mover Y para trás', <ArrowUp size={15} strokeWidth={2} aria-hidden />, mover('Y', 1))}
+          {botao(t.impressora.moverYTras, <ArrowUp size={15} strokeWidth={2} aria-hidden />, mover('Y', 1))}
           {vazio}
 
-          {botao('Mover X para a esquerda', <ArrowLeft size={15} strokeWidth={2} aria-hidden />, mover('X', -1))}
-          {botao('Home em todos os eixos', <House size={14} strokeWidth={2} aria-hidden />, () => {
+          {botao(t.impressora.moverXEsq, <ArrowLeft size={15} strokeWidth={2} aria-hidden />, mover('X', -1))}
+          {botao(t.impressora.home, <House size={14} strokeWidth={2} aria-hidden />, () => {
             void api.home(printerId).catch(() => {});
           })}
-          {botao('Mover X para a direita', <ArrowRight size={15} strokeWidth={2} aria-hidden />, mover('X', 1))}
+          {botao(t.impressora.moverXDir, <ArrowRight size={15} strokeWidth={2} aria-hidden />, mover('X', 1))}
 
           {vazio}
-          {botao('Mover Y para a frente', <ArrowDown size={15} strokeWidth={2} aria-hidden />, mover('Y', -1))}
+          {botao(t.impressora.moverYFrente, <ArrowDown size={15} strokeWidth={2} aria-hidden />, mover('Y', -1))}
           {vazio}
         </div>
 
@@ -86,16 +88,16 @@ export function JogPad({
             com o mesmo ícone seriam indistinguíveis sem passar o mouse. */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
           <MoveVertical size={13} strokeWidth={2} aria-hidden style={{ color: 'var(--color-neutral-400)' }} />
-          {botao('Subir Z', <ArrowUp size={15} strokeWidth={2} aria-hidden />, mover('Z', 1))}
-          {botao('Descer Z', <ArrowDown size={15} strokeWidth={2} aria-hidden />, mover('Z', -1))}
+          {botao(t.impressora.subirZ, <ArrowUp size={15} strokeWidth={2} aria-hidden />, mover('Z', 1))}
+          {botao(t.impressora.descerZ, <ArrowDown size={15} strokeWidth={2} aria-hidden />, mover('Z', -1))}
         </div>
       </div>
 
       <div>
         <div className="mono" style={{ marginBottom: 6 }}>
-          PASSO (MM)
+          {t.impressora.passo}
         </div>
-        <div role="group" aria-label="Passo do jog em milímetros" style={{ display: 'flex', gap: 4 }}>
+        <div role="group" aria-label={t.impressora.passoGrupo} style={{ display: 'flex', gap: 4 }}>
           {PASSOS.map((v) => {
             const ativo = passo === v;
             return (
@@ -126,7 +128,7 @@ export function JogPad({
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-neutral-500)' }}>
         {posicao
           ? `X ${posicao.x.toFixed(1)}  Y ${posicao.y.toFixed(1)}  Z ${posicao.z.toFixed(2)}`
-          : 'POSIÇÃO DESCONHECIDA'}
+          : t.impressora.posicaoDesconhecida}
       </div>
     </section>
   );

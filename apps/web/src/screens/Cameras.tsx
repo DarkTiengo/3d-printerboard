@@ -6,7 +6,9 @@ import { useUi } from '../store/ui';
 import { CameraFeed } from '../components/CameraFeed';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';
-import { controlesHabilitados, corDoPonto, estiloStatus } from '../lib/status';
+import { controlesHabilitados, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
+import { useT } from '../i18n';
+import { useFormato } from '../i18n/formato';
 import { api } from '../lib/api';
 
 /**
@@ -14,6 +16,7 @@ import { api } from '../lib/api';
  * Quadrante 2×2 na altura disponível e tira de miniaturas rolável embaixo.
  */
 export function Cameras({ usuario }: { usuario: User }) {
+  const t = useT();
   const printers = usePrintersVisiveis();
   const camFoco = useUi((s) => s.camFoco);
   const focarCamera = useUi((s) => s.focarCamera);
@@ -45,7 +48,7 @@ export function Cameras({ usuario }: { usuario: User }) {
         ))}
         {visiveis.length === 0 && (
           <div style={{ gridColumn: '1 / -1', display: 'grid', placeItems: 'center' }}>
-            <span className="mono">NENHUMA CÂMERA DISPONÍVEL</span>
+            <span className="mono">{t.cameras.nenhuma}</span>
           </div>
         )}
       </div>
@@ -68,7 +71,7 @@ export function Cameras({ usuario }: { usuario: User }) {
               type="button"
               onClick={() => focarCamera(p.id)}
               aria-pressed={emFoco}
-              aria-label={`Ver ${p.nome} no quadrante`}
+              aria-label={t.cameras.verNoQuadrante(p.nome)}
               style={{
                 width: 150,
                 flex: 'none',
@@ -106,8 +109,9 @@ export function Cameras({ usuario }: { usuario: User }) {
 }
 
 function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: User; aoVivo: boolean }) {
+  const t = useT();
+  const f = useFormato();
   const otimista = usePrinters((s) => s.otimista);
-  const tag = estiloStatus(printer.status);
   const habilitado = controlesHabilitados(printer.status);
   const podeControlar = pode(usuario.role, 'controlarImpressao') && printer.online;
 
@@ -124,7 +128,7 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
         fps={aoVivo ? 15 : 4}
         modo={aoVivo ? 'stream' : 'snapshot'}
         observarVisibilidade={false}
-        alt={`Câmera de ${printer.nome}`}
+        alt={t.painel.cameraDe(printer.nome)}
       />
 
       <div
@@ -169,13 +173,15 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
             {printer.nome}
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-300)' }}>
-            {printer.online ? `${printer.pct}% · ${printer.restante}` : `OFFLINE · ${tag.curto.toLowerCase()}`}
+            {printer.online
+              ? `${printer.pct}% · ${rotuloRestante(printer, t, f)}`
+              : `${t.status.offline} · ${rotuloStatus(printer.status, t).toLowerCase()}`}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 6 }}>
           <IconButton
-            rotulo="Pausar impressão"
+            rotulo={t.impressora.pausar}
             variante="secundaria"
             pequeno
             disabled={!habilitado.pausar || !podeControlar}
@@ -184,7 +190,7 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
             style={{ background: 'rgba(32,30,29,.55)' }}
           />
           <IconButton
-            rotulo="Continuar impressão"
+            rotulo={t.impressora.continuar}
             variante={habilitado.continuar && podeControlar ? 'primaria' : 'secundaria'}
             pequeno
             disabled={!habilitado.continuar || !podeControlar}
@@ -192,7 +198,7 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
             icone={<Play size={14} strokeWidth={2} aria-hidden />}
           />
           <IconButton
-            rotulo="Cancelar impressão"
+            rotulo={t.impressora.cancelar}
             variante="secundaria"
             pequeno
             disabled={!habilitado.cancelar || !podeControlar}

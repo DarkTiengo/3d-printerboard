@@ -11,6 +11,18 @@ import type {
   User
 } from '@3dfarm/shared';
 
+/**
+ * Mensagens da camada de rede. Ficam aqui, e não no dicionário, porque este
+ * módulo não é um componente e não tem acesso ao hook — quem troca o idioma
+ * atualiza este objeto.
+ */
+export const MENSAGENS = { semServidor: 'Could not reach the server.', erro: 'Error' };
+
+export function definirMensagensDaApi(m: { semServidor: string; erro: string }): void {
+  MENSAGENS.semServidor = m.semServidor;
+  MENSAGENS.erro = m.erro;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -43,7 +55,7 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
     });
   } catch {
     // rede caiu ou o endereço do servidor está errado — a tela de login trata
-    throw new ApiError('Não foi possível falar com o servidor.', 0);
+    throw new ApiError(MENSAGENS.semServidor, 0);
   }
 
   if (res.status === 204) return undefined as T;
@@ -52,7 +64,7 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
   const corpo = texto ? safeJson(texto) : null;
 
   if (!res.ok) {
-    throw new ApiError(corpo?.erro ?? `Erro ${res.status}`, res.status);
+    throw new ApiError(corpo?.erro ?? `${MENSAGENS.erro} ${res.status}`, res.status);
   }
   return corpo as T;
 }
@@ -102,7 +114,14 @@ export const api = {
   atualizarPrinter: (id: string, p: Partial<PrinterConfig>) => put<PrinterConfig>(`/api/config/printers/${id}`, p),
   removerPrinter: (id: string) => del<{ ok: true }>(`/api/config/printers/${id}`),
   testarPrinter: (p: Partial<PrinterConfig>) =>
-    post<{ ok: boolean; versao?: string; hostname?: string; erro?: string }>('/api/config/printers/testar', p),
+    post<{
+      ok: boolean;
+      versao?: string;
+      hostname?: string;
+      erro?: string;
+      /** null quando não há câmera configurada para testar */
+      camera?: { ok: boolean; erro?: string } | null;
+    }>('/api/config/printers/testar', p),
 
   // arquivos e fila
   arquivos: () => get<GcodeFile[]>('/api/arquivos'),

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useT } from '../i18n';
 
 /**
  * Confirmação para ações destrutivas — parada de emergência, restauração de
@@ -9,7 +10,7 @@ export function Confirm({
   aberto,
   titulo,
   descricao,
-  rotuloConfirmar = 'Confirmar',
+  rotuloConfirmar,
   perigoso = true,
   semCancelar = false,
   onConfirmar,
@@ -25,6 +26,7 @@ export function Confirm({
   onConfirmar: () => void;
   onCancelar: () => void;
 }) {
+  const t = useT();
   const cancelarRef = useRef<HTMLButtonElement>(null);
   const confirmarRef = useRef<HTMLButtonElement>(null);
 
@@ -89,7 +91,7 @@ export function Confirm({
               cursor: 'pointer'
             }}
           >
-            Cancelar
+            {t.comum.cancelar}
           </button>
           <button
             ref={confirmarRef}
@@ -107,7 +109,7 @@ export function Confirm({
               cursor: 'pointer'
             }}
           >
-            {rotuloConfirmar}
+            {rotuloConfirmar ?? t.comum.confirmar}
           </button>
         </div>
       </div>

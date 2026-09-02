@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VideoOff } from 'lucide-react';
 import { urlCamera, urlSnapshot } from '../lib/api';
+import { useT } from '../i18n';
 
 type Modo = 'stream' | 'snapshot';
 
@@ -31,6 +32,7 @@ export function CameraFeed({
   observarVisibilidade = true,
   alt
 }: Props) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [visivel, setVisivel] = useState(!observarVisibilidade);
   const [erro, setErro] = useState(false);
@@ -90,7 +92,7 @@ export function CameraFeed({
         >
           <VideoOff size={22} strokeWidth={2} aria-hidden />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.06em' }}>
-            {temCamera ? 'SEM SINAL' : 'SEM CÂMERA'}
+            {temCamera ? t.cameras.semSinal : t.cameras.semCamera}
           </span>
         </div>
       )}

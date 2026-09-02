@@ -8,12 +8,17 @@ import { IconButton } from '../components/IconButton';
 import { Tag } from '../components/Tag';
 import { Confirm } from '../components/Confirm';
 import { usePrinters, usePrintersVisiveis } from '../store/printers';
+import { useT } from '../i18n';
+import { useFormato } from '../i18n/formato';
+import type { Dicionario } from '../i18n/pt';
 
 /**
  * Backups — design/README.md § 5.
  * Faixa de quatro números no topo e um card por impressora.
  */
 export function Backups({ usuario }: { usuario: User }) {
+  const t = useT();
+  const f = useFormato();
   const qc = useQueryClient();
   // seletores separados de propósito: um seletor que monta objeto novo a cada
   // render faz o zustand v5 re-renderizar em loop
@@ -38,33 +43,28 @@ export function Backups({ usuario }: { usuario: User }) {
     mutationFn: api.rodarBackupTodas,
     onSuccess: (r) => {
       // só as ociosas começam agora: dizer isso evita o usuário achar que travou
-      const partes = [`${r.iniciados} em andamento`];
-      if (r.adiados > 0) partes.push(`${r.adiados} imprimindo (serão copiadas ao ficarem ociosas)`);
-      if (r.offline > 0) partes.push(`${r.offline} offline`);
-      setAviso(`Backup: ${partes.join(' · ')}.`);
+      setAviso(t.backups.resultado(r.iniciados, r.adiados, r.offline));
       setTimeout(() => void qc.invalidateQueries({ queryKey: ['backups'] }), 3000);
     },
-    onError: (err) => setAviso(err instanceof Error ? err.message : 'Falha ao iniciar o backup.')
+    onError: (err) => setAviso(err instanceof Error ? err.message : t.backups.falha)
   });
 
   const rodarUma = useMutation({
     mutationFn: (id: string) => api.rodarBackup(id),
     onSuccess: (r) => {
-      setAviso(
-        r.resultado === 'adiado'
-          ? `${r.nome} está imprimindo — o backup vai rodar assim que ela ficar ociosa.`
-          : `Backup de ${r.nome} iniciado.`
-      );
+      setAviso(r.resultado === 'adiado' ? t.backups.adiado(r.nome) : t.backups.iniciado(r.nome));
       setTimeout(() => void qc.invalidateQueries({ queryKey: ['backups'] }), 3000);
     },
-    onError: (err) => setAviso(err instanceof Error ? err.message : 'Falha ao iniciar o backup.')
+    onError: (err) => setAviso(err instanceof Error ? err.message : t.backups.falha)
   });
 
+  // a rotina agendada mais a rede de segurança de quem estava desligado
+  const hora = resumo ? f.horaDoCron(resumo.cron) : null;
   const numeros = [
-    { rotulo: 'ROTINA', valor: resumo?.rotina ?? '—', alerta: false },
-    { rotulo: 'ÚLTIMO CICLO', valor: resumo?.ultimoCiclo ?? '—', alerta: false },
-    { rotulo: 'ARMAZENADO', valor: resumo?.armazenado ?? '—', alerta: false },
-    { rotulo: 'FALHAS', valor: String(resumo?.falhas ?? 0), alerta: (resumo?.falhas ?? 0) > 0 }
+    { rotulo: t.backups.rotina, valor: hora ? t.backups.diario(hora) : (resumo?.cron ?? '—'), alerta: false },
+    { rotulo: t.backups.ultimoCiclo, valor: f.quandoCurto(resumo?.ultimoCicloEm), alerta: false },
+    { rotulo: t.backups.armazenado, valor: f.bytes(resumo?.bytes), alerta: false },
+    { rotulo: t.backups.falhas, valor: String(resumo?.falhas ?? 0), alerta: (resumo?.falhas ?? 0) > 0 }
   ];
 
   return (
@@ -98,7 +98,7 @@ export function Backups({ usuario }: { usuario: User }) {
 
         <div style={{ marginLeft: 'auto' }}>
           <IconButton
-            rotulo={podeRodar ? 'Backup de toda a fazenda agora' : 'Backup agora (sem permissão)'}
+            rotulo={podeRodar ? t.backups.rodarTodas : t.backups.rodarSemPermissao}
             variante="primaria"
             disabled={!podeRodar || rodarTodas.isPending}
             onClick={() => rodarTodas.mutate()}
@@ -124,12 +124,14 @@ export function Backups({ usuario }: { usuario: User }) {
       )}
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 22 }}>
-        {isLoading && cards.length === 0 && <span className="mono">CARREGANDO…</span>}
+        {isLoading && cards.length === 0 && <span className="mono">{t.comum.carregando}</span>}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
           {cards.map((c) => (
             <CardBackup
               key={c.printerId}
+              t={t}
+              f={f}
               card={c}
               podeRodar={podeRodar}
               podeRestaurar={pode(usuario.role, 'restaurarBackup')}
@@ -141,6 +143,8 @@ export function Backups({ usuario }: { usuario: User }) {
       </div>
 
       <DialogoRestauracao
+        t={t}
+        f={f}
         card={restaurando}
         aoFechar={() => setRestaurando(null)}
         aoConcluir={(msg) => {
@@ -153,12 +157,16 @@ export function Backups({ usuario }: { usuario: User }) {
 }
 
 function CardBackup({
+  t,
+  f,
   card,
   podeRodar,
   podeRestaurar,
   aoRodar,
   aoRestaurar
 }: {
+  t: Dicionario;
+  f: ReturnType<typeof useFormato>;
   card: BackupCard;
   podeRodar: boolean;
   podeRestaurar: boolean;
@@ -167,9 +175,9 @@ function CardBackup({
 }) {
   const ok = card.estado === 'OK';
   const linhas = [
-    { rotulo: 'PERFIS', valor: card.perfis },
-    { rotulo: 'FIRMWARE/CALIB.', valor: card.firmware },
-    { rotulo: 'G-CODE', valor: card.gcode }
+    { rotulo: t.backups.perfis, valor: f.quandoCurto(card.ultimoEm) },
+    { rotulo: t.backups.firmware, valor: card.firmware },
+    { rotulo: t.backups.gcode, valor: card.ultimoEm ? `${card.gcodeArquivos} · ${f.bytes(card.bytes)}` : '—' }
   ];
 
   return (
@@ -191,7 +199,7 @@ function CardBackup({
           fg={ok ? 'var(--color-neutral-300)' : 'var(--color-bg)'}
           style={{ marginLeft: 'auto' }}
         >
-          {card.estado}
+          {t.backups.estados[card.estado]}
         </Tag>
       </div>
 
@@ -219,20 +227,20 @@ function CardBackup({
           }}
         >
           <Clock size={12} strokeWidth={2} aria-hidden />
-          NA FILA — AGUARDANDO FICAR OCIOSA
+          {t.backups.naFila}
         </div>
       )}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <IconButton
-          rotulo={`Fazer backup de ${card.nome} agora`}
+          rotulo={t.backups.rodarUma(card.nome)}
           variante="primaria"
           disabled={!podeRodar}
           onClick={aoRodar}
           icone={<Download size={16} strokeWidth={2} aria-hidden />}
         />
         <IconButton
-          rotulo={`Restaurar um backup de ${card.nome} em outra impressora`}
+          rotulo={t.backups.restaurarDe(card.nome)}
           variante="secundaria"
           disabled={!podeRestaurar || card.estado === 'NUNCA'}
           onClick={aoRestaurar}
@@ -248,10 +256,14 @@ function CardBackup({
  * Sobrescreve a config da máquina de destino, então passa por confirmação.
  */
 function DialogoRestauracao({
+  t,
+  f,
   card,
   aoFechar,
   aoConcluir
 }: {
+  t: Dicionario;
+  f: ReturnType<typeof useFormato>;
   card: BackupCard | null;
   aoFechar: () => void;
   aoConcluir: (msg: string) => void;
@@ -269,8 +281,8 @@ function DialogoRestauracao({
 
   const restaurar = useMutation({
     mutationFn: () => api.restaurar(snapshotId!, destino),
-    onSuccess: (r) => aoConcluir(`Restauração concluída: ${r.arquivos} arquivos de configuração enviados.`),
-    onError: (err) => aoConcluir(err instanceof Error ? err.message : 'Falha na restauração.')
+    onSuccess: (r) => aoConcluir(t.backups.restaurado(r.arquivos)),
+    onError: (err) => aoConcluir(err instanceof Error ? err.message : t.backups.falhaRestaurar)
   });
 
   if (!card) return null;
@@ -308,12 +320,12 @@ function DialogoRestauracao({
           }}
         >
           <div>
-            <div className="mono">RESTAURAR CONFIGURAÇÃO</div>
+            <div className="mono">{t.backups.restaurarTitulo}</div>
             <h2 style={{ fontSize: 24, marginTop: 8 }}>{card.nome}</h2>
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="mono">SNAPSHOT DE ORIGEM</span>
+            <span className="mono">{t.backups.snapshotOrigem}</span>
             <select
               value={escolhido ?? ''}
               onChange={(e) => setSnapshotId(Number(e.target.value))}
@@ -321,20 +333,20 @@ function DialogoRestauracao({
             >
               {(snapshots ?? []).map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.quando} · {s.estado} · {s.arquivos} arq. · {s.tamanho}
+                  {f.quandoCurto(s.criadoEm)} · {t.backups.estados[s.estado]} · {s.arquivos} · {f.bytes(s.bytes)}
                 </option>
               ))}
-              {(snapshots ?? []).length === 0 && <option value="">nenhum snapshot guardado</option>}
+              {(snapshots ?? []).length === 0 && <option value="">{t.backups.semSnapshot}</option>}
             </select>
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span className="mono">IMPRESSORA DE DESTINO</span>
+            <span className="mono">{t.backups.destino}</span>
             <select value={alvo} onChange={(e) => setDestino(e.target.value)} style={campoSelect}>
               {printers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome}
-                  {p.id === card.printerId ? ' (mesma máquina)' : ''}
+                  {p.id === card.printerId ? t.backups.mesmaMaquina : ''}
                 </option>
               ))}
             </select>
@@ -342,7 +354,7 @@ function DialogoRestauracao({
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <button type="button" onClick={aoFechar} style={botaoSecundario}>
-              Cancelar
+              {t.comum.cancelar}
             </button>
             <button
               type="button"
@@ -350,7 +362,7 @@ function DialogoRestauracao({
               onClick={() => setConfirmando(true)}
               style={{ ...botaoPrimario, opacity: !escolhido || restaurar.isPending ? 0.5 : 1 }}
             >
-              {restaurar.isPending ? 'Restaurando…' : 'Restaurar'}
+              {restaurar.isPending ? t.backups.restaurando : t.backups.restaurar}
             </button>
           </div>
         </div>
@@ -358,14 +370,9 @@ function DialogoRestauracao({
 
       <Confirm
         aberto={confirmando}
-        titulo="Sobrescrever configuração"
-        descricao={
-          <>
-            Os arquivos de configuração de <strong>{nomeAlvo}</strong> serão substituídos pelos do snapshot escolhido.
-            O que estiver lá agora e não estiver no backup se perde. A máquina precisa de um FIRMWARE_RESTART depois.
-          </>
-        }
-        rotuloConfirmar="Sobrescrever"
+        titulo={t.backups.confirmaTitulo}
+        descricao={t.backups.confirmaTexto(nomeAlvo)}
+        rotuloConfirmar={t.backups.sobrescrever}
         onConfirmar={() => {
           setConfirmando(false);
           restaurar.mutate();

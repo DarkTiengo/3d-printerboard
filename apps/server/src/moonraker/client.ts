@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
+import { lookupComMdns } from '../lib/mdns.js';
 import type { PrinterConfig } from '@3dfarm/shared';
 
 /** Objetos que assinamos no Klipper. É daqui que sai tudo que a UI mostra. */
@@ -121,7 +122,8 @@ export class MoonrakerClient extends EventEmitter {
     const headers: Record<string, string> = {};
     if (this.cfg.apiKey) headers['X-Api-Key'] = this.cfg.apiKey;
 
-    const ws = new WebSocket(url, { headers, handshakeTimeout: 8_000 });
+    // `lookup` próprio: nomes .local não resolvem pela libc da imagem
+    const ws = new WebSocket(url, { headers, handshakeTimeout: 8_000, lookup: lookupComMdns });
     this.ws = ws;
 
     ws.on('open', () => {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { User } from '@3dfarm/shared';
-import { api } from './lib/api';
+import { api, definirMensagensDaApi } from './lib/api';
 import { useStream } from './lib/stream';
 import { usePrinters } from './store/printers';
 import { useUi } from './store/ui';
@@ -13,8 +13,15 @@ import { Files } from './screens/Files';
 import { Backups } from './screens/Backups';
 import { Alerts } from './screens/Alerts';
 import { Settings } from './screens/Settings';
+import { useLangDoDocumento, useT } from './i18n';
 
 export function App() {
+  useLangDoDocumento();
+  const t = useT();
+  // a camada de rede não é componente: recebe as mensagens quando o idioma muda
+  useEffect(() => {
+    definirMensagensDaApi({ semServidor: t.erros.semServidor, erro: t.erros.generico(0).replace(/\s*0$/, '') });
+  }, [t]);
   const [usuario, setUsuario] = useState<User | null>(null);
   const [verificando, setVerificando] = useState(true);
   const tela = useUi((s) => s.tela);
@@ -65,7 +72,7 @@ export function App() {
   if (verificando) {
     return (
       <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}>
-        <span className="mono">CARREGANDO…</span>
+        <span className="mono">{t.comum.carregando}</span>
       </div>
     );
   }

@@ -9,12 +9,22 @@ import { useUi } from '../store/ui';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';
 import { CORES_SEVERIDADE } from '../lib/status';
+import { useT } from '../i18n';
+import { useFormato } from '../i18n/formato';
+import type { Dicionario } from '../i18n/pt';
 
 /**
  * Alertas — design/README.md § 6.
  * Lista de 420px à esquerda, detalhe com frame do momento à direita.
  */
+/** Título traduzido pelo código; cai no texto do servidor se o código for novo. */
+function tituloDoAlerta(a: Alert, t: Dicionario): string {
+  return t.alertas.titulos[a.codigo] ?? a.titulo;
+}
+
 export function Alerts({ usuario }: { usuario: User }) {
+  const t = useT();
+  const f = useFormato();
   const alertas = usePrinters((s) => s.alertas);
   const definirAlertas = usePrinters((s) => s.definirAlertas);
   const alertaSel = useUi((s) => s.alertaSel);
@@ -51,12 +61,12 @@ export function Alerts({ usuario }: { usuario: User }) {
       >
         {isLoading && alertas.length === 0 && (
           <div style={{ padding: 18 }}>
-            <span className="mono">CARREGANDO…</span>
+            <span className="mono">{t.alertas.carregando}</span>
           </div>
         )}
         {!isLoading && alertas.length === 0 && (
           <div style={{ padding: 18 }}>
-            <span className="mono">NENHUM ALERTA ABERTO.</span>
+            <span className="mono">{t.alertas.nenhum}</span>
           </div>
         )}
 
@@ -94,7 +104,7 @@ export function Alerts({ usuario }: { usuario: User }) {
                       textWrap: 'pretty'
                     }}
                   >
-                    {a.titulo}
+                    {tituloDoAlerta(a, t)}
                   </span>
                   <span
                     style={{
@@ -105,7 +115,7 @@ export function Alerts({ usuario }: { usuario: User }) {
                       marginTop: 2
                     }}
                   >
-                    {a.quando} · {a.impressora}
+                    {f.quando(a.criadoEm)} · {a.impressora}
                   </span>
                 </span>
               </button>
@@ -117,6 +127,8 @@ export function Alerts({ usuario }: { usuario: User }) {
       <div style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 28 }}>
         {selecionado ? (
           <Detalhe
+            t={t}
+            f={f}
             alerta={selecionado}
             podeResolver={pode(usuario.role, 'resolverAlerta')}
             resolvendo={resolver.isPending}
@@ -124,7 +136,7 @@ export function Alerts({ usuario }: { usuario: User }) {
             aoAbrirImpressora={() => selecionado.printerId && abrirImpressora(selecionado.printerId)}
           />
         ) : (
-          <span className="mono">SELECIONE UM ALERTA À ESQUERDA.</span>
+          <span className="mono">{t.alertas.selecione}</span>
         )}
       </div>
     </div>
@@ -132,12 +144,16 @@ export function Alerts({ usuario }: { usuario: User }) {
 }
 
 function Detalhe({
+  t,
+  f,
   alerta,
   podeResolver,
   resolvendo,
   aoResolver,
   aoAbrirImpressora
 }: {
+  t: Dicionario;
+  f: ReturnType<typeof useFormato>;
   alerta: Alert;
   podeResolver: boolean;
   resolvendo: boolean;
@@ -147,10 +163,10 @@ function Detalhe({
   return (
     <article style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 760 }}>
       <div className="mono">
-        {alerta.quando} · {alerta.impressora} · SEVERIDADE {alerta.sev.toUpperCase()}
+        {f.quando(alerta.criadoEm)} · {alerta.impressora} · {t.alertas.severidade(t.alertas.sevNomes[alerta.sev])}
       </div>
 
-      <h2 style={{ fontSize: 28, letterSpacing: '-0.01em', textWrap: 'pretty' }}>{alerta.titulo}</h2>
+      <h2 style={{ fontSize: 28, letterSpacing: '-0.01em', textWrap: 'pretty' }}>{tituloDoAlerta(alerta, t)}</h2>
 
       <p style={{ fontSize: 14, color: 'var(--color-neutral-300)', maxWidth: 520, textWrap: 'pretty', margin: 0 }}>
         {alerta.detalhe}
@@ -169,7 +185,7 @@ function Detalhe({
         {alerta.frameUrl && (
           <img
             src={alerta.frameUrl}
-            alt={`Imagem da câmera no momento do alerta em ${alerta.impressora}`}
+            alt={t.alertas.frameDe(alerta.impressora)}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         )}
@@ -185,20 +201,20 @@ function Detalhe({
             textShadow: '0 1px 3px rgba(0,0,0,.85)'
           }}
         >
-          {alerta.frame || 'SEM IMAGEM DO MOMENTO'}
+          {alerta.frame || t.alertas.semImagem}
         </figcaption>
       </figure>
 
       <div style={{ display: 'flex', gap: 10 }}>
         <IconButton
-          rotulo={podeResolver ? 'Marcar alerta como resolvido' : 'Resolver alerta (sem permissão)'}
+          rotulo={podeResolver ? t.alertas.resolver : t.alertas.resolverSemPermissao}
           variante="primaria"
           disabled={!podeResolver || resolvendo}
           onClick={aoResolver}
           icone={<Check size={17} strokeWidth={2} aria-hidden />}
         />
         <IconButton
-          rotulo="Abrir a impressora no painel"
+          rotulo={t.alertas.abrirImpressora}
           variante="secundaria"
           disabled={!alerta.printerId}
           onClick={aoAbrirImpressora}

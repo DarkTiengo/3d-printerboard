@@ -12,7 +12,11 @@ export type Printer = {
   nome: string; // 'Ender 3 V2 — A'
   job: string; // 'suporte_camera_v3.gcode'
   pct: number; // 0-100
-  restante: string; // '1h 14m'
+  /**
+   * Segundos restantes, ou null quando não dá para estimar. O rótulo é montado
+   * no front: o servidor não sabe em que idioma a tela está.
+   */
+  restanteSegundos: number | null;
   camada: string; // '84/210'
   status: Status;
   /** false quando o WebSocket do Moonraker está caído ou o Klipper não respondeu. */
@@ -24,9 +28,11 @@ export type Printer = {
 };
 
 export type Temperatura = {
-  item: string; // 'Bico' | 'Mesa'
-  atual: string; // '210,4 °C'
-  alvo: string; // '210 °C'
+  /** identifica o sensor sem depender de idioma */
+  chave: 'bico' | 'mesa';
+  atual: number | null;
+  /** 0 significa desligado */
+  alvo: number | null;
 };
 
 export type Posicao = { x: number; y: number; z: number };
@@ -97,9 +103,8 @@ export type QueueStatus = 'pendente' | 'atribuido' | 'imprimindo' | 'concluido' 
 export type QueueJob = {
   id: number;
   arquivo: string; // 'clipe_cabo_x12.gcode'
-  /** null = "próxima livre" */
+  /** null = "próxima livre"; o rótulo é montado no front */
   destino: string | null;
-  destinoNome: string; // 'Prusa MK4' | 'próxima livre'
   tempo: string; // '4h 25m'
   status: QueueStatus;
   printerId: string | null;
@@ -113,10 +118,12 @@ export type Severidade = 'alta' | 'media' | 'baixa';
 
 export type Alert = {
   id: number;
+  /** chave estável do tipo de alerta, para o front traduzir o título */
+  codigo: string;
+  /** título como o servidor escreveu — usado quando o código é desconhecido */
   titulo: string;
   impressora: string; // nome da impressora
   printerId: string | null;
-  quando: string; // 'há 6 min' — formatado no servidor
   criadoEm: string;
   sev: Severidade;
   detalhe: string;
@@ -134,27 +141,29 @@ export type BackupCard = {
   printerId: string;
   nome: string;
   estado: BackupEstado;
-  perfis: string; // 'hoje 03:00'
-  firmware: string; // 'Klipper v0.12 · há 6 d'
-  gcode: string; // '42 arq. · 1,1 GB'
+  /** ISO do último backup, ou null se nunca houve — o front formata */
+  ultimoEm: string | null;
+  firmware: string; // 'Klipper v0.12.0' — versão, não depende de idioma
+  gcodeArquivos: number;
+  bytes: number;
   /** Na fila, esperando a impressora ficar ociosa para ser copiada. */
   pendente: boolean;
 };
 
 export type BackupResumo = {
-  rotina: string; // 'diário 03:00'
-  ultimoCiclo: string; // 'hoje 03:03'
-  armazenado: string; // '5,5 GB'
+  /** expressão cron crua; o front descreve em palavras */
+  cron: string;
+  ultimoCicloEm: string | null;
+  bytes: number;
   falhas: number;
 };
 
 export type BackupSnapshot = {
   id: number;
   printerId: string;
-  quando: string;
   criadoEm: string;
   estado: BackupEstado;
-  tamanho: string;
+  bytes: number;
   arquivos: number;
 };
 

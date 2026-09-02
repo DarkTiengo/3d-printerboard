@@ -1,5 +1,4 @@
 import type { Printer, Status, Temperatura, Posicao, PrinterConfig } from '@3dfarm/shared';
-import { duracao, temperatura, alvo } from '@3dfarm/shared';
 import type { EstadoBruto } from './client.js';
 
 /**
@@ -80,16 +79,14 @@ export function camadaDe(bruto: EstadoBruto): string {
   return '—';
 }
 
+/** Números crus: quem formata (e escolhe a vírgula ou o ponto) é o front. */
 export function temperaturasDe(bruto: EstadoBruto): Temperatura[] {
   const temps: Temperatura[] = [];
+  const numero = (v: unknown) => (Number.isFinite(v) ? (v as number) : null);
   const bico = bruto.objetos.extruder;
   const mesa = bruto.objetos.heater_bed;
-  if (bico) {
-    temps.push({ item: 'Bico', atual: temperatura(bico.temperature), alvo: alvo(bico.target) });
-  }
-  if (mesa) {
-    temps.push({ item: 'Mesa', atual: temperatura(mesa.temperature), alvo: alvo(mesa.target) });
-  }
+  if (bico) temps.push({ chave: 'bico', atual: numero(bico.temperature), alvo: numero(bico.target) });
+  if (mesa) temps.push({ chave: 'mesa', atual: numero(mesa.temperature), alvo: numero(mesa.target) });
   return temps;
 }
 
@@ -107,20 +104,14 @@ export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
   const stats = bruto.objetos.print_stats ?? {};
   const pct = status === 'cancelada' || status === 'ociosa' ? 0 : progressoDe(bruto);
 
-  let restante: string;
-  if (!bruto.conectado) restante = 'offline';
-  else if (status === 'pausada') restante = 'pausada';
-  else if (status === 'cancelada') restante = 'cancelada';
-  else if (status === 'atenção') restante = 'parado';
-  else if (status === 'ociosa') restante = '—';
-  else restante = duracao(restanteSegundos(bruto));
-
   return {
     id: cfg.id,
     nome: cfg.nome,
     job: stats.filename || '—',
     pct,
-    restante,
+    // só faz sentido quando está de fato imprimindo; nos outros casos o front
+    // mostra o próprio status
+    restanteSegundos: status === 'imprimindo' ? restanteSegundos(bruto) : null,
     camada: camadaDe(bruto),
     status,
     online: bruto.conectado,

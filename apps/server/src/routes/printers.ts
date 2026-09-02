@@ -11,6 +11,27 @@ import {
 } from '../services/printers.repo.js';
 import { exigirLogin, exigirPermissao } from '../lib/guard.js';
 import { logger } from '../lib/logger.js';
+import { agenteDaFazenda } from '../lib/http-agent.js';
+
+/** Abre o stream da câmera só o suficiente para saber se vem imagem. */
+async function testarCamera(url: string): Promise<{ ok: boolean; erro?: string }> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 6_000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, dispatcher: agenteDaFazenda });
+    if (!res.ok) return { ok: false, erro: `respondeu ${res.status}` };
+    const tipo = res.headers.get('content-type') ?? '';
+    void res.body?.cancel();
+    if (!/image|multipart/i.test(tipo)) {
+      return { ok: false, erro: `não parece um stream de vídeo (${tipo || 'sem tipo'})` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, erro: err instanceof Error ? err.message : 'sem resposta' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function validarEntrada(body: Partial<PrinterConfigInput>): string | null {
   if (!body?.nome?.trim()) return 'Informe o nome da impressora.';
@@ -230,7 +251,12 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       });
       try {
         const info = await http.testar();
-        return { ...info, ok: true as const };
+        // a câmera é opcional, então falha nela não reprova a impressora
+        let camera: { ok: boolean; erro?: string } | null = null;
+        if (req.body.cameraUrl) {
+          camera = await testarCamera(req.body.cameraUrl);
+        }
+        return { ...info, ok: true as const, camera };
       } catch (err) {
         return reply.code(200).send({ ok: false, erro: err instanceof Error ? err.message : 'falha na conexão' });
       }

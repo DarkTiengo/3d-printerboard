@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plug, Plus, Trash2 } from 'lucide-react';
+import { Check, Plug, Plus, Trash2, X } from 'lucide-react';
 import type { PrinterConfig } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Confirm } from '../components/Confirm';
+import { useT } from '../i18n';
+import type { Dicionario } from '../i18n/pt';
 
 type Rascunho = {
   id?: string;
@@ -31,13 +33,14 @@ const VAZIO: Rascunho = {
  * botões em pílula.
  */
 export function Settings() {
+  const t = useT();
   const qc = useQueryClient();
   const { data: printers, isLoading } = useQuery({ queryKey: ['configPrinters'], queryFn: api.configPrinters });
 
   const [editando, setEditando] = useState<Rascunho | null>(null);
   const [removendo, setRemovendo] = useState<PrinterConfig | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [teste, setTeste] = useState<string | null>(null);
+  const [teste, setTeste] = useState<{ ok: boolean; texto: string } | null>(null);
 
   const invalidar = () => {
     void qc.invalidateQueries({ queryKey: ['configPrinters'] });
@@ -60,7 +63,7 @@ export function Settings() {
       setErro(null);
       invalidar();
     },
-    onError: (e) => setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    onError: (e) => setErro(e instanceof Error ? e.message : t.gestao.naoSalvou)
   });
 
   const remover = useMutation({
@@ -81,9 +84,23 @@ export function Settings() {
         cameraUrl: r.cameraUrl || null,
         backupEnabled: r.backupEnabled
       }),
-    onSuccess: (res) =>
-      setTeste(res.ok ? `Conectado: ${res.hostname} rodando ${res.versao}.` : `Falhou: ${res.erro}`),
-    onError: (e) => setTeste(e instanceof Error ? e.message : 'Falha no teste.')
+    onSuccess: (res) => {
+      if (!res.ok) {
+        setTeste({ ok: false, texto: t.gestao.testeFalhou(res.erro ?? '') });
+        return;
+      }
+      // a câmera é opcional: se ela falhar, a impressora ainda está conectada
+      const extra = !res.camera
+        ? ''
+        : res.camera.ok
+          ? t.gestao.testeCameraOk
+          : t.gestao.testeCameraFalhou(res.camera.erro ?? '');
+      setTeste({
+        ok: res.camera ? res.camera.ok : true,
+        texto: t.gestao.testeOk(res.hostname ?? '?', res.versao ?? '?') + extra
+      });
+    },
+    onError: (e) => setTeste({ ok: false, texto: e instanceof Error ? e.message : t.gestao.testeErro })
   });
 
   return (
@@ -98,10 +115,10 @@ export function Settings() {
           borderBottom: '2px solid var(--color-neutral-700)'
         }}
       >
-        <span className="mono">IMPRESSORAS DA FAZENDA — {printers?.length ?? 0}</span>
+        <span className="mono">{t.gestao.titulo(printers?.length ?? 0)}</span>
         <span style={{ marginLeft: 'auto' }}>
           <IconButton
-            rotulo="Cadastrar nova impressora"
+            rotulo={t.gestao.nova}
             variante="primaria"
             onClick={() => {
               setEditando({ ...VAZIO });
@@ -114,11 +131,11 @@ export function Settings() {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 22 }}>
-        {isLoading && <span className="mono">CARREGANDO…</span>}
+        {isLoading && <span className="mono">{t.comum.carregando}</span>}
         {printers?.length === 0 && !isLoading && (
           <p style={{ color: 'var(--color-neutral-300)', maxWidth: 480, textWrap: 'pretty' }}>
-            Nenhuma impressora cadastrada. Adicione o endereço do Moonraker de cada máquina — normalmente{' '}
-            <code style={{ fontFamily: 'var(--font-mono)' }}>http://nome-do-host.local:7125</code>.
+            {t.gestao.vazio}{' '}
+            <code style={{ fontFamily: 'var(--font-mono)' }}>{t.gestao.urlPlaceholder}</code>.
           </p>
         )}
 
@@ -145,10 +162,11 @@ export function Settings() {
                 {p.moonrakerUrl}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-500)', overflowWrap: 'anywhere' }}>
-                CÂMERA {p.cameraUrl ?? 'não configurada'}
+                {t.gestao.camera} {p.cameraUrl ?? t.gestao.semCamera}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-500)' }}>
-                BACKUP {p.backupEnabled ? 'ligado' : 'desligado'} · CHAVE {p.apiKey ? 'definida' : 'nenhuma'}
+                {t.gestao.backup} {p.backupEnabled ? t.gestao.backupLigado : t.gestao.backupDesligado} ·{' '}
+                {t.gestao.chave} {p.apiKey ? t.gestao.chaveDefinida : t.gestao.chaveNenhuma}
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -168,10 +186,10 @@ export function Settings() {
                   }}
                   style={botaoSecundario}
                 >
-                  Editar
+                  {t.comum.editar}
                 </button>
                 <IconButton
-                  rotulo={`Remover ${p.nome} da fazenda`}
+                  rotulo={t.gestao.remover(p.nome)}
                   variante="secundaria"
                   pequeno
                   onClick={() => setRemovendo(p)}
@@ -185,6 +203,7 @@ export function Settings() {
 
       {editando && (
         <Formulario
+          t={t}
           rascunho={editando}
           erro={erro}
           teste={teste}
@@ -203,14 +222,9 @@ export function Settings() {
 
       <Confirm
         aberto={!!removendo}
-        titulo="Remover impressora"
-        descricao={
-          <>
-            <strong>{removendo?.nome}</strong> sai do painel, da parede de câmeras e do ciclo de backup. Os snapshots
-            já guardados dessa máquina também são apagados. A impressora em si não é alterada.
-          </>
-        }
-        rotuloConfirmar="Remover"
+        titulo={t.gestao.removerTitulo}
+        descricao={t.gestao.removerTexto(removendo?.nome ?? '')}
+        rotuloConfirmar={t.gestao.removerTitulo}
         onConfirmar={() => removendo && remover.mutate(removendo.id)}
         onCancelar={() => setRemovendo(null)}
       />
@@ -219,6 +233,7 @@ export function Settings() {
 }
 
 function Formulario({
+  t,
   rascunho,
   erro,
   teste,
@@ -229,9 +244,10 @@ function Formulario({
   aoSalvar,
   aoFechar
 }: {
+  t: Dicionario;
   rascunho: Rascunho;
   erro: string | null;
-  teste: string | null;
+  teste: { ok: boolean; texto: string } | null;
   salvando: boolean;
   testando: boolean;
   aoMudar: (r: Rascunho) => void;
@@ -242,7 +258,7 @@ function Formulario({
   const campo = (
     rotulo: string,
     chave: 'nome' | 'moonrakerUrl' | 'apiKey' | 'cameraUrl',
-    props: { placeholder?: string; mono?: boolean; type?: string } = {}
+    props: { placeholder?: string; mono?: boolean; type?: string; dica?: string } = {}
   ) => (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span className="mono">{rotulo}</span>
@@ -262,6 +278,9 @@ function Formulario({
           padding: '13px 14px'
         }}
       />
+      {props.dica && (
+        <span style={{ fontSize: 11, color: 'var(--color-neutral-500)' }}>{props.dica}</span>
+      )}
     </label>
   );
 
@@ -269,7 +288,7 @@ function Formulario({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={rascunho.id ? `Editar ${rascunho.nome}` : 'Cadastrar impressora'}
+      aria-label={rascunho.id ? `${t.comum.editar} ${rascunho.nome}` : t.gestao.cadastrar}
       onClick={(e) => e.target === e.currentTarget && aoFechar()}
       style={{
         position: 'fixed',
@@ -298,17 +317,69 @@ function Formulario({
         }}
       >
         <div>
-          <div className="mono">{rascunho.id ? `EDITANDO ${rascunho.id}` : 'NOVA IMPRESSORA'}</div>
-          <h2 style={{ fontSize: 26, marginTop: 8 }}>{rascunho.id ? rascunho.nome || 'Impressora' : 'Cadastrar'}</h2>
+          <div className="mono">{rascunho.id ? t.gestao.editando(rascunho.id) : t.gestao.novaKicker}</div>
+          <h2 style={{ fontSize: 26, marginTop: 8 }}>
+            {rascunho.id ? rascunho.nome || rascunho.id : t.gestao.cadastrar}
+          </h2>
         </div>
 
-        {campo('NOME', 'nome', { placeholder: 'Ender 3 V2 — A' })}
-        {campo('URL DO MOONRAKER', 'moonrakerUrl', { placeholder: 'http://ender-a.local:7125', mono: true })}
-        {campo('API KEY (OPCIONAL)', 'apiKey', { placeholder: 'em branco se o Moonraker não exige', mono: true, type: 'password' })}
-        {campo('URL DA CÂMERA (OPCIONAL)', 'cameraUrl', {
-          placeholder: 'http://ender-a.local/webcam/?action=stream',
-          mono: true
+        {campo(t.gestao.nome, 'nome', { placeholder: t.gestao.nomePlaceholder })}
+        {campo(t.gestao.url, 'moonrakerUrl', {
+          placeholder: t.gestao.urlPlaceholder,
+          mono: true,
+          dica: t.gestao.urlDica
         })}
+
+        {/* O teste fica logo abaixo da URL, com rótulo: é aqui que ele serve,
+            enquanto a pessoa ainda está digitando o endereço. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: -6 }}>
+          <button
+            type="button"
+            onClick={aoTestar}
+            disabled={testando || !rascunho.moonrakerUrl.trim()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              border: '1px solid var(--color-neutral-700)',
+              background: 'transparent',
+              color: testando ? 'var(--color-neutral-500)' : 'var(--color-bg)',
+              borderRadius: 999,
+              padding: '9px 16px',
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: testando ? 'progress' : 'pointer'
+            }}
+          >
+            <Plug size={14} strokeWidth={2} aria-hidden />
+            {testando ? t.gestao.testando : t.gestao.testar}
+          </button>
+
+          {teste && (
+            <span
+              role="status"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                color: teste.ok ? 'var(--color-accent-400)' : 'var(--color-accent)'
+              }}
+            >
+              {teste.ok ? <Check size={13} strokeWidth={3} aria-hidden /> : <X size={13} strokeWidth={3} aria-hidden />}
+              {teste.texto}
+            </span>
+          )}
+        </div>
+
+        {campo(t.gestao.apiKey, 'apiKey', {
+          placeholder: t.gestao.apiKeyPlaceholder,
+          mono: true,
+          type: 'password'
+        })}
+        {campo(t.gestao.cameraUrl, 'cameraUrl', { placeholder: t.gestao.cameraPlaceholder, mono: true })}
 
         <button
           type="button"
@@ -341,22 +412,9 @@ function Formulario({
           >
             {rascunho.backupEnabled && <Check size={12} strokeWidth={3} aria-hidden />}
           </span>
-          <span>Incluir no backup diário</span>
+          <span>{t.gestao.incluirBackup}</span>
         </button>
 
-        {teste && (
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              color: teste.startsWith('Conectado') ? 'var(--color-accent-400)' : 'var(--color-accent)',
-              borderLeft: '2px solid currentColor',
-              paddingLeft: 10
-            }}
-          >
-            {teste}
-          </div>
-        )}
         {erro && (
           <div
             role="alert"
@@ -366,22 +424,13 @@ function Formulario({
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <IconButton
-            rotulo="Testar conexão com o Moonraker"
-            variante="secundaria"
-            disabled={testando}
-            onClick={aoTestar}
-            icone={<Plug size={16} strokeWidth={2} aria-hidden />}
-          />
-          <span style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button type="button" onClick={aoFechar} style={botaoSecundario}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={salvando} style={{ ...botaoPrimario, opacity: salvando ? 0.5 : 1 }}>
-              {salvando ? 'Salvando…' : 'Salvar'}
-            </button>
-          </span>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={aoFechar} style={botaoSecundario}>
+            {t.comum.cancelar}
+          </button>
+          <button type="submit" disabled={salvando} style={{ ...botaoPrimario, opacity: salvando ? 0.5 : 1 }}>
+            {salvando ? t.comum.salvando : t.comum.salvar}
+          </button>
         </div>
       </form>
     </div>

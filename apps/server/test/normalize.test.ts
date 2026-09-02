@@ -119,23 +119,31 @@ describe('normalizar', () => {
       online: true,
       temTaCamera: true
     });
+    // números crus: o front é quem escolhe vírgula ou ponto
     expect(p.temperaturas).toEqual([
-      { item: 'Bico', atual: '210,4 °C', alvo: '210 °C' },
-      { item: 'Mesa', atual: '59,8 °C', alvo: '60 °C' }
+      { chave: 'bico', atual: 210.42, alvo: 210 },
+      { chave: 'mesa', atual: 59.81, alvo: 60 }
     ]);
     expect(p.posicao).toEqual({ x: 110, y: 92.5, z: 16.8 });
   });
 
   it('zera o progresso quando cancelada ou ociosa, como no design', () => {
     const cancelada = bruto({}, { print_stats: { state: 'cancelled', filename: 'x.gcode' }, display_status: { progress: 0.44 } });
-    expect(normalizar(cfg, cancelada)).toMatchObject({ pct: 0, restante: 'cancelada' });
+    expect(normalizar(cfg, cancelada)).toMatchObject({ pct: 0, status: 'cancelada' });
   });
 
-  it('troca o tempo restante por rótulo de estado quando não está imprimindo', () => {
+  it('só estima tempo restante quando está de fato imprimindo', () => {
+    // fora do estado "imprimindo" o rótulo vem do próprio status, no front
     const pausada = bruto({}, { print_stats: { state: 'paused', filename: 'x.gcode' }, display_status: { progress: 0.2 } });
-    expect(normalizar(cfg, pausada).restante).toBe('pausada');
+    expect(normalizar(cfg, pausada).restanteSegundos).toBeNull();
 
     const offline = bruto({ conectado: false });
-    expect(normalizar(cfg, offline).restante).toBe('offline');
+    expect(normalizar(cfg, offline).restanteSegundos).toBeNull();
+
+    const imprimindo = bruto(
+      {},
+      { print_stats: { state: 'printing', print_duration: 3600 }, display_status: { progress: 0.5 } }
+    );
+    expect(normalizar(cfg, imprimindo).restanteSegundos).toBeCloseTo(3600, 0);
   });
 });

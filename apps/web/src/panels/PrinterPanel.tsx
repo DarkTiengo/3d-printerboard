@@ -5,7 +5,9 @@ import { IconButton } from '../components/IconButton';
 import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';
 import { CameraFeed } from '../components/CameraFeed';
-import { controlesHabilitados, corDoPonto, estiloStatus } from '../lib/status';
+import { controlesHabilitados, coresStatus, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
+import { useT } from '../i18n';
+import { useFormato } from '../i18n/formato';
 import { usePrinters } from '../store/printers';
 import { api } from '../lib/api';
 import { JogPad } from './JogPad';
@@ -27,8 +29,10 @@ export function PrinterPanel({
   usuario: User;
   aoFechar: () => void;
 }) {
+  const t = useT();
+  const f = useFormato();
   const otimista = usePrinters((s) => s.otimista);
-  const tag = estiloStatus(printer.status);
+  const cores = coresStatus(printer.status);
   const habilitado = controlesHabilitados(printer.status);
   const podeControlar = pode(usuario.role, 'controlarImpressao') && printer.online;
 
@@ -59,11 +63,11 @@ export function PrinterPanel({
         >
           {printer.nome}
         </span>
-        <Tag bg={tag.bg} fg={tag.fg} style={{ marginLeft: 'auto' }}>
-          {printer.online ? tag.curto : 'OFFLINE'}
+        <Tag bg={cores.bg} fg={cores.fg} style={{ marginLeft: 'auto' }}>
+          {printer.online ? rotuloStatus(printer.status, t) : t.status.offline}
         </Tag>
         <IconButton
-          rotulo="Fechar painel"
+          rotulo={t.impressora.fechar}
           variante="secundaria"
           pequeno
           onClick={aoFechar}
@@ -80,7 +84,7 @@ export function PrinterPanel({
           fps={10}
           modo="stream"
           observarVisibilidade={false}
-          alt={`Câmera de ${printer.nome}`}
+          alt={t.painel.cameraDe(printer.nome)}
         />
         <span
           style={{
@@ -99,7 +103,7 @@ export function PrinterPanel({
 
       {/* 3. trabalho + controles */}
       <section style={{ ...secao, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div className="mono">TRABALHO</div>
+        <div className="mono">{t.impressora.trabalho}</div>
         <div
           style={{
             fontFamily: 'var(--font-mono)',
@@ -126,28 +130,28 @@ export function PrinterPanel({
           }}
         >
           <span>
-            {printer.pct}% · CAMADA {printer.camada}
+            {printer.pct}% · {t.impressora.camada(printer.camada)}
           </span>
-          <span>{printer.restante}</span>
+          <span>{rotuloRestante(printer, t, f)}</span>
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
           <IconButton
-            rotulo="Pausar impressão"
+            rotulo={t.impressora.pausar}
             variante="controle"
             disabled={!habilitado.pausar || !podeControlar}
             onClick={comandar('pausada', () => api.pausar(printer.id))}
             icone={<Pause size={15} strokeWidth={2} aria-hidden />}
           />
           <IconButton
-            rotulo="Continuar impressão"
+            rotulo={t.impressora.continuar}
             variante="controlePrimario"
             disabled={!habilitado.continuar || !podeControlar}
             onClick={comandar('imprimindo', () => api.continuar(printer.id))}
             icone={<Play size={15} strokeWidth={2} aria-hidden />}
           />
           <IconButton
-            rotulo="Cancelar impressão"
+            rotulo={t.impressora.cancelar}
             variante="controle"
             disabled={!habilitado.cancelar || !podeControlar}
             onClick={comandar('cancelada', () => api.cancelar(printer.id))}

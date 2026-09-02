@@ -6,12 +6,14 @@ import { pode } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { usePrintersVisiveis } from '../store/printers';
+import { useT } from '../i18n';
 
 /**
  * Arquivos — design/README.md § 4.
  * Grade de cards com prévia 4:3, perfil de fatiamento e métricas.
  */
 export function Files({ usuario }: { usuario: User }) {
+  const t = useT();
   const printers = usePrintersVisiveis();
   const podeEnfileirar = pode(usuario.role, 'enfileirar');
   const [destino, setDestino] = useState<string>('');
@@ -27,11 +29,14 @@ export function Files({ usuario }: { usuario: User }) {
   const enfileirar = useMutation({
     mutationFn: (arquivo: string) => api.enfileirar(arquivo, destino || null),
     onSuccess: (job) => {
-      setAviso(`${job.arquivo} enviado para a fila (${job.destinoNome}).`);
+      const destino = job.destino
+        ? (printers.find((p) => p.id === job.destino)?.nome ?? job.destino)
+        : t.fila.proximaLivre;
+      setAviso(t.arquivos.enviado(job.arquivo, destino));
       void qc.invalidateQueries({ queryKey: ['fila'] });
       setTimeout(() => setAviso(null), 4000);
     },
-    onError: (err) => setAviso(err instanceof Error ? err.message : 'Falha ao enfileirar.')
+    onError: (err) => setAviso(err instanceof Error ? err.message : t.arquivos.falhaEnfileirar)
   });
 
   return (
@@ -47,10 +52,10 @@ export function Files({ usuario }: { usuario: User }) {
           flexWrap: 'wrap'
         }}
       >
-        <span className="mono">BIBLIOTECA — {arquivos?.length ?? 0} ARQUIVOS</span>
+        <span className="mono">{t.arquivos.biblioteca(arquivos?.length ?? 0)}</span>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-          <span className="mono">ENVIAR PARA</span>
+          <span className="mono">{t.arquivos.enviarPara}</span>
           <select
             value={destino}
             onChange={(e) => setDestino(e.target.value)}
@@ -64,7 +69,7 @@ export function Files({ usuario }: { usuario: User }) {
               padding: '7px 12px'
             }}
           >
-            <option value="">próxima livre</option>
+            <option value="">{t.fila.proximaLivre}</option>
             {printers.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nome}
@@ -91,16 +96,17 @@ export function Files({ usuario }: { usuario: User }) {
       )}
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 22 }}>
-        {isLoading && <span className="mono">CARREGANDO BIBLIOTECA…</span>}
-        {error && <span className="mono">NÃO FOI POSSÍVEL LISTAR OS ARQUIVOS.</span>}
+        {isLoading && <span className="mono">{t.arquivos.carregando}</span>}
+        {error && <span className="mono">{t.arquivos.erro}</span>}
         {arquivos?.length === 0 && !isLoading && (
-          <span className="mono">NENHUM G-CODE ENCONTRADO NAS IMPRESSORAS DA FAZENDA.</span>
+          <span className="mono">{t.arquivos.vazio}</span>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {arquivos?.map((a) => (
             <CardArquivo
               key={`${a.printerId}:${a.path}`}
+              t={t}
               arquivo={a}
               podeEnfileirar={podeEnfileirar}
               enviando={enfileirar.isPending && enfileirar.variables === a.path}
@@ -114,11 +120,13 @@ export function Files({ usuario }: { usuario: User }) {
 }
 
 function CardArquivo({
+  t,
   arquivo,
   podeEnfileirar,
   enviando,
   aoEnviar
 }: {
+  t: ReturnType<typeof useT>;
   arquivo: GcodeFile;
   podeEnfileirar: boolean;
   enviando: boolean;
@@ -133,7 +141,7 @@ function CardArquivo({
         {arquivo.thumbnailUrl && (
           <img
             src={arquivo.thumbnailUrl}
-            alt={`Prévia de ${arquivo.nome}`}
+            alt={t.arquivos.previaDe(arquivo.nome)}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         )}
@@ -183,9 +191,7 @@ function CardArquivo({
           <span>{arquivo.impressoes}×</span>
           <span style={{ marginLeft: 'auto' }}>
             <IconButton
-              rotulo={
-                podeEnfileirar ? `Enviar ${arquivo.nome} para a fila` : 'Enviar para a fila (sem permissão)'
-              }
+              rotulo={podeEnfileirar ? t.arquivos.enfileirar(arquivo.nome) : t.arquivos.enfileirarSemPermissao}
               variante="primaria"
               disabled={!podeEnfileirar || enviando}
               onClick={aoEnviar}

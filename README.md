@@ -1,177 +1,205 @@
 # 3D Printerboard
 
-Gerenciador de fazenda de impressão 3D: monitora e opera 5–10 impressoras
-Klipper/Moonraker por uma tela só — parede de câmeras ao vivo, controle de
-impressão, biblioteca de G-code com fila, alertas e **backup automático das
-configurações de cada máquina**, que o Moonraker não faz.
+Run your 3D print farm from one screen — remotely, from your own server.
+Live cameras, print control, a G-code library with a queue, alerts, and the
+thing Moonraker does not do: **automatic backups of every machine's
+configuration**.
 
-Roda como um container só. O mesmo processo serve a API e o front, e mantém
-uma conexão WebSocket persistente com cada host Moonraker.
+Built for people who own several Klipper/Moonraker printers and are tired of
+keeping one browser tab open per machine.
 
-## Subir
+Everything runs in a single container: the same process serves the API and the
+web app, and holds a persistent WebSocket to each Moonraker host.
+
+## Getting started
 
 ```bash
 cp .env.example .env
-# defina ADMIN_PASSWORD e gere o JWT_SECRET:
+# set ADMIN_PASSWORD and generate JWT_SECRET:
 openssl rand -hex 32
 
-mkdir -p data                 # precisa existir e ser sua, veja PUID/PGID no .env
+mkdir -p data                 # must exist and be yours — see PUID/PGID in .env
 docker compose up --build -d
 ```
 
-Acesse `http://localhost:8080` e entre com o `ADMIN_USER`/`ADMIN_PASSWORD` do
-`.env`. O primeiro admin só é criado no primeiro boot; depois disso mude a senha
-pelo app — editar o `.env` não tem efeito.
+Open `http://localhost:8080` and sign in with the `ADMIN_USER`/`ADMIN_PASSWORD`
+from your `.env`. That first admin is created only on the first boot; after
+that, change the password in the app — editing `.env` has no effect.
 
-Deixe `NETWORK_MODE=host` se as impressoras forem acessadas por nome `.local`:
-no modo bridge o container não faz mDNS.
+Keep `NETWORK_MODE=host`. The container needs to see your LAN directly:
+multicast does not cross Docker's default bridge, and without it `.local`
+addresses and camera discovery stop working.
 
-### Sem hardware
+### Try it without hardware
 
 ```bash
 MOCK_PRINTERS=true docker compose up
 ```
 
-Sobe as oito impressoras do design em estados diferentes (imprimindo, ociosa,
-pausada, atenção), com câmeras sintéticas, arquivos e backups funcionais. Dá
-para percorrer as sete telas inteiras antes de cadastrar a fazenda de verdade.
+Brings up eight simulated printers in different states (printing, idle, paused,
+attention) with synthetic cameras, files and working backups. You can walk
+through all seven screens before registering a single real machine.
 
-## Cadastrar as impressoras
+## Adding your printers
 
-Botão de ajustes na barra superior (só admin) → **+**. Para cada máquina:
+Settings button in the top bar (admin only) → **+**. For each machine:
 
-| Campo | Exemplo |
+| Field | Example |
 | --- | --- |
-| URL do Moonraker | `http://ender-a.local:7125` |
-| API key | em branco, a menos que o Moonraker exija |
-| URL da câmera | `http://ender-a.local/webcam/?action=stream` |
+| Moonraker URL | `http://ender-a.local:7125` |
+| API key | leave blank unless Moonraker requires one |
+| Camera URL | `http://ender-a.local/webcam/?action=stream` |
 
-O botão de tomada testa a conexão antes de salvar.
+**Test connection** sits right under the URL field. It checks the printer and,
+if you filled it in, the camera too — before you save anything.
 
-## Telas
+### .local addresses (mDNS)
 
-**Painel** — parede de câmeras + mini painel da impressora selecionada
-(trabalho, temperaturas, jog, macros) ou a fila, quando nada está selecionado.
-**Câmeras** — quadrante 2×2 com controles e tira de miniaturas.
-**Arquivos** — biblioteca de G-code da fazenda inteira; um clique manda para a fila.
-**Backups** — estado por máquina, backup manual e restauração.
-**Alertas** — lista por severidade com o frame da câmera no momento do alerta.
-**Gestão** — CRUD das impressoras.
+`.local` names work out of the box. Worth knowing why that took effort: the
+image runs on Alpine, whose musl libc has no NSS and therefore ignores mDNS
+entirely — `ender-a.local` would never resolve, not even with host networking.
+Instead of switching the base image or mounting an Avahi socket from the host,
+the server speaks multicast DNS itself (`src/lib/mdns.ts`), caches answers by
+their TTL, and falls back to regular DNS. It needs `NETWORK_MODE=host` to reach
+the multicast group.
 
-## Papéis
+## The screens
 
-| | leitura | operador | admin |
+**Dashboard** — camera wall plus a control panel for the selected printer (job,
+temperatures, jog, macros), or the queue when nothing is selected.
+**Cameras** — 2×2 quadrant with controls and a thumbnail strip.
+**Files** — G-code library across the whole farm; one click sends a file to the queue.
+**Backups** — per-machine state, manual runs and restore.
+**Alerts** — list by severity, with the camera frame captured at that moment.
+**Settings** — printer CRUD.
+
+## Language
+
+The interface ships in **English and Brazilian Portuguese**. The toggle sits in
+the top bar and on the sign-in screen; the choice is remembered per browser, and
+the first visit follows your browser's language. Dates, numbers and relative
+times follow the selected locale.
+
+## Roles
+
+| | read-only | operator | admin |
 | --- | --- | --- | --- |
-| Ver tudo | ✓ | ✓ | ✓ |
-| Pausar/continuar/cancelar, parada de emergência, fila | | ✓ | ✓ |
-| Rodar backup | | ✓ | ✓ |
-| Restaurar backup, gerir impressoras e usuários | | | ✓ |
+| See everything | ✓ | ✓ | ✓ |
+| Pause/resume/cancel, emergency stop, queue | | ✓ | ✓ |
+| Run a backup | | ✓ | ✓ |
+| Restore a backup, manage printers and users | | | ✓ |
 
-Checado no servidor; o front só reflete desabilitando os botões.
+Enforced on the server. The front end only mirrors it by disabling buttons.
 
-## Backup
+## Backups
 
-Roda todo dia às 03:00 (`BACKUP_CRON`), só pela API HTTP do Moonraker — sem SSH,
-sem credenciais do sistema operacional. Cobre as três linhas do card:
+Runs daily at 03:00 (`BACKUP_CRON`) over Moonraker's HTTP API only — no SSH, no
+operating-system credentials. It covers the three lines on each card:
 
-- **perfis** — `printer.cfg`, macros e o resto do root `config`, mais um dump do
-  banco do Moonraker (perfis de fatiamento do Mainsail/Fluidd)
-- **firmware/calibração** — `machine.system_info` e `machine.update.status`
-- **G-code** — o root `gcodes`
+- **profiles** — `printer.cfg`, macros and the rest of the `config` root, plus a
+  dump of Moonraker's database (Mainsail/Fluidd slicing profiles)
+- **firmware/calibration** — `machine.system_info` and `machine.update.status`
+- **G-code** — the `gcodes` root
 
-Cada ciclo vira `data/backups/<impressora>/<timestamp>.tar.gz` com um
-`manifest.json`. Os G-code vão para um store endereçado por hash em
-`data/blobs/`: oito máquinas imprimem em boa parte os mesmos arquivos, e sem a
-deduplicação a retenção de 7 dias encheria o disco.
+Each run becomes `data/backups/<printer>/<timestamp>.tar.gz` with a
+`manifest.json`. G-code goes into a content-addressed store under `data/blobs/`:
+eight machines print largely the same files, and without deduplication a 7-day
+retention would fill the disk.
 
-### Só copia impressora ociosa
+### Idle printers only
 
-**Nenhum backup roda numa máquina que está trabalhando** — vale para o ciclo
-agendado, para o botão manual e para a recuperação. Puxar um gigabyte de G-code
-do Raspberry Pi no meio de uma peça disputa CPU e rede com o Klipper, e o preço
-é stutter na impressão.
+**No backup ever runs on a machine that is working** — that holds for the
+scheduled cycle, the manual button and catch-up alike. Pulling a gigabyte of
+G-code off a Raspberry Pi mid-print competes with Klipper for CPU and network,
+and the price is stutter in the print.
 
-Quem não está ociosa não é recusada: entra numa fila e é copiada assim que a
-impressão terminar. Ociosa significa ociosa mesmo — pausada, em atenção e
-offline também esperam. O card mostra `NA FILA — AGUARDANDO FICAR OCIOSA` e o
-botão de backup manual responde dizendo que vai rodar depois.
+A busy printer is not refused, it is queued, and copied as soon as the print
+ends. Idle means idle: paused, attention and offline all wait. The card shows
+`QUEUED — WAITING FOR THE PRINTER TO GO IDLE`, and the manual button tells you
+it will run later.
 
-Se uma impressora nunca abre uma janela ociosa, isso não fica em silêncio: depois
-de dois intervalos na fila, um alerta de severidade média avisa.
+If a printer never opens an idle window, that does not stay silent: after two
+intervals in the queue, a medium-severity alert says so.
 
-### Recuperação ao religar
+### Catch-up on reconnect
 
-O ciclo agendado só alcança quem estava ligado na hora, e numa fazenda caseira as
-máquinas passam dias desligadas. Por isso, **toda vez que uma impressora reaparece
-na rede o sistema confere o último backup dela**: se já passou de
-`BACKUP_INTERVALO_HORAS` (24 h por padrão), ela entra na fila — e é copiada assim
-que estiver ociosa, com um alerta de severidade baixa registrando que tinha ficado
-para trás. Antes de perguntar qualquer coisa, espera o Klipper terminar de subir.
+The scheduled cycle only reaches machines that were on at the time, and in a
+home farm they spend days switched off. So **every time a printer reappears on
+the network the system checks its last backup**: if more than
+`BACKUP_INTERVAL_HOURS` (24 by default) has passed, it joins the queue and is
+copied once idle, with a low-severity alert recording that it had fallen behind.
+It waits for Klipper to finish booting before asking anything.
 
-Quando a fazenda inteira religa junto, os backups saem um de cada vez.
+When the whole farm powers up together, backups go out one at a time.
 
-### Restauração
+### Restore
 
-Sobrescreve a configuração da máquina de destino — pode ser outra impressora, que
-é como se clona a máquina que está funcionando. Exige papel admin e confirmação.
+Overwrites the configuration on the target printer — which may be a *different*
+printer, the way you clone the machine that works. Admin role and an explicit
+confirmation required.
 
-## Câmeras
+## Cameras
 
-Uma conexão upstream por câmera no servidor, com fan-out para todos os
-espectadores — o host da câmera vê uma conexão, não uma por aba aberta.
+One upstream connection per camera on the server, fanned out to every viewer —
+the camera host sees a single connection, not one per open tab.
 
-No navegador, quase tudo é **snapshot por polling**, não MJPEG: o HTTP/1.1
-limita a 6 conexões por origem, e um stream por tile consumiria todas, deixando
-o SSE e a própria API na fila. Fica ao vivo só o feed em foco (o mini painel, ou
-o primeiro quadrante da tela de Câmeras).
+In the browser almost everything is **snapshot polling**, not MJPEG: HTTP/1.1
+allows only 6 connections per origin, and one stream per tile would consume all
+of them, leaving the event stream and the API itself queued behind. Only the
+focused feed stays live (the control panel, or the first quadrant on the
+Cameras screen).
 
-## Segurança
+## Security
 
-O modelo de confiança é simples: **quem entra no app é confiável dentro do papel
-dele, e todo o resto é verificado no servidor**.
+The trust model is simple: **whoever signs in is trusted within their role, and
+everything else is verified on the server.**
 
-- Toda rota exige sessão, menos o login. O papel é lido do banco a cada
-  requisição, não do token — remover um usuário ou rebaixá-lo vale na hora, e
-  não só quando o JWT expirar.
-- Permissão nunca é decidida no navegador. O front desabilita botões por
-  conveniência; quem recusa de fato é o servidor.
-- Sessão em cookie `httpOnly` + `SameSite=Strict`. A flag `Secure` é decidida
-  por conexão (`COOKIE_SECURE=auto`): marcá-la sempre quebraria o acesso por
-  `http://` na rede local, que é como a fazenda é usada.
-- Cabeçalhos via helmet, com CSP sem script externo nem inline.
-- Rate limit nas rotas sensíveis (login, controle de impressão, G-code, parada
-  de emergência, restauração, criação de usuário). Não é global de propósito: a
-  parede de câmeras faz polling legítimo acima de mil requisições por minuto.
-- A API key do Moonraker nunca sai do servidor — a tela de gestão só vê `••••`.
-- A restauração valida cada caminho do manifesto antes de ler o arquivo.
+- Every route requires a session except sign-in. The role is read from the
+  database on each request, not from the token — removing a user or demoting
+  them takes effect immediately rather than whenever the JWT expires.
+- Permissions are never decided in the browser. The front end disables buttons
+  for convenience; the server is what actually refuses.
+- Session in an `httpOnly` + `SameSite=Strict` cookie. The `Secure` flag is
+  decided per connection (`COOKIE_SECURE=auto`): always setting it would break
+  access over `http://` on a local network, which is how a farm is used.
+- Security headers via helmet, with a CSP that allows no external and no inline
+  scripts.
+- Rate limits on the sensitive routes (sign-in, print control, G-code, emergency
+  stop, restore, user creation). Deliberately not global: the camera wall does
+  legitimate polling well above a thousand requests per minute.
+- The Moonraker API key never leaves the server — the settings screen only ever
+  sees `••••`.
+- Restore validates every path in the manifest before reading a file.
 
-Duas coisas que **são** poderes de propósito, e é bom saber:
+Two capabilities that are powerful **on purpose**, and worth knowing about:
 
-- `POST /api/printers/:id/gcode` executa G-code arbitrário na máquina. É a
-  função do app (macros e console), e o Moonraker expõe o mesmo. Por isso
-  `operador` já é um papel de confiança.
-- O admin cadastra as URLs que o servidor busca (Moonraker e câmeras), então
-  ele pode apontar o servidor para qualquer endereço alcançável na rede. É
-  inerente ao produto; `admin` é o papel de maior confiança.
+- `POST /api/printers/:id/gcode` runs arbitrary G-code on the machine. That is
+  the point of the app (macros and console), and Moonraker exposes the same.
+  This is why `operator` is already a trusted role.
+- An admin registers the URLs the server fetches (Moonraker and cameras), so an
+  admin can point the server at any address reachable on the network. That is
+  inherent to the product; `admin` is the highest-trust role.
 
-## Desenvolvimento
+## Development
 
 ```bash
 npm install
-npm run build -w @3dfarm/shared          # o resto depende do dist dele
-MOCK_PRINTERS=true npm run dev:server    # API em :8080
-npm run dev:web                          # Vite em :5173, com proxy para a API
+npm run build -w @3dfarm/shared          # everything else depends on its dist
+MOCK_PRINTERS=true npm run dev:server    # API on :8080
+npm run dev:web                          # Vite on :5173, proxying the API
 
-npm test         # Vitest: normalizador, motor de fila, demux MJPEG, formatadores
+npm test         # Vitest: normalizer, queue engine, MJPEG demuxer, mDNS codec, formatters
 npm run typecheck
 ```
 
 ```
-packages/shared   tipos e formatadores usados pelos dois lados
-apps/server       Fastify, SQLite, clientes Moonraker, backup, fila, alertas
-apps/web          React + Vite, telas e componentes
-design/           o pacote de design — README.md é a fonte da verdade visual
+packages/shared   types shared by both sides
+apps/server       Fastify, SQLite, Moonraker clients, backup, queue, alerts, mDNS
+apps/web          React + Vite, screens and components
+design/           the design package — README.md is the visual source of truth
 ```
 
-O `design/README.md` traz as medidas, cores e estados finais de cada tela;
-consulte a cada mudança de UI.
+`design/README.md` carries the final measurements, colours and states for every
+screen; check it whenever you touch the UI. Note that the design package and the
+source comments are written in Brazilian Portuguese — the UI itself is fully
+translated.

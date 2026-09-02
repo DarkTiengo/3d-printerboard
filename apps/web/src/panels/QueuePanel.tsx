@@ -1,7 +1,8 @@
 import { Menu, X } from 'lucide-react';
 import type { User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
-import { usePrinters } from '../store/printers';
+import { usePrinters, usePrintersVisiveis } from '../store/printers';
+import { useT } from '../i18n';
 import { IconButton } from '../components/IconButton';
 import { api } from '../lib/api';
 
@@ -10,8 +11,14 @@ import { api } from '../lib/api';
  * selecionada (design/README.md § 2, "Sem seleção").
  */
 export function QueuePanel({ usuario }: { usuario: User }) {
+  const t = useT();
   const fila = usePrinters((s) => s.fila);
+  const printers = usePrintersVisiveis();
   const definirFila = usePrinters((s) => s.definirFila);
+
+  // o rótulo do destino é montado aqui: o servidor não sabe o idioma da tela
+  const nomeDoDestino = (id: string | null) =>
+    id ? (printers.find((p) => p.id === id)?.nome ?? id) : t.fila.proximaLivre;
   const podeMexer = pode(usuario.role, 'enfileirar');
 
   async function cancelar(id: number) {
@@ -27,9 +34,7 @@ export function QueuePanel({ usuario }: { usuario: User }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 18px 14px' }}>
         <Menu size={15} strokeWidth={2} aria-hidden style={{ color: 'var(--color-neutral-400)' }} />
-        <span className="mono">
-          FILA — {fila.length} {fila.length === 1 ? 'TRABALHO' : 'TRABALHOS'}
-        </span>
+        <span className="mono">{t.fila.titulo(fila.length)}</span>
       </header>
 
       {fila.length === 0 ? (
@@ -43,7 +48,7 @@ export function QueuePanel({ usuario }: { usuario: User }) {
             margin: 0
           }}
         >
-          FILA VAZIA. MANDE UM ARQUIVO PELA ABA ARQUIVOS.
+          {t.fila.vazia}
         </p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -73,8 +78,8 @@ export function QueuePanel({ usuario }: { usuario: User }) {
                   {job.arquivo}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-neutral-400)' }}>
-                  {job.destinoNome} · {job.tempo}
-                  {job.status !== 'pendente' && ` · ${job.status.toUpperCase()}`}
+                  {nomeDoDestino(job.destino)} · {job.tempo}
+                  {job.status !== 'pendente' && ` · ${t.fila.estados[job.status]}`}
                 </div>
                 {job.erro && (
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-accent-400)' }}>
@@ -84,7 +89,7 @@ export function QueuePanel({ usuario }: { usuario: User }) {
               </div>
               {podeMexer && (job.status === 'pendente' || job.status === 'atribuido') && (
                 <IconButton
-                  rotulo={`Tirar ${job.arquivo} da fila`}
+                  rotulo={t.fila.tirarDaFila(job.arquivo)}
                   variante="secundaria"
                   pequeno
                   onClick={() => void cancelar(job.id)}
@@ -106,7 +111,7 @@ export function QueuePanel({ usuario }: { usuario: User }) {
           lineHeight: 1.8
         }}
       >
-        CLIQUE EM UMA CÂMERA PARA ABRIR O PAINEL DE CONTROLE DA IMPRESSORA.
+        {t.fila.dica}
       </p>
     </div>
   );

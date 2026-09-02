@@ -17,12 +17,10 @@ type Row = {
 };
 
 function paraJob(r: Row): QueueJob {
-  const destinoNome = r.target_printer_id ? (acharPrinter(r.target_printer_id)?.nome ?? r.target_printer_id) : 'próxima livre';
   return {
     id: r.id,
     arquivo: r.filename,
     destino: r.target_printer_id,
-    destinoNome,
     tempo: r.tempo ?? '—',
     status: r.status,
     printerId: r.printer_id,

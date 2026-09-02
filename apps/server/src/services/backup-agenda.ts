@@ -164,7 +164,8 @@ async function processarPendentes(): Promise<void> {
           printerId,
           printerNome: printer.nome,
           sev: 'baixa',
-          titulo: 'Backup de recuperação executado',
+          codigo: 'backup_recuperacao',
+        titulo: 'Backup de recuperação executado',
           detalhe: pendente.ultimoEm
             ? `${printer.nome} ficou fora do ar durante a janela de backup — o último era de ${quando(pendente.ultimoEm)}. Um backup foi feito assim que ela voltou à rede e ficou ociosa.`
             : `${printer.nome} nunca tinha sido copiada. O primeiro backup foi feito assim que ela ficou ociosa.`,
@@ -203,7 +204,8 @@ function avisarEsperaLonga(): void {
       printerId,
       printerNome: printer.nome,
       sev: 'media',
-      titulo: 'Backup esperando a impressora ficar ociosa',
+      codigo: 'backup_esperando',
+        titulo: 'Backup esperando a impressora ficar ociosa',
       detalhe:
         `${printer.nome} está na fila de backup há ${quando(new Date(pendente.desde).toISOString())} e segue ocupada. ` +
         `O último backup dela é de ${pendente.ultimoEm ? quando(pendente.ultimoEm) : 'nunca'}. ` +

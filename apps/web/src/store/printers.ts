@@ -103,16 +103,10 @@ export function usePrintersVisiveis(): Printer[] {
       ...p,
       status: o.status,
       pct: o.status === 'cancelada' || o.status === 'ociosa' ? 0 : p.pct,
-      restante: rotuloRestante(o.status, p.restante)
+      // sem estimativa enquanto não voltar a imprimir; o rótulo sai do status
+      restanteSegundos: o.status === 'imprimindo' ? p.restanteSegundos : null
     };
   });
-}
-
-function rotuloRestante(status: Status, atual: string): string {
-  if (status === 'pausada') return 'pausada';
-  if (status === 'cancelada') return 'cancelada';
-  if (status === 'ociosa') return '—';
-  return atual;
 }
 
 export function usePrinter(id: string | null): Printer | null {

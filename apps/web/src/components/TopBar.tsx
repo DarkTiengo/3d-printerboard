@@ -3,18 +3,29 @@ import { Archive, Clock, FileText, LayoutGrid, LogOut, OctagonX, SlidersHorizont
 import type { User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
 import { useUi, type Tela } from '../store/ui';
+import { IDIOMAS, codigoDoIdioma, nomeDoIdioma, useIdioma, useT } from '../i18n';
 import { usePrinters, usePrintersVisiveis } from '../store/printers';
 import { IconButton } from './IconButton';
 import { Confirm } from './Confirm';
+import { Tooltip } from './Tooltip';
 import { api } from '../lib/api';
 
-const ABAS: { tela: Tela; rotulo: string; Icone: typeof LayoutGrid }[] = [
-  { tela: 'dash', rotulo: 'Painel', Icone: LayoutGrid },
-  { tela: 'cams', rotulo: 'Câmeras', Icone: Video },
-  { tela: 'files', rotulo: 'Arquivos', Icone: FileText },
-  { tela: 'backup', rotulo: 'Backups', Icone: Archive },
-  { tela: 'alerts', rotulo: 'Alertas', Icone: Clock }
+const ABAS: { tela: Tela; Icone: typeof LayoutGrid }[] = [
+  { tela: 'dash', Icone: LayoutGrid },
+  { tela: 'cams', Icone: Video },
+  { tela: 'files', Icone: FileText },
+  { tela: 'backup', Icone: Archive },
+  { tela: 'alerts', Icone: Clock }
 ];
+
+const ROTULO_ABA: Record<Tela, keyof ReturnType<typeof useT>['barra']> = {
+  dash: 'painel',
+  cams: 'cameras',
+  files: 'arquivos',
+  backup: 'backups',
+  alerts: 'alertas',
+  config: 'gerir'
+};
 
 /**
  * Barra superior — design/README.md § 2.
@@ -23,6 +34,9 @@ const ABAS: { tela: Tela; rotulo: string; Icone: typeof LayoutGrid }[] = [
  * botões secundários à direita, para não diluir esse grupo.
  */
 export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void }) {
+  const t = useT();
+  const idioma = useIdioma((s) => s.idioma);
+  const definirIdioma = useIdioma((s) => s.definirIdioma);
   const tela = useUi((s) => s.tela);
   const irPara = useUi((s) => s.irPara);
   const printers = usePrintersVisiveis();
@@ -42,12 +56,10 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
     try {
       const r = await api.paradaEmergencia();
       setResultadoParada(
-        r.ok
-          ? `Parada de emergência enviada para ${r.total} impressoras.`
-          : `Parada enviada, mas falhou em: ${r.falhas.join(', ')}. Verifique essas máquinas fisicamente.`
+        r.ok ? t.barra.paradaEnviada(r.total) : t.barra.paradaFalhou(r.falhas.join(', '))
       );
     } catch (err) {
-      setResultadoParada(err instanceof Error ? err.message : 'Falha ao enviar a parada de emergência.');
+      setResultadoParada(err instanceof Error ? err.message : t.barra.paradaErro);
     }
   }
 
@@ -69,14 +81,14 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
           3D PRINTERBOARD
         </span>
 
-        <nav aria-label="Telas" style={{ display: 'flex', gap: 4 }}>
-          {ABAS.map(({ tela: t, rotulo, Icone }) => (
+        <nav aria-label={t.barra.painel} style={{ display: 'flex', gap: 4 }}>
+          {ABAS.map(({ tela: alvo, Icone }) => (
             <IconButton
-              key={t}
-              rotulo={rotulo}
-              variante={tela === t ? 'abaAtiva' : 'abaInativa'}
-              aria-current={tela === t ? 'page' : undefined}
-              onClick={() => irPara(t)}
+              key={alvo}
+              rotulo={t.barra[ROTULO_ABA[alvo]] as string}
+              variante={tela === alvo ? 'abaAtiva' : 'abaInativa'}
+              aria-current={tela === alvo ? 'page' : undefined}
+              onClick={() => irPara(alvo)}
               icone={<Icone size={17} strokeWidth={2} aria-hidden />}
             />
           ))}
@@ -90,14 +102,20 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
             marginRight: 'auto'
           }}
         >
-          {ativas} ativas · fila {fila.length} · {atencao} atenção
-          {alertas.length > 0 && ` · ${alertas.length} alerta${alertas.length > 1 ? 's' : ''}`}
-          {!conectado && ' · SEM CONEXÃO'}
+          {t.barra.resumo(ativas, fila.length, atencao)}
+          {alertas.length > 0 && t.barra.alertas_n(alertas.length)}
+          {!conectado && t.barra.semConexao}
         </span>
+
+        <SeletorDeIdioma
+          idioma={idioma}
+          aoTrocar={definirIdioma}
+          rotulo={t.idioma.trocar}
+        />
 
         {pode(usuario.role, 'gerirImpressoras') && (
           <IconButton
-            rotulo="Gerir impressoras"
+            rotulo={t.barra.gerir}
             variante={tela === 'config' ? 'abaAtiva' : 'secundaria'}
             onClick={() => irPara('config')}
             icone={<SlidersHorizontal size={16} strokeWidth={2} aria-hidden />}
@@ -105,14 +123,14 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
         )}
 
         <IconButton
-          rotulo={`Sair (${usuario.username})`}
+          rotulo={t.barra.sairCom(usuario.username)}
           variante="secundaria"
           onClick={aoSair}
           icone={<LogOut size={16} strokeWidth={2} aria-hidden />}
         />
 
         <IconButton
-          rotulo={podeParar ? 'Parada de emergência' : 'Parada de emergência (sem permissão)'}
+          rotulo={podeParar ? t.barra.paradaEmergencia : t.barra.paradaSemPermissao}
           variante="primaria"
           disabled={!podeParar}
           onClick={() => setConfirmarParada(true)}
@@ -122,29 +140,67 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
 
       <Confirm
         aberto={confirmarParada}
-        titulo="Parada de emergência"
-        descricao={
-          <>
-            Isto desliga os aquecedores e os motores de <strong>todas as {printers.length} impressoras</strong>{' '}
-            imediatamente. As impressões em andamento serão perdidas e cada máquina precisará de um FIRMWARE_RESTART
-            para voltar.
-          </>
-        }
-        rotuloConfirmar="Parar tudo"
+        titulo={t.barra.paradaEmergencia}
+        descricao={t.barra.confirmaParada(printers.length)}
+        rotuloConfirmar={t.barra.pararTudo}
         onConfirmar={dispararParada}
         onCancelar={() => setConfirmarParada(false)}
       />
 
       <Confirm
         aberto={!!resultadoParada}
-        titulo="Parada de emergência"
+        titulo={t.barra.paradaEmergencia}
         descricao={resultadoParada}
-        rotuloConfirmar="Entendi"
+        rotuloConfirmar={t.comum.entendi}
         perigoso={false}
         semCancelar
         onConfirmar={() => setResultadoParada(null)}
         onCancelar={() => setResultadoParada(null)}
       />
     </>
+  );
+}
+
+/**
+ * Troca de idioma. Com dois idiomas um botão que alterna é mais direto que um
+ * menu, e o código visível ("PT"/"EN") já diz onde se está.
+ */
+function SeletorDeIdioma({
+  idioma,
+  aoTrocar,
+  rotulo
+}: {
+  idioma: (typeof IDIOMAS)[number];
+  aoTrocar: (i: (typeof IDIOMAS)[number]) => void;
+  rotulo: string;
+}) {
+  const proximo = IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length];
+
+  return (
+    <Tooltip texto={`${rotulo} — ${nomeDoIdioma(proximo)}`}>
+      <button
+        type="button"
+        onClick={() => aoTrocar(proximo)}
+        aria-label={`${rotulo} — ${nomeDoIdioma(proximo)}`}
+        style={{
+          width: 40,
+          height: 40,
+          flex: 'none',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 999,
+          border: '1px solid var(--color-neutral-700)',
+          background: 'transparent',
+          color: 'var(--color-neutral-300)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          letterSpacing: '0.06em',
+          cursor: 'pointer'
+        }}
+      >
+        {codigoDoIdioma(idioma)}
+      </button>
+    </Tooltip>
   );
 }

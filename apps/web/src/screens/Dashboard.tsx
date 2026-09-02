@@ -4,6 +4,7 @@ import { useUi } from '../store/ui';
 import { CameraTile } from '../components/CameraTile';
 import { PrinterPanel } from '../panels/PrinterPanel';
 import { QueuePanel } from '../panels/QueuePanel';
+import { useT } from '../i18n';
 
 /**
  * Painel — tela inicial. Parede de câmeras à esquerda, coluna de 360px à direita
@@ -72,6 +73,7 @@ export function Dashboard({ usuario }: { usuario: User }) {
 }
 
 function Vazio() {
+  const t = useT();
   const irPara = useUi((s) => s.irPara);
   return (
     <div
@@ -86,9 +88,9 @@ function Vazio() {
         textAlign: 'center'
       }}
     >
-      <div className="mono">NENHUMA IMPRESSORA CADASTRADA</div>
+      <div className="mono">{t.painel.semImpressoras}</div>
       <p style={{ maxWidth: 380, color: 'var(--color-neutral-300)', fontSize: 14, textWrap: 'pretty' }}>
-        Cadastre o primeiro host Moonraker para a parede de câmeras aparecer aqui.
+        {t.painel.semImpressorasTexto}
       </p>
       <button
         type="button"
@@ -105,7 +107,7 @@ function Vazio() {
           cursor: 'pointer'
         }}
       >
-        Cadastrar impressora
+        {t.painel.cadastrar}
       </button>
     </div>
   );

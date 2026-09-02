@@ -1,4 +1,5 @@
 import type { PrinterConfig } from '@3dfarm/shared';
+import { agenteDaFazenda } from '../lib/http-agent.js';
 
 /**
  * Lado HTTP do Moonraker. O WebSocket cobre estado e comandos; arquivos,
@@ -27,6 +28,22 @@ export type MetadadosGcode = {
   print_start_time?: number;
   thumbnails?: { width: number; height: number; size: number; relative_path: string }[];
 };
+
+/**
+ * O `fetch` embrulha tudo em "fetch failed" e guarda o motivo em `cause`.
+ * Sem desembrulhar, um nome .local que não resolve e um cabo solto viram a
+ * mesma mensagem inútil na tela.
+ */
+function descreverFalha(err: unknown): string {
+  if (err instanceof Error) {
+    const causa = (err as Error & { cause?: unknown }).cause;
+    if (causa instanceof Error && causa.message) return causa.message;
+    if (err.name === 'AbortError' || err.name === 'TimeoutError') return 'sem resposta dentro do tempo limite';
+    if (err.message && err.message !== 'fetch failed') return err.message;
+    return 'host inalcançável';
+  }
+  return String(err);
+}
 
 export class MoonrakerHttpError extends Error {
   constructor(
@@ -58,15 +75,18 @@ export class MoonrakerHttp {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetch(this.url(caminho, query), { headers: this.headers(), signal: ctrl.signal });
+      const res = await fetch(this.url(caminho, query), {
+        headers: this.headers(),
+        signal: ctrl.signal,
+        dispatcher: agenteDaFazenda
+      });
       if (!res.ok) {
         throw new MoonrakerHttpError(`${caminho} respondeu ${res.status}`, res.status);
       }
       return res;
     } catch (err) {
       if (err instanceof MoonrakerHttpError) throw err;
-      const msg = err instanceof Error ? err.message : String(err);
-      throw new MoonrakerHttpError(`${caminho}: ${msg}`);
+      throw new MoonrakerHttpError(`${caminho}: ${descreverFalha(err)}`);
     } finally {
       clearTimeout(timer);
     }
@@ -135,7 +155,8 @@ export class MoonrakerHttp {
     const res = await fetch(this.url('/server/files/upload'), {
       method: 'POST',
       headers: this.headers(),
-      body: form
+      body: form,
+      dispatcher: agenteDaFazenda
     });
     if (!res.ok) {
       throw new MoonrakerHttpError(`upload de ${caminho} respondeu ${res.status}`, res.status);

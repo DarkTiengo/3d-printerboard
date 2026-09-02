@@ -58,9 +58,9 @@ export const config = {
    * É o que o verificador usa quando uma impressora volta à rede: se o último
    * backup dela é mais antigo que isto, roda um de recuperação na hora.
    */
-  backupIntervaloHoras: int(process.env.BACKUP_INTERVALO_HORAS, 24),
+  backupIntervaloHoras: int(process.env.BACKUP_INTERVAL_HOURS ?? process.env.BACKUP_INTERVALO_HORAS, 24),
   /** Espera depois de a impressora aparecer, para o Klipper terminar de subir. */
-  backupEsperaAposOnlineMs: int(process.env.BACKUP_ESPERA_ONLINE_MS, 30_000),
+  backupEsperaAposOnlineMs: int(process.env.BACKUP_WAIT_AFTER_ONLINE_MS ?? process.env.BACKUP_ESPERA_ONLINE_MS, 30_000),
   backupRetencao: int(process.env.BACKUP_KEEP, 7),
   backupIncluiGcode: bool(process.env.BACKUP_GCODE, true),
   /** teto por impressora para o download de G-code, evita encher o volume */

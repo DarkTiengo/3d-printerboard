@@ -3,6 +3,7 @@ import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
 import type { User } from '@3dfarm/shared';
 import { ApiError, api } from '../lib/api';
 import { Ponto } from '../components/Tag';
+import { IDIOMAS, codigoDoIdioma, nomeDoIdioma, useIdioma, useT } from '../i18n';
 import s from './Login.module.css';
 
 type Estatistica = { rotulo: string; valor: string };
@@ -10,6 +11,9 @@ type Estatistica = { rotulo: string; valor: string };
 const CHAVE_USUARIO = 'printerboard.usuario';
 
 export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
+  const t = useT();
+  const idioma = useIdioma((s) => s.idioma);
+  const definirIdioma = useIdioma((s) => s.definirIdioma);
   const [usuario, setUsuario] = useState(() => {
     try {
       return localStorage.getItem(CHAVE_USUARIO) ?? '';
@@ -24,11 +28,7 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
   const [campoRuim, setCampoRuim] = useState<'usuario' | 'senha' | null>(null);
 
   const [servidorOk, setServidorOk] = useState<boolean | null>(null);
-  const [stats, setStats] = useState<Estatistica[]>([
-    { rotulo: 'IMPRESSORAS', valor: '—' },
-    { rotulo: 'ARQUIVOS', valor: '—' },
-    { rotulo: 'ÚLTIMO BACKUP', valor: '—' }
-  ]);
+  const [stats, setStats] = useState<Estatistica[]>([]);
 
   /**
    * Pulso do servidor para o rodapé. É a mesma origem desta página, então isto
@@ -62,12 +62,12 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
 
     if (!usuario.trim()) {
       setCampoRuim('usuario');
-      setErro('Informe o usuário.');
+      setErro(t.login.informeUsuario);
       return;
     }
     if (!senha) {
       setCampoRuim('senha');
-      setErro('Informe a senha.');
+      setErro(t.login.informeSenha);
       return;
     }
 
@@ -83,12 +83,12 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
       aoEntrar(user);
     } catch (err) {
       if (err instanceof ApiError && err.status === 0) {
-        setErro('O servidor não respondeu. Verifique se o container ainda está no ar.');
+        setErro(t.login.servidorMudo);
       } else if (err instanceof ApiError && err.status === 401) {
         setCampoRuim('senha');
-        setErro('Usuário ou senha inválidos.');
+        setErro(t.login.credenciaisInvalidas);
       } else {
-        setErro(err instanceof Error ? err.message : 'Não foi possível entrar.');
+        setErro(err instanceof Error ? err.message : t.login.naoFoiPossivel);
       }
       setEnviando(false);
     }
@@ -106,15 +106,19 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
         </div>
 
         <div className={`${s.camada} ${s.chamadaBloco}`}>
-          <h1 className={s.chamada}>Toda a fazenda em uma tela só.</h1>
-          <p className={s.subChamada}>
-            Câmeras ao vivo, controle de impressão, biblioteca de arquivos e backup diário das configurações de cada
-            máquina.
-          </p>
+          <h1 className={s.chamada}>{t.login.chamada}</h1>
+          <p className={s.subChamada}>{t.login.subChamada}</p>
         </div>
 
         <div className={`${s.camada} ${s.numeros}`}>
-          {stats.map((e) => (
+          {(stats.length > 0
+            ? stats
+            : [
+                { rotulo: t.login.impressoras, valor: '—' },
+                { rotulo: t.login.arquivos, valor: '—' },
+                { rotulo: t.login.ultimoBackup, valor: '—' }
+              ]
+          ).map((e) => (
             <div key={e.rotulo} className={s.numero}>
               <div className={s.numeroRotulo}>{e.rotulo}</div>
               <div className={s.numeroValor}>{e.valor}</div>
@@ -124,19 +128,42 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
       </div>
 
       <form className={s.form} onSubmit={enviar} noValidate>
-        <div>
-          <div className={s.kicker}>ACESSO AO SERVIDOR</div>
-          <h2 className={s.titulo}>Entrar</h2>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <div className={s.kicker}>{t.login.kicker}</div>
+            <h2 className={s.titulo}>{t.login.titulo}</h2>
+          </div>
+          {/* o idioma precisa poder mudar antes de entrar */}
+          <button
+            type="button"
+            onClick={() => definirIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}
+            aria-label={`${t.idioma.trocar} — ${nomeDoIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}`}
+            title={nomeDoIdioma(IDIOMAS[(IDIOMAS.indexOf(idioma) + 1) % IDIOMAS.length])}
+            style={{
+              flex: 'none',
+              padding: '7px 14px',
+              borderRadius: 999,
+              border: '1px solid var(--color-neutral-700)',
+              background: 'transparent',
+              color: 'var(--color-neutral-300)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              letterSpacing: '0.06em',
+              cursor: 'pointer'
+            }}
+          >
+            {codigoDoIdioma(idioma)}
+          </button>
         </div>
 
         <div className={s.campos}>
           <label className={s.campo}>
-            <span className={s.campoRotulo}>USUÁRIO</span>
+            <span className={s.campoRotulo}>{t.login.usuario}</span>
             <input
               className={`${s.entrada} ${campoRuim === 'usuario' ? s.entradaErro : ''}`}
               value={usuario}
               onChange={(e) => setUsuario(e.target.value)}
-              placeholder="operador"
+              placeholder={t.login.usuarioPlaceholder}
               autoComplete="username"
               autoFocus={!usuario}
               aria-invalid={campoRuim === 'usuario'}
@@ -144,7 +171,7 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
           </label>
 
           <label className={s.campo}>
-            <span className={s.campoRotulo}>SENHA</span>
+            <span className={s.campoRotulo}>{t.login.senha}</span>
             <input
               className={`${s.entrada} ${campoRuim === 'senha' ? s.entradaErro : ''}`}
               type="password"
@@ -163,10 +190,10 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
             <span className={`${s.check} ${lembrar ? s.checkMarcado : ''}`}>
               {lembrar && <Check size={12} strokeWidth={3} aria-hidden />}
             </span>
-            <span>Manter conectado</span>
+            <span>{t.login.manterConectado}</span>
           </button>
           <a href="#recuperar" onClick={(e) => e.preventDefault()} style={{ fontSize: 13 }}>
-            Esqueci a senha
+            {t.login.esqueciSenha}
           </a>
         </div>
 
@@ -180,11 +207,11 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
           {enviando ? (
             <>
               <LoaderCircle size={17} strokeWidth={2} aria-hidden style={{ animation: 'girar 900ms linear infinite' }} />
-              <span>Entrando…</span>
+              <span>{t.login.entrando}</span>
             </>
           ) : (
             <>
-              <span>Entrar</span>
+              <span>{t.login.entrar}</span>
               <ArrowRight size={17} strokeWidth={2} aria-hidden />
             </>
           )}
@@ -202,16 +229,16 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
           />
           <span>
             {servidorOk === null
-              ? 'verificando servidor…'
+              ? t.login.verificando
               : servidorOk
-                ? `servidor respondendo · ${window.location.host}`
-                : 'servidor fora do ar'}
+                ? `${t.login.respondendo} · ${window.location.host}`
+                : t.login.foraDoAr}
           </span>
         </div>
       </form>
 
       <style>{`@keyframes girar { to { transform: rotate(360deg); } }`}</style>
-      <EstatisticasDoServidor pronto={servidorOk === true} aoCarregar={setStats} />
+      <EstatisticasDoServidor pronto={servidorOk === true} rotulos={t.login} aoCarregar={setStats} />
     </div>
   );
 }
@@ -223,9 +250,11 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
  */
 function EstatisticasDoServidor({
   pronto,
+  rotulos,
   aoCarregar
 }: {
   pronto: boolean;
+  rotulos: { impressoras: string; arquivos: string; ultimoBackup: string };
   aoCarregar: (e: Estatistica[]) => void;
 }) {
   useEffect(() => {
@@ -247,9 +276,9 @@ function EstatisticasDoServidor({
         const bk = backups.ok ? await backups.json() : null;
 
         aoCarregar([
-          { rotulo: 'IMPRESSORAS', valor: String(lista.length) },
-          { rotulo: 'ARQUIVOS', valor: String(arqs.length) },
-          { rotulo: 'ÚLTIMO BACKUP', valor: bk?.resumo?.ultimoCiclo ?? '—' }
+          { rotulo: rotulos.impressoras, valor: String(lista.length) },
+          { rotulo: rotulos.arquivos, valor: String(arqs.length) },
+          { rotulo: rotulos.ultimoBackup, valor: bk?.resumo?.ultimoCicloEm ? '✓' : '—' }
         ]);
       } catch {
         /* sem sessão ainda: mantém os travessões */
@@ -259,7 +288,7 @@ function EstatisticasDoServidor({
     return () => {
       cancelado = true;
     };
-  }, [pronto, aoCarregar]);
+  }, [pronto, rotulos, aoCarregar]);
 
   return null;
 }

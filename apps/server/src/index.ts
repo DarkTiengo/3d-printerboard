@@ -60,6 +60,7 @@ async function main(): Promise<void> {
         printerId: id,
         printerNome: farmPrinterNome(id),
         sev: 'media',
+        codigo: 'camera_muda',
         titulo: 'Câmera parou de responder',
         detalhe: `Nenhum quadro novo nos últimos ${Math.round(config.cameraTimeoutMs / 1000)} s, mas a conexão segue aberta.`,
         frameLabel: 'ÚLTIMO FRAME RECEBIDO',

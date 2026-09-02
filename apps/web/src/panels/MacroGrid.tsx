@@ -1,5 +1,6 @@
 import { Zap } from 'lucide-react';
 import { api } from '../lib/api';
+import { useT } from '../i18n';
 
 /** Macros — design/README.md § 2.6: grade de 2 colunas com ícone vermelho. */
 export function MacroGrid({
@@ -11,11 +12,12 @@ export function MacroGrid({
   macros: string[];
   desabilitado: boolean;
 }) {
+  const t = useT();
   if (macros.length === 0) return null;
 
   return (
     <section style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div className="mono">MACROS</div>
+      <div className="mono">{t.impressora.macros}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         {macros.slice(0, 8).map((m) => (
           <button

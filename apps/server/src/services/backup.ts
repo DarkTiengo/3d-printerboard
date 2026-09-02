@@ -4,7 +4,7 @@ import fsSync from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as tar from 'tar';
 import type { BackupCard, BackupEstado, BackupResumo, BackupSnapshot, PrinterConfig } from '@3dfarm/shared';
-import { bytes as fmtBytes, quandoCurto, quando } from '@3dfarm/shared';
+import { bytes as fmtBytes } from '@3dfarm/shared';
 import { getDb, getSetting, setSetting } from '../db/index.js';
 import { config } from '../config.js';
 import { farm } from './farm.js';
@@ -286,6 +286,7 @@ export async function rodarBackup(printerId: string): Promise<BackupSnapshot | n
         printerId,
         printerNome: cfg.nome,
         sev: 'alta',
+        codigo: 'backup_falhou',
         titulo: 'Backup falhou',
         detalhe: `Nenhum arquivo de configuração veio de ${cfg.nome}. ${avisos[0] ?? ''}`.trim(),
         frameLabel: 'CAPTURA DO LOG DE BACKUP',
@@ -307,7 +308,8 @@ export async function rodarBackup(printerId: string): Promise<BackupSnapshot | n
       printerId,
       printerNome: cfg.nome,
       sev: 'alta',
-      titulo: 'Backup falhou',
+      codigo: 'backup_falhou',
+        titulo: 'Backup falhou',
       detalhe: msg,
       frameLabel: 'CAPTURA DO LOG DE BACKUP',
       dedupeKey: `backup:${printerId}`
@@ -467,10 +469,9 @@ function snapshotDeRun(id: number): BackupSnapshot | null {
   return {
     id: r.id,
     printerId: r.printer_id,
-    quando: quando(r.started_at + 'Z'),
     criadoEm: r.started_at + 'Z',
     estado: r.status === 'RODANDO' ? 'PARCIAL' : r.status,
-    tamanho: fmtBytes(r.bytes),
+    bytes: r.bytes,
     arquivos: r.file_count
   };
 }
@@ -501,9 +502,10 @@ export function cardsDeBackup(): BackupCard[] {
         printerId: cfg.id,
         nome: cfg.nome,
         estado: 'NUNCA' as BackupEstado,
-        perfis: 'nunca',
+        ultimoEm: null,
         firmware: '—',
-        gcode: '—',
+        gcodeArquivos: 0,
+        bytes: 0,
         pendente
       };
     }
@@ -511,9 +513,10 @@ export function cardsDeBackup(): BackupCard[] {
       printerId: cfg.id,
       nome: cfg.nome,
       estado: run.status as BackupEstado,
-      perfis: quandoCurto(run.started_at + 'Z'),
+      ultimoEm: run.started_at + 'Z',
       firmware: run.firmware ?? '—',
-      gcode: `${run.gcode_resumo ?? '0 arq.'} · ${fmtBytes(run.bytes)}`,
+      gcodeArquivos: Number(/(\d+)/.exec(run.gcode_resumo ?? '')?.[1] ?? 0),
+      bytes: run.bytes,
       pendente
     };
   });
@@ -528,11 +531,9 @@ export function resumoDeBackup(): BackupResumo {
   const ultimo = getSetting('ultimo_ciclo');
 
   return {
-    // a rotina agendada mais a rede de segurança: uma máquina que estava
-    // desligada às 03:00 é recuperada assim que voltar
-    rotina: `${descreverCron(config.backupCron)} · e ao religar`,
-    ultimoCiclo: ultimo ? quandoCurto(ultimo) : 'nunca',
-    armazenado: fmtBytes(total.b),
+    cron: config.backupCron,
+    ultimoCicloEm: ultimo,
+    bytes: total.b,
     falhas: falhas.n
   };
 }
