@@ -359,6 +359,16 @@ async function aplicarRetencao(printerId: string): Promise<void> {
  * "clonar a configuração da máquina que funciona". Sobrescreve config na
  * máquina de destino: a rota exige papel admin e confirmação explícita.
  */
+/** O caminho resolvido continua dentro da raiz? Barra `..` e absolutos. */
+function caminhoSeguro(raiz: string, relativo: string): boolean {
+  if (!relativo || path.isAbsolute(relativo)) return false;
+  const destino = path.resolve(raiz, relativo);
+  return destino === raiz || destino.startsWith(raiz + path.sep);
+}
+
+/** Exportado só para teste. */
+export const _caminhoSeguro = caminhoSeguro;
+
 export async function restaurar(snapshotId: number, destinoPrinterId: string): Promise<{ arquivos: number }> {
   const run = getDb().prepare('SELECT * FROM backup_runs WHERE id = ?').get(snapshotId) as RunRow | undefined;
   if (!run?.archive_path) throw new Error('snapshot não encontrado');
@@ -367,6 +377,7 @@ export async function restaurar(snapshotId: number, destinoPrinterId: string): P
   if (!destino) throw new Error('impressora de destino não encontrada');
 
   const http = farm.http(destinoPrinterId) ?? new MoonrakerHttp(destino);
+  const avisosRestauracao: string[] = [];
   const tmp = path.join(config.dataDir, `.tmp-restore-${snapshotId}-${Date.now()}`);
   await fs.mkdir(tmp, { recursive: true });
 
@@ -374,11 +385,25 @@ export async function restaurar(snapshotId: number, destinoPrinterId: string): P
     await tar.extract({ file: run.archive_path, cwd: tmp });
     const manifesto = JSON.parse(await fs.readFile(path.join(tmp, 'manifest.json'), 'utf8')) as Manifesto;
 
+    const raizConfig = path.resolve(tmp, 'config');
     let enviados = 0;
     for (const relativo of manifesto.arquivosConfig) {
-      const conteudo = await fs.readFile(path.join(tmp, 'config', relativo));
+      // O manifesto é lido de um arquivo dentro de um volume gravável, então
+      // não é entrada confiável: um caminho com ../ leria fora do snapshot e
+      // mandaria o que achasse para a impressora.
+      if (!caminhoSeguro(raizConfig, relativo)) {
+        avisosRestauracao.push(relativo);
+        continue;
+      }
+      const conteudo = await fs.readFile(path.join(raizConfig, relativo));
       await http.enviar('config', relativo, conteudo);
       enviados++;
+    }
+    if (avisosRestauracao.length > 0) {
+      logger.warn(
+        { snapshotId, ignorados: avisosRestauracao },
+        'restauração ignorou caminhos suspeitos no manifesto'
+      );
     }
 
     logger.warn(

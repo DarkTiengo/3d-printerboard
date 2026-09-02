@@ -52,7 +52,10 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
   for (const [rota, executar] of Object.entries(comandos)) {
     app.post<{ Params: { id: string } }>(
       `/api/printers/:id/${rota}`,
-      { preHandler: exigirPermissao('controlarImpressao') },
+      {
+        preHandler: exigirPermissao('controlarImpressao'),
+        config: { rateLimit: { max: 60, timeWindow: '1 minute' } }
+      },
       async (req, reply) => {
         const promessa = executar(req.params.id);
         if (!promessa) return reply.code(503).send({ erro: 'impressora offline' });
@@ -106,7 +109,11 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
 
   app.post<{ Params: { id: string }; Body: GcodePayload }>(
     '/api/printers/:id/gcode',
-    { preHandler: exigirPermissao('controlarImpressao') },
+    {
+      preHandler: exigirPermissao('controlarImpressao'),
+      // G-code arbitrário é a rota mais poderosa do app: freio mais curto
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } }
+    },
     async (req, reply) => {
       const cliente = farm.clienteVivo(req.params.id);
       if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
@@ -127,16 +134,23 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
    * relata o que falhou — numa emergência, uma impressora offline não pode
    * impedir as outras de parar.
    */
-  app.post('/api/emergency-stop', { preHandler: exigirPermissao('pararEmergencia') }, async (req) => {
-    const clientes = farm.clientes_();
-    const resultados = await Promise.allSettled(clientes.map((c) => c.paradaEmergencia()));
-    const falhas = clientes
-      .map((c, i) => ({ id: c.id, r: resultados[i] }))
-      .filter((x) => x.r.status === 'rejected')
-      .map((x) => x.id);
-    logger.warn({ por: req.sessao!.usuario, falhas }, 'PARADA DE EMERGÊNCIA');
-    return { ok: falhas.length === 0, total: clientes.length, falhas };
-  });
+  app.post(
+    '/api/emergency-stop',
+    {
+      preHandler: exigirPermissao('pararEmergencia'),
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } }
+    },
+    async (req) => {
+      const clientes = farm.clientes_();
+      const resultados = await Promise.allSettled(clientes.map((c) => c.paradaEmergencia()));
+      const falhas = clientes
+        .map((c, i) => ({ id: c.id, r: resultados[i] }))
+        .filter((x) => x.r.status === 'rejected')
+        .map((x) => x.id);
+      logger.warn({ por: req.sessao!.usuario, falhas }, 'PARADA DE EMERGÊNCIA');
+      return { ok: falhas.length === 0, total: clientes.length, falhas };
+    }
+  );
 
   app.post<{ Params: { id: string } }>(
     '/api/printers/:id/emergency-stop',

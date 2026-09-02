@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { pode } from '@3dfarm/shared';
-import type { Acao } from '@3dfarm/shared';
-import { COOKIE_SESSAO, lerToken, type Sessao } from '../services/auth.js';
+import type { Acao, Role } from '@3dfarm/shared';
+import { COOKIE_SESSAO, acharUsuarioPorId, lerToken, type Sessao } from '../services/auth.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -9,7 +9,13 @@ declare module 'fastify' {
   }
 }
 
-/** preHandler: exige sessão válida. */
+/**
+ * preHandler: exige sessão válida.
+ *
+ * O papel vem do banco, não do token. O JWT é assinado no login e vive até 30
+ * dias; sem esta consulta, remover um usuário ou rebaixá-lo de admin não teria
+ * efeito nenhum até o token expirar — o crachá continuaria abrindo a porta.
+ */
 export async function exigirLogin(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const token = req.cookies?.[COOKIE_SESSAO];
   const sessao = token ? lerToken(token) : null;
@@ -17,7 +23,16 @@ export async function exigirLogin(req: FastifyRequest, reply: FastifyReply): Pro
     await reply.code(401).send({ erro: 'não autenticado' });
     return;
   }
-  req.sessao = sessao;
+
+  const atual = acharUsuarioPorId(sessao.sub);
+  if (!atual) {
+    // conta removida enquanto o token ainda era válido
+    reply.clearCookie(COOKIE_SESSAO, { path: '/' });
+    await reply.code(401).send({ erro: 'sessão inválida' });
+    return;
+  }
+
+  req.sessao = { sub: atual.id, usuario: atual.username, role: atual.role as Role };
 }
 
 /** preHandler: exige sessão válida com permissão para a ação. */

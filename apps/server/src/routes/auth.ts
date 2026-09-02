@@ -39,7 +39,11 @@ export async function rotasAuth(app: FastifyInstance): Promise<void> {
       reply.setCookie(COOKIE_SESSAO, token, {
         httpOnly: true,
         sameSite: 'strict',
-        secure: config.isProd,
+        // 'auto': Secure só quando a conexão realmente é HTTPS. Um cookie
+        // Secure enviado por http:// é descartado pelo navegador em qualquer
+        // origem que não seja localhost — e a fazenda é acessada pelo IP.
+        secure:
+          config.cookieSecure === 'auto' ? req.protocol === 'https' : config.cookieSecure === 'true',
         path: '/',
         maxAge
       });
@@ -63,7 +67,10 @@ export async function rotasAuth(app: FastifyInstance): Promise<void> {
 
   app.post<{ Body: { usuario?: string; senha?: string; role?: Role } }>(
     '/api/usuarios',
-    { preHandler: exigirPermissao('gerirUsuarios') },
+    {
+      preHandler: exigirPermissao('gerirUsuarios'),
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } }
+    },
     async (req, reply) => {
       const { usuario, senha, role } = req.body ?? {};
       if (!usuario?.trim() || !senha || senha.length < 8) {
@@ -81,7 +88,7 @@ export async function rotasAuth(app: FastifyInstance): Promise<void> {
 
   app.put<{ Params: { id: string }; Body: { senha?: string } }>(
     '/api/usuarios/:id/senha',
-    { preHandler: exigirLogin },
+    { preHandler: exigirLogin, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
     async (req, reply) => {
       const id = Number(req.params.id);
       const eu = req.sessao!;

@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,11 +28,51 @@ export async function criarApp() {
   });
 
   await app.register(cookie);
-  await app.register(rateLimit, {
-    global: false,
-    max: 300,
-    timeWindow: '1 minute'
+
+  /**
+   * Cabeçalhos de segurança.
+   *
+   * A CSP é apertada: nada de script externo, nada de inline. O que sobra
+   * frouxo é `style-src 'unsafe-inline'`, porque o design é implementado com
+   * atributos `style` — trocar isso exigiria reescrever as telas em classes.
+   * HSTS fica desligado: a fazenda é servida por http:// na rede local, e
+   * mandar o navegador exigir HTTPS deixaria o app inacessível.
+   */
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        // as câmeras e miniaturas passam todas pelo nosso proxy, então 'self' basta
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        // O helmet liga isto por padrão. Numa fazenda servida por http:// ele
+        // reescreve todo asset para https://, nada responde, e a página fica
+        // preta — mesma armadilha do cookie Secure. Quem colocar um proxy
+        // TLS na frente pode religar via COOKIE_SECURE/proxy.
+        upgradeInsecureRequests: null
+      }
+    },
+    // o app roda em http:// na LAN; HSTS o tornaria inalcançável
+    strictTransportSecurity: false,
+    crossOriginEmbedderPolicy: false,
+    // os feeds MJPEG são consumidos por <img> da mesma origem
+    crossOriginResourcePolicy: { policy: 'same-origin' }
   });
+
+  /**
+   * Rate limit por rota, não global: a parede de câmeras faz polling de
+   * snapshot em oito tiles, o que passa de mil requisições por minuto vindas
+   * de uma aba legítima. Um teto global derrubaria o painel. As rotas que
+   * merecem freio são as sensíveis, e cada uma pede o seu.
+   */
+  await app.register(rateLimit, { global: false });
 
   await app.register(rotasAuth);
   await app.register(rotasPrinters);

@@ -14,6 +14,17 @@ export function acharUsuario(username: string): UserRow | null {
   return (getDb().prepare('SELECT * FROM users WHERE username = ?').get(username) as UserRow) ?? null;
 }
 
+/**
+ * Estado atual do usuário da sessão. Chamado a cada requisição autenticada
+ * para que remoção e mudança de papel valham na hora, e não só quando o token
+ * expirar. É uma leitura em SQLite local — custa microssegundos.
+ */
+export function acharUsuarioPorId(id: number): User | null {
+  return (
+    (getDb().prepare('SELECT id, username, role FROM users WHERE id = ?').get(id) as User | undefined) ?? null
+  );
+}
+
 export function listarUsuarios(): User[] {
   const rows = getDb().prepare('SELECT id, username, role FROM users ORDER BY username').all() as User[];
   return rows;
@@ -87,6 +98,17 @@ export function garantirAdmin(): void {
     logger.error(
       'Nenhum usuário cadastrado e ADMIN_PASSWORD não foi definido. ' +
         'Defina ADMIN_USER/ADMIN_PASSWORD no .env e reinicie — sem isso não há como entrar.'
+    );
+    return;
+  }
+  if (config.adminPassword.length < 8) {
+    logger.error('ADMIN_PASSWORD tem menos de 8 caracteres. O admin NÃO foi criado — escolha uma senha maior.');
+    return;
+  }
+  if (config.adminPassword === 'troque-esta-senha') {
+    logger.error(
+      'ADMIN_PASSWORD ainda é o valor de exemplo do .env.example. O admin NÃO foi criado — ' +
+        'trocar essa senha é o que separa a sua fazenda de qualquer um na rede.'
     );
     return;
   }

@@ -62,7 +62,10 @@ export async function rotasBackups(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Body: RestorePayload & { confirmar?: boolean } }>(
     '/api/backups/restaurar',
-    { preHandler: exigirPermissao('restaurarBackup') },
+    {
+      preHandler: exigirPermissao('restaurarBackup'),
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } }
+    },
     async (req, reply) => {
       const { snapshotId, destinoPrinterId, confirmar } = req.body ?? {};
       if (!snapshotId || !destinoPrinterId) {

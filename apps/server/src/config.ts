@@ -33,6 +33,14 @@ export const config = {
   webDir: path.resolve(process.env.WEB_DIR ?? './apps/web/dist'),
 
   /** Sem JWT_SECRET a sessão não sobrevive a um restart — avisamos no boot. */
+  /**
+   * Flag Secure do cookie de sessão: 'auto' decide por requisição (Secure só
+   * quando a conexão de fato é HTTPS). Amarrar isso a NODE_ENV quebra a
+   * fazenda: o container roda em produção mas é acessado por http:// na rede
+   * local, e o navegador descarta um cookie Secure vindo de origem insegura.
+   */
+  cookieSecure: (process.env.COOKIE_SECURE ?? 'auto') as 'auto' | 'true' | 'false',
+
   jwtSecret: process.env.JWT_SECRET ?? randomBytes(32).toString('hex'),
   jwtSecretGerado: !process.env.JWT_SECRET,
   sessaoCurtaHoras: int(process.env.SESSION_HOURS, 12),

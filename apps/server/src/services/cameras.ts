@@ -49,14 +49,26 @@ class CameraHub extends EventEmitter {
     }
     this.conectar(printerId, fonte);
 
-    // primeiro quadro imediato: o tile pinta sem esperar o próximo ciclo
+    /*
+     * Primeiro quadro imediato, para o tile pintar sem esperar o próximo ciclo.
+     *
+     * Sai num microtask de propósito: entregue de forma síncrona, o callback
+     * rodaria *antes* de `assinar` retornar — ou seja, antes de quem chamou ter
+     * a função de cancelamento em mãos. Foi exatamente essa reentrância que
+     * travou o snapshot (veja `capturar`).
+     */
     if (fonte.ultimoFrame) {
+      const primeiro = fonte.ultimoFrame;
       assinante.ultimoEnvio = Date.now();
-      try {
-        onFrame(fonte.ultimoFrame);
-      } catch {
-        /* cliente já foi embora */
-      }
+      queueMicrotask(() => {
+        if (!fonte.assinantes.has(assinante)) return;
+        try {
+          onFrame(primeiro);
+        } catch (err) {
+          logger.debug(`câmera ${printerId}: assinante falhou ao receber o primeiro quadro: ${err}`);
+          fonte.assinantes.delete(assinante);
+        }
+      });
     }
 
     return () => {
@@ -82,24 +94,33 @@ class CameraHub extends EventEmitter {
     if (existente && fonte && Date.now() - fonte.ultimoFrameEm < maxIdadeMs) return existente;
 
     return new Promise((resolve) => {
-      let pronto = false;
-      const cancelar = this.assinar(printerId, 30, (jpeg) => {
-        if (pronto) return;
-        pronto = true;
+      /*
+       * Um único ponto de saída, com tudo declarado antes de qualquer callback
+       * poder rodar. A versão anterior chamava clearTimeout(timer) de dentro do
+       * callback do assinante, que disparava antes de `const timer` existir: o
+       * ReferenceError da zona morta temporal era engolido pelo try/catch da
+       * entrega, a flag "pronto" já tinha virado true, e o timeout de 8 s então
+       * desistia sem resolver. A promessa nunca assentava, a resposta HTTP
+       * nunca era enviada, e o soquete ficava preso — seis desses e o navegador
+       * fica sem conexões para qualquer outra chamada.
+       */
+      let encerrado = false;
+      let cancelar: (() => void) | null = null;
+
+      const timer = setTimeout(() => terminar(this.ultimoFrame(printerId)), timeoutMs);
+
+      function terminar(jpeg: Buffer | null): void {
+        if (encerrado) return;
+        encerrado = true;
         clearTimeout(timer);
         cancelar?.();
         resolve(jpeg);
-      });
-      if (!cancelar) {
-        resolve(null);
-        return;
       }
-      const timer = setTimeout(() => {
-        if (pronto) return;
-        pronto = true;
-        cancelar();
-        resolve(this.ultimoFrame(printerId));
-      }, timeoutMs);
+
+      cancelar = this.assinar(printerId, 30, terminar);
+      if (!cancelar) terminar(null);
+      // se o quadro chegou antes de `cancelar` existir, cancelamos agora
+      else if (encerrado) cancelar();
     });
   }
 
@@ -219,7 +240,9 @@ class CameraHub extends EventEmitter {
       a.ultimoEnvio = agora;
       try {
         a.onFrame(jpeg);
-      } catch {
+      } catch (err) {
+        // não engolir calado: já escondeu um bug que travava o snapshot
+        logger.debug(`assinante de câmera removido após erro na entrega: ${err}`);
         fonte.assinantes.delete(a);
       }
     }

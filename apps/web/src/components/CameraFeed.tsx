@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { VideoOff } from 'lucide-react';
 import { urlCamera, urlSnapshot } from '../lib/api';
 
@@ -50,6 +50,12 @@ export function CameraFeed({
 
   useEffect(() => setErro(false), [printerId, fps, modo]);
 
+  // precisa ser estável: o SSE re-renderiza o painel várias vezes por segundo,
+  // e um callback novo a cada render reiniciaria o loop de polling — cada
+  // reinício dispara uma requisição na hora, ignorando o intervalo e enchendo
+  // o pool de 6 conexões do navegador
+  const aoFalhar = useCallback(() => setErro(true), []);
+
   const ativo = temCamera && !erro && visivel;
   const semImagem = !temCamera || erro;
 
@@ -66,7 +72,7 @@ export function CameraFeed({
         />
       )}
       {ativo && modo === 'snapshot' && (
-        <SnapshotLoop printerId={printerId} fps={fps} alt={alt} aoFalhar={() => setErro(true)} />
+        <SnapshotLoop printerId={printerId} fps={fps} alt={alt} aoFalhar={aoFalhar} />
       )}
 
       {semImagem && (
@@ -118,6 +124,10 @@ function SnapshotLoop({
   const [src, setSrc] = useState<string | null>(null);
   const falhasRef = useRef(0);
 
+  // o callback fica numa ref para não entrar nas dependências do efeito
+  const aoFalharRef = useRef(aoFalhar);
+  aoFalharRef.current = aoFalhar;
+
   useEffect(() => {
     let vivo = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -140,7 +150,7 @@ function SnapshotLoop({
         falhasRef.current++;
         // três falhas seguidas: mostra "sem sinal" em vez de martelar a câmera
         if (falhasRef.current >= 3) {
-          aoFalhar();
+          aoFalharRef.current();
           return;
         }
         timer = setTimeout(buscar, 2000);
@@ -153,7 +163,7 @@ function SnapshotLoop({
       vivo = false;
       if (timer) clearTimeout(timer);
     };
-  }, [printerId, fps, aoFalhar]);
+  }, [printerId, fps]);
 
   if (!src) return null;
   return <img src={src} alt={alt} style={estiloImagem} />;

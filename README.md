@@ -125,6 +125,35 @@ limita a 6 conexões por origem, e um stream por tile consumiria todas, deixando
 o SSE e a própria API na fila. Fica ao vivo só o feed em foco (o mini painel, ou
 o primeiro quadrante da tela de Câmeras).
 
+## Segurança
+
+O modelo de confiança é simples: **quem entra no app é confiável dentro do papel
+dele, e todo o resto é verificado no servidor**.
+
+- Toda rota exige sessão, menos o login. O papel é lido do banco a cada
+  requisição, não do token — remover um usuário ou rebaixá-lo vale na hora, e
+  não só quando o JWT expirar.
+- Permissão nunca é decidida no navegador. O front desabilita botões por
+  conveniência; quem recusa de fato é o servidor.
+- Sessão em cookie `httpOnly` + `SameSite=Strict`. A flag `Secure` é decidida
+  por conexão (`COOKIE_SECURE=auto`): marcá-la sempre quebraria o acesso por
+  `http://` na rede local, que é como a fazenda é usada.
+- Cabeçalhos via helmet, com CSP sem script externo nem inline.
+- Rate limit nas rotas sensíveis (login, controle de impressão, G-code, parada
+  de emergência, restauração, criação de usuário). Não é global de propósito: a
+  parede de câmeras faz polling legítimo acima de mil requisições por minuto.
+- A API key do Moonraker nunca sai do servidor — a tela de gestão só vê `••••`.
+- A restauração valida cada caminho do manifesto antes de ler o arquivo.
+
+Duas coisas que **são** poderes de propósito, e é bom saber:
+
+- `POST /api/printers/:id/gcode` executa G-code arbitrário na máquina. É a
+  função do app (macros e console), e o Moonraker expõe o mesmo. Por isso
+  `operador` já é um papel de confiança.
+- O admin cadastra as URLs que o servidor busca (Moonraker e câmeras), então
+  ele pode apontar o servidor para qualquer endereço alcançável na rede. É
+  inerente ao produto; `admin` é o papel de maior confiança.
+
 ## Desenvolvimento
 
 ```bash
