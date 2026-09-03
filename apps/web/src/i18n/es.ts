@@ -118,7 +118,18 @@ export const es: Dicionario = {
     descerZ: 'Bajar Z',
     home: 'Origen en todos los ejes',
     posicaoDesconhecida: 'POSICIÓN DESCONOCIDA',
-    macros: 'MACROS'
+    macros: 'MACROS',
+    fila: 'COLA DE ESTA IMPRESORA',
+    filaVazia: 'nada en la cola de esta máquina',
+    daFazenda: 'de la granja',
+    iniciar: (arquivo: string) => `Autorizar e iniciar ${arquivo}`,
+    iniciarOcupada: 'la impresora debe estar inactiva para empezar',
+    iniciando: 'Iniciando…',
+    aguardandoAutorizacao: 'ESPERANDO AUTORIZACIÓN',
+    concluida: 'LA ÚLTIMA PIEZA SALIÓ ENTERA',
+    reimprimir: (arquivo: string) => `Reimprimir ${arquivo}`,
+    retirarPeca: 'Retira la pieza de la cama antes de empezar la siguiente.',
+    falhaIniciar: 'No se pudo iniciar.'
   },
 
   cameras: {

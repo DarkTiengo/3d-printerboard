@@ -137,6 +137,10 @@ export const api = {
   fila: () => get<QueueJob[]>('/api/fila'),
   enfileirar: (arquivo: string, destino: string | null) => post<QueueJob>('/api/fila', { arquivo, destino }),
   cancelarJob: (id: number) => del<QueueJob>(`/api/fila/${id}`),
+  filaDaImpressora: (id: string) => get<QueueJob[]>(`/api/printers/${id}/fila`),
+  /** Autoriza e inicia: nada na fila começa sem passar por aqui. */
+  iniciarJob: (jobId: number, printerId: string) => post<QueueJob>(`/api/fila/${jobId}/iniciar`, { printerId }),
+  reimprimir: (printerId: string) => post<QueueJob>(`/api/printers/${printerId}/reimprimir`),
 
   // alertas
   alertas: () => get<Alert[]>('/api/alertas'),

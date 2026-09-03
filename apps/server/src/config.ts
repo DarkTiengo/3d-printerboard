@@ -49,6 +49,14 @@ export const config = {
   adminUser: process.env.ADMIN_USER ?? 'admin',
   adminPassword: process.env.ADMIN_PASSWORD ?? '',
 
+  /**
+   * Fila automática: quando ligada, a próxima impressão começa sozinha assim
+   * que a máquina fica ociosa. Desligada por padrão de propósito — numa fazenda
+   * a peça anterior continua na mesa, e começar por cima dela estraga as duas.
+   * Com ela desligada, cada impressão precisa de um clique de autorização.
+   */
+  filaAutomatica: bool(process.env.QUEUE_AUTO_START, false),
+
   /** Sobe um Moonraker falso com as 8 impressoras do design — testar sem hardware. */
   mockPrinters: bool(process.env.MOCK_PRINTERS, false),
 

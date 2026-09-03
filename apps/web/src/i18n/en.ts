@@ -118,7 +118,18 @@ export const en: Dicionario = {
     descerZ: 'Lower Z',
     home: 'Home all axes',
     posicaoDesconhecida: 'POSITION UNKNOWN',
-    macros: 'MACROS'
+    macros: 'MACROS',
+    fila: 'THIS PRINTER’S QUEUE',
+    filaVazia: 'nothing queued for this machine',
+    daFazenda: 'farm-wide',
+    iniciar: (arquivo: string) => `Authorise and start ${arquivo}`,
+    iniciarOcupada: 'the printer must be idle to start',
+    iniciando: 'Starting…',
+    aguardandoAutorizacao: 'WAITING FOR AUTHORISATION',
+    concluida: 'LAST PART CAME OUT WHOLE',
+    reimprimir: (arquivo: string) => `Reprint ${arquivo}`,
+    retirarPeca: 'Take the part off the bed before starting the next one.',
+    falhaIniciar: 'Could not start.'
   },
 
   cameras: {

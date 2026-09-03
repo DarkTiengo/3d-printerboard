@@ -21,7 +21,7 @@ type Semente = {
   pct: number;
   camadaAtual: number;
   camadaTotal: number;
-  estado: 'printing' | 'paused' | 'standby' | 'error';
+  estado: 'printing' | 'paused' | 'standby' | 'error' | 'complete' | 'cancelled';
 };
 
 export const SEMENTES: Semente[] = [
@@ -118,9 +118,11 @@ class MockClient extends MoonrakerClient {
       this.mesa.atual = 60 + Math.sin(Date.now() / 5000) * 0.4;
 
       if (this.progresso >= 1) {
-        this.semente.estado = 'standby';
-        this.progresso = 0;
-        this.decorrido = 0;
+        // 'complete', não 'standby': é o que o Klipper faz, e é a diferença
+        // entre "a peça saiu inteira" e "a máquina está parada", que o app usa
+        // para decidir se oferece reimpressão
+        this.semente.estado = 'complete';
+        this.progresso = 1;
         this.bico.alvo = 0;
         this.mesa.alvo = 0;
       }
@@ -143,7 +145,8 @@ class MockClient extends MoonrakerClient {
     this.emitir();
   }
   override async cancelar(): Promise<void> {
-    this.semente.estado = 'standby';
+    // o Klipper marca 'cancelled', e é isso que impede a oferta de reimpressão
+    this.semente.estado = 'cancelled';
     this.semente.job = '';
     this.progresso = 0;
     this.decorrido = 0;

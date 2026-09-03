@@ -19,6 +19,11 @@ export type Printer = {
   restanteSegundos: number | null;
   camada: string; // '84/210'
   status: Status;
+  /**
+   * A última impressão terminou inteira (e não cancelada nem por erro). É o que
+   * habilita a oferta de reimprimir a peça.
+   */
+  concluiuComSucesso: boolean;
   /** false quando o WebSocket do Moonraker está caído ou o Klipper não respondeu. */
   online: boolean;
   temTaCamera: boolean;

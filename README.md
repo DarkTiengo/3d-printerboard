@@ -91,8 +91,9 @@ the multicast group.
 
 ## The screens
 
-**Dashboard** — camera wall plus a control panel for the selected printer (job,
-temperatures, jog, macros), or the queue when nothing is selected.
+**Dashboard** — camera wall plus a control panel for the selected printer: job,
+**that printer's queue**, temperatures, jog and macros. With nothing selected,
+the column shows the farm-wide queue.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip.
 **Files** — G-code library **grouped by printer**, so it is obvious which machine
 already holds a file and which one will print it. Queueing from a group sends
@@ -113,6 +114,26 @@ locale.
 Adding a language is one file: copy `apps/web/src/i18n/en.ts`, translate the
 values, and register it in `apps/web/src/i18n/index.ts`. The dictionary is typed
 against the Portuguese one, so the compiler tells you if a key is missing.
+
+## Nothing starts on its own
+
+A queued job waits for someone to authorise it. When a printer is idle, its
+panel shows what is next and a button starts it — one click, naming the file.
+
+That is deliberate. When a print finishes, **the part is still on the bed**, and
+the machine has no way of knowing whether anyone took it off. A farm that starts
+the next job automatically eventually prints into the previous part and ruins
+both.
+
+If you would rather have it unattended, `QUEUE_AUTO_START=true` restores the old
+behaviour: the queue dispatches to any idle printer by itself.
+
+### Reprinting
+
+When a print finishes **whole**, the printer's panel offers to run it again.
+The offer only appears after a real completion — after a cancel or an error,
+repeating the same thing blindly would just waste filament. It reads Klipper's
+own `print_stats.state`, so it also covers prints you started from Mainsail.
 
 ## Roles
 

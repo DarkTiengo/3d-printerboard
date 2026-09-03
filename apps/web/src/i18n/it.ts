@@ -118,7 +118,18 @@ export const it: Dicionario = {
     descerZ: 'Abbassa Z',
     home: 'Azzera tutti gli assi',
     posicaoDesconhecida: 'POSIZIONE SCONOSCIUTA',
-    macros: 'MACRO'
+    macros: 'MACRO',
+    fila: 'CODA DI QUESTA STAMPANTE',
+    filaVazia: 'niente in coda per questa macchina',
+    daFazenda: 'della farm',
+    iniciar: (arquivo: string) => `Autorizza e avvia ${arquivo}`,
+    iniciarOcupada: 'la stampante deve essere inattiva per partire',
+    iniciando: 'Avvio…',
+    aguardandoAutorizacao: 'IN ATTESA DI AUTORIZZAZIONE',
+    concluida: 'L’ULTIMO PEZZO È USCITO INTERO',
+    reimprimir: (arquivo: string) => `Ristampa ${arquivo}`,
+    retirarPeca: 'Togli il pezzo dal piano prima di avviare il prossimo.',
+    falhaIniciar: 'Impossibile avviare.'
   },
 
   cameras: {

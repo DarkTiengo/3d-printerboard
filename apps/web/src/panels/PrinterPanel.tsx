@@ -13,6 +13,7 @@ import { api } from '../lib/api';
 import { JogPad } from './JogPad';
 import { TempList } from './TempList';
 import { MacroGrid } from './MacroGrid';
+import { OfertaDeReimpressao, PrinterQueue } from './PrinterQueue';
 
 const secao: React.CSSProperties = { borderTop: '1px solid var(--color-neutral-800)' };
 
@@ -160,17 +161,27 @@ export function PrinterPanel({
         </div>
       </section>
 
-      {/* 4. temperaturas */}
+      {/* 4. a peça anterior acabou de sair: oferece repetir */}
+      <div style={secao}>
+        <OfertaDeReimpressao printer={printer} podeControlar={podeControlar} />
+      </div>
+
+      {/* 5. a fila desta máquina, que só anda com autorização */}
+      <div style={secao}>
+        <PrinterQueue printer={printer} podeControlar={podeControlar} />
+      </div>
+
+      {/* 6. temperaturas */}
       <div style={secao}>
         <TempList temperaturas={printer.temperaturas} />
       </div>
 
-      {/* 5. cabeça de impressão */}
+      {/* 7. cabeça de impressão */}
       <div style={secao}>
         <JogPad printerId={printer.id} posicao={printer.posicao} desabilitado={!podeControlar} />
       </div>
 
-      {/* 6. macros */}
+      {/* 8. macros */}
       <div style={secao}>
         <MacroGrid printerId={printer.id} macros={printer.macros} desabilitado={!podeControlar} />
       </div>

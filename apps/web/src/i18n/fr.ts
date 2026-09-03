@@ -118,7 +118,18 @@ export const fr: Dicionario = {
     descerZ: 'Descendre Z',
     home: 'Origine sur tous les axes',
     posicaoDesconhecida: 'POSITION INCONNUE',
-    macros: 'MACROS'
+    macros: 'MACROS',
+    fila: 'FILE DE CETTE IMPRIMANTE',
+    filaVazia: 'rien en file pour cette machine',
+    daFazenda: 'de la ferme',
+    iniciar: (arquivo: string) => `Autoriser et lancer ${arquivo}`,
+    iniciarOcupada: 'l’imprimante doit être inactive pour démarrer',
+    iniciando: 'Démarrage…',
+    aguardandoAutorizacao: 'EN ATTENTE D’AUTORISATION',
+    concluida: 'LA DERNIÈRE PIÈCE EST SORTIE ENTIÈRE',
+    reimprimir: (arquivo: string) => `Réimprimer ${arquivo}`,
+    retirarPeca: 'Retirez la pièce du plateau avant de lancer la suivante.',
+    falhaIniciar: 'Impossible de démarrer.'
   },
 
   cameras: {

@@ -117,7 +117,18 @@ export const pt = {
     descerZ: 'Descer Z',
     home: 'Home em todos os eixos',
     posicaoDesconhecida: 'POSIÇÃO DESCONHECIDA',
-    macros: 'MACROS'
+    macros: 'MACROS',
+    fila: 'FILA DESTA IMPRESSORA',
+    filaVazia: 'nada na fila desta máquina',
+    daFazenda: 'da fazenda',
+    iniciar: (arquivo: string) => `Autorizar e iniciar ${arquivo}`,
+    iniciarOcupada: 'a impressora precisa estar ociosa para começar',
+    iniciando: 'Iniciando…',
+    aguardandoAutorizacao: 'AGUARDANDO AUTORIZAÇÃO',
+    concluida: 'ÚLTIMA PEÇA SAIU INTEIRA',
+    reimprimir: (arquivo: string) => `Reimprimir ${arquivo}`,
+    retirarPeca: 'Tire a peça da mesa antes de começar a próxima.',
+    falhaIniciar: 'Não foi possível iniciar.'
   },
 
   cameras: {

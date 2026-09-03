@@ -102,12 +102,20 @@ export function posicaoDe(bruto: EstadoBruto): Posicao | null {
 export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
   const status = statusDe(bruto);
   const stats = bruto.objetos.print_stats ?? {};
+  const estadoKlipper: string = stats.state ?? 'standby';
   const pct = status === 'cancelada' || status === 'ociosa' ? 0 : progressoDe(bruto);
 
   return {
     id: cfg.id,
     nome: cfg.nome,
     job: stats.filename || '—',
+    /*
+     * O Klipper mantém o nome do arquivo em print_stats depois que a impressão
+     * acaba, e distingue 'complete' de 'cancelled' — distinção que o nosso
+     * `status` perde ao mapear as duas para "ociosa". Guardamos aqui porque é
+     * o que permite oferecer reimpressão só quando a peça saiu inteira.
+     */
+    concluiuComSucesso: estadoKlipper === 'complete' && !!stats.filename,
     pct,
     // só faz sentido quando está de fato imprimindo; nos outros casos o front
     // mostra o próprio status
