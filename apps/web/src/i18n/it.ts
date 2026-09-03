@@ -130,6 +130,13 @@ export const it: Dicionario = {
 
   arquivos: {
     biblioteca: (n: number) => `LIBRERIA — ${n} FILE`,
+    agrupadoPor: 'RAGGRUPPATO PER STAMPANTE',
+    destinoGrupo: 'la stampante del gruppo',
+    semArquivos: 'nessun G-code su questa stampante',
+    impressoraOffline: 'stampante non in linea — impossibile elencare',
+    recolher: (nome: string) => `Comprimi ${nome}`,
+    expandir: (nome: string) => `Espandi ${nome}`,
+    contagem: (n: number) => `${n} ${n === 1 ? 'file' : 'file'}`,
     enviarPara: 'INVIA A',
     carregando: 'CARICAMENTO DELLA LIBRERIA…',
     erro: 'IMPOSSIBILE ELENCARE I FILE.',

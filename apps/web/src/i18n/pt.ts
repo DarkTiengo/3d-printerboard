@@ -129,6 +129,13 @@ export const pt = {
 
   arquivos: {
     biblioteca: (n: number) => `BIBLIOTECA — ${n} ARQUIVOS`,
+    agrupadoPor: 'AGRUPADO POR IMPRESSORA',
+    destinoGrupo: 'a impressora do grupo',
+    semArquivos: 'nenhum G-code nesta impressora',
+    impressoraOffline: 'impressora offline — não dá para listar',
+    recolher: (nome: string) => `Recolher ${nome}`,
+    expandir: (nome: string) => `Expandir ${nome}`,
+    contagem: (n: number) => `${n} ${n === 1 ? 'arquivo' : 'arquivos'}`,
     enviarPara: 'ENVIAR PARA',
     carregando: 'CARREGANDO BIBLIOTECA…',
     erro: 'NÃO FOI POSSÍVEL LISTAR OS ARQUIVOS.',

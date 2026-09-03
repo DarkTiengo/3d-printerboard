@@ -130,6 +130,13 @@ export const es: Dicionario = {
 
   arquivos: {
     biblioteca: (n: number) => `BIBLIOTECA — ${n} ARCHIVOS`,
+    agrupadoPor: 'AGRUPADO POR IMPRESORA',
+    destinoGrupo: 'la impresora del grupo',
+    semArquivos: 'ningún G-code en esta impresora',
+    impressoraOffline: 'impresora desconectada — no se puede listar',
+    recolher: (nome: string) => `Contraer ${nome}`,
+    expandir: (nome: string) => `Expandir ${nome}`,
+    contagem: (n: number) => `${n} ${n === 1 ? 'archivo' : 'archivos'}`,
     enviarPara: 'ENVIAR A',
     carregando: 'CARGANDO LA BIBLIOTECA…',
     erro: 'NO SE PUDIERON LISTAR LOS ARCHIVOS.',

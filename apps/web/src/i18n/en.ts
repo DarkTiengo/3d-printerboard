@@ -130,6 +130,13 @@ export const en: Dicionario = {
 
   arquivos: {
     biblioteca: (n: number) => `LIBRARY — ${n} FILES`,
+    agrupadoPor: 'GROUPED BY PRINTER',
+    destinoGrupo: 'the printer of the group',
+    semArquivos: 'no G-code on this printer',
+    impressoraOffline: 'printer offline — cannot list',
+    recolher: (nome: string) => `Collapse ${nome}`,
+    expandir: (nome: string) => `Expand ${nome}`,
+    contagem: (n: number) => `${n} ${n === 1 ? 'file' : 'files'}`,
     enviarPara: 'SEND TO',
     carregando: 'LOADING LIBRARY…',
     erro: 'COULD NOT LIST THE FILES.',

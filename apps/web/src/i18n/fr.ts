@@ -130,6 +130,13 @@ export const fr: Dicionario = {
 
   arquivos: {
     biblioteca: (n: number) => `BIBLIOTHÈQUE — ${n} FICHIERS`,
+    agrupadoPor: 'GROUPÉ PAR IMPRIMANTE',
+    destinoGrupo: 'l’imprimante du groupe',
+    semArquivos: 'aucun G-code sur cette imprimante',
+    impressoraOffline: 'imprimante hors ligne — impossible de lister',
+    recolher: (nome: string) => `Replier ${nome}`,
+    expandir: (nome: string) => `Déplier ${nome}`,
+    contagem: (n: number) => `${n} ${n === 1 ? 'fichier' : 'fichiers'}`,
     enviarPara: 'ENVOYER VERS',
     carregando: 'CHARGEMENT DE LA BIBLIOTHÈQUE…',
     erro: 'IMPOSSIBLE DE LISTER LES FICHIERS.',

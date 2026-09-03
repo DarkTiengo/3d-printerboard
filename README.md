@@ -94,7 +94,10 @@ the multicast group.
 **Dashboard** — camera wall plus a control panel for the selected printer (job,
 temperatures, jog, macros), or the queue when nothing is selected.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip.
-**Files** — G-code library across the whole farm; one click sends a file to the queue.
+**Files** — G-code library **grouped by printer**, so it is obvious which machine
+already holds a file and which one will print it. Queueing from a group sends
+the job to that group's printer; the selector at the top can override this to
+"next free" or to one specific machine.
 **Backups** — per-machine state, manual runs and restore.
 **Alerts** — list by severity, with the camera frame captured at that moment.
 **Settings** — printer CRUD.

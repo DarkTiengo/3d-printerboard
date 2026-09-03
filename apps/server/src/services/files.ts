@@ -109,21 +109,26 @@ function contarImpressoes(): Map<string, number> {
 }
 
 /**
- * Biblioteca da fazenda inteira. Arquivos com o mesmo nome em máquinas
- * diferentes são o mesmo modelo — o card aparece uma vez só.
+ * Biblioteca da fazenda inteira, uma entrada por arquivo *por impressora*.
+ *
+ * Antes o mesmo nome em máquinas diferentes era juntado num card só. Isso
+ * escondia justamente o que importa na hora de enfileirar: em qual máquina o
+ * arquivo já está, e portanto quem vai imprimi-lo. A tela agrupa por
+ * impressora, então a duplicata aqui é a informação, não ruído.
  */
 export async function listarBiblioteca(): Promise<GcodeFile[]> {
   const ids = farm.printers().map((p) => p.id);
   const listas = await Promise.all(ids.map((id) => listarArquivos(id).catch(() => [] as GcodeFile[])));
 
-  const porNome = new Map<string, GcodeFile>();
-  for (const arquivo of listas.flat()) {
-    const chave = arquivo.path.split('/').pop() ?? arquivo.path;
-    const existente = porNome.get(chave);
-    // preferimos a entrada que trouxe miniatura
-    if (!existente || (!existente.thumbnailUrl && arquivo.thumbnailUrl)) porNome.set(chave, arquivo);
-  }
-  return [...porNome.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  // ordem da fazenda primeiro, nome depois: é assim que a tela desenha as seções
+  const posicao = new Map(ids.map((id, i) => [id, i]));
+  return listas
+    .flat()
+    .sort(
+      (a, b) =>
+        (posicao.get(a.printerId) ?? 99) - (posicao.get(b.printerId) ?? 99) ||
+        a.nome.localeCompare(b.nome, 'pt-BR')
+    );
 }
 
 export function invalidarCache(printerId?: string): void {
