@@ -11,6 +11,28 @@ keeping one browser tab open per machine.
 Everything runs in a single container: the same process serves the API and the
 web app, and holds a persistent WebSocket to each Moonraker host.
 
+![Dashboard — camera wall with the selected printer's control panel](docs/dashboard.jpg)
+
+<details>
+<summary>More screens</summary>
+
+![Sign in](docs/login.jpg)
+
+![Backups — per-machine state, with printers queued until they go idle](docs/backups.jpg)
+
+</details>
+
+## What you need
+
+- **A machine to host it**: anything that runs Docker on the same LAN as the
+  printers — a mini PC, a NAS, a spare Raspberry Pi. It does not go on the
+  printers themselves.
+- **Klipper + Moonraker** on each printer, reachable over HTTP. That is the only
+  supported firmware: the app speaks Moonraker's API, not OctoPrint's or a
+  vendor cloud.
+- **A camera per printer, optionally** — MJPEG or a JPEG snapshot endpoint, which
+  is what crowsnest, ustreamer and mjpg-streamer all serve.
+
 ## Getting started
 
 ```bash
@@ -194,12 +216,15 @@ Two capabilities that are powerful **on purpose**, and worth knowing about:
 ```bash
 npm install
 npm run build -w @3dfarm/shared          # everything else depends on its dist
-MOCK_PRINTERS=true npm run dev:server    # API on :8080
+MOCK_PRINTERS=true npm run dev:server    # API on :8080, data in ./data
 npm run dev:web                          # Vite on :5173, proxying the API
 
 npm test         # Vitest: normalizer, queue engine, MJPEG demuxer, mDNS codec, formatters
 npm run typecheck
 ```
+
+Outside Docker the server reads `DATA_DIR` (default `./data`) and `WEB_DIR`
+(default `apps/web/dist`); the image sets both for you.
 
 ```
 packages/shared   types shared by both sides
@@ -209,6 +234,11 @@ design/           the design package — README.md is the visual source of truth
 ```
 
 `design/README.md` carries the final measurements, colours and states for every
-screen; check it whenever you touch the UI. Note that the design package and the
-source comments are written in Brazilian Portuguese — the UI itself is fully
-translated.
+screen; check it whenever you touch the UI.
+
+Two things are still written in Brazilian Portuguese, and it is worth being
+straight about it: the source comments and log lines, and the **prose inside
+alert details** — the sentence explaining what happened. Alert *titles* are
+translated (they carry a stable code the front end maps), and every other string
+in the UI is too; only that description is still emitted by the server in the
+language it was written in. The design package is in Portuguese as well.
