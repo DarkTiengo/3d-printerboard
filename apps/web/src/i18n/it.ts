@@ -196,7 +196,40 @@ export const it: Dicionario = {
       `I file di configurazione di ${nome} saranno sostituiti da quelli del backup scelto. Ciò che c’è adesso e non è nel backup andrà perso. Dopo, la macchina ha bisogno di un FIRMWARE_RESTART.`,
     sobrescrever: 'Sovrascrivi',
     restaurado: (n: number) => `Ripristino completato: ${n} file di configurazione inviati.`,
-    falhaRestaurar: 'Ripristino non riuscito.'
+    falhaRestaurar: 'Ripristino non riuscito.',
+    plano: 'PIANO',
+    resumoPlano: (secoes: string, horas: number, copias: number) =>
+      `${secoes} · ${horas} h · ${copias} copie`,
+    semSecao: 'niente selezionato',
+    secoes: {
+      config: 'Configurazione (printer.cfg, macro)',
+      banco: 'Profili di Mainsail/Fluidd',
+      sistema: 'Firmware e calibrazione',
+      gcode: 'Libreria di G-code'
+    },
+    secoesCurtas: { config: 'config', banco: 'profili', sistema: 'firmware', gcode: 'G-code' },
+    configurar: (nome: string) => `Configura il backup di ${nome}`,
+    configTitulo: 'IMPOSTAZIONI DI BACKUP',
+    oQueCopiar: 'COSA SALVARE',
+    arquivosDeConfig: 'FILE DI CONFIGURAZIONE',
+    arquivosDica: 'Togli la spunta a ciò che non deve entrare. Un file nuovo sulla stampante entra da solo.',
+    arquivosOffline: 'La stampante deve essere in rete per elencare i file.',
+    arquivosVazio: 'Nessun file di configurazione sulla stampante.',
+    intervalo: 'OGNI QUANTE ORE',
+    retencaoLabel: 'COPIE CONSERVATE',
+    padraoGlobal: (v: number) => `predefinito (${v})`,
+    retencaoAviso: (n: number) => `Conserva le ${n} più recenti; le precedenti vengono cancellate.`,
+    salvar: 'Salva',
+    salvando: 'Salvataggio…',
+    salvo: (nome: string) => `Impostazioni di backup di ${nome} salvate.`,
+    falhaSalvar: 'Impossibile salvare le impostazioni.',
+    copias: (nome: string) => `Copie conservate di ${nome}`,
+    copiasTitulo: 'COPIE CONSERVATE',
+    copiasVazio: 'Ancora nessuna copia conservata.',
+    baixar: 'Scarica .zip',
+    baixarComGcode: 'Scarica con il G-code',
+    comGcode: (n: number) => `+ ${n} G-code`,
+    fechar: 'Chiudi'
   },
 
   alertas: {

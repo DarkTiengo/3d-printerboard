@@ -72,6 +72,20 @@ CREATE TABLE IF NOT EXISTS backup_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_backup_printer ON backup_runs(printer_id, started_at DESC);
 
+-- Preferências de backup por impressora: o que copiar, de quanto em quanto
+-- tempo e quantas cópias guardar. Linha ausente = tudo, no padrão global.
+CREATE TABLE IF NOT EXISTS backup_prefs (
+  printer_id      TEXT PRIMARY KEY REFERENCES printers(id) ON DELETE CASCADE,
+  -- lista separada por vírgula: config,banco,sistema,gcode
+  secoes          TEXT NOT NULL DEFAULT 'config,banco,sistema,gcode',
+  -- JSON com os caminhos de config desmarcados
+  excluidos       TEXT NOT NULL DEFAULT '[]',
+  -- NULL = herda o valor global
+  intervalo_horas INTEGER,
+  retencao        INTEGER,
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL

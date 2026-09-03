@@ -1,6 +1,10 @@
 import type {
   Alert,
+  ArquivoDeConfig,
   BackupCard,
+  BackupPadroes,
+  BackupPrefs,
+  BackupPrefsInput,
   BackupResumo,
   BackupSnapshot,
   GcodeFile,
@@ -157,8 +161,21 @@ export const api = {
   rodarBackup: (id: string) =>
     post<{ ok: true; resultado: 'iniciado' | 'adiado'; nome: string }>(`/api/backups/${id}/rodar`),
   restaurar: (snapshotId: number, destinoPrinterId: string) =>
-    post<{ ok: true; arquivos: number }>('/api/backups/restaurar', { snapshotId, destinoPrinterId, confirmar: true })
+    post<{ ok: true; arquivos: number }>('/api/backups/restaurar', { snapshotId, destinoPrinterId, confirmar: true }),
+  prefsBackup: (id: string) => get<{ prefs: BackupPrefs; padroes: BackupPadroes }>(`/api/backups/${id}/prefs`),
+  salvarPrefsBackup: (id: string, prefs: BackupPrefsInput) =>
+    put<{ ok: true; prefs: BackupPrefs; padroes: BackupPadroes }>(`/api/backups/${id}/prefs`, prefs),
+  /** lista ao vivo, direto da impressora — só responde com ela na rede */
+  arquivosDeConfig: (id: string) => get<ArquivoDeConfig[]>(`/api/backups/${id}/arquivos`)
 };
+
+/**
+ * Endereço para baixar uma cópia. É um link normal: mesma origem, cookie de
+ * sessão junto, e o navegador salva o arquivo sem passar pelo JavaScript.
+ */
+export function urlDownloadBackup(snapshotId: number, comGcode: boolean): string {
+  return urlDaApi(`/api/backups/snapshots/${snapshotId}/baixar${comGcode ? '?gcode=1' : ''}`);
+}
 
 /** URL do stream MJPEG de uma câmera, na taxa pedida. */
 export function urlCamera(printerId: string, fps: number): string {

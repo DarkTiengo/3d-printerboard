@@ -153,7 +153,50 @@ export type BackupCard = {
   bytes: number;
   /** Na fila, esperando a impressora ficar ociosa para ser copiada. */
   pendente: boolean;
+  /** O que esta máquina copia, de quanto em quanto tempo e quantas cópias guarda. */
+  prefs: BackupPrefs;
+  /** Quantas cópias existem guardadas hoje. */
+  copias: number;
 };
+
+/**
+ * O que entra no backup de uma impressora.
+ *
+ * `config` é printer.cfg e macros, `banco` são os perfis do Mainsail/Fluidd,
+ * `sistema` é versão de firmware e calibração, `gcode` é a biblioteca de peças
+ * — de longe a mais pesada, por isso é a que mais se desliga por máquina.
+ */
+export type BackupSecao = 'config' | 'banco' | 'sistema' | 'gcode';
+
+export const BACKUP_SECOES: BackupSecao[] = ['config', 'banco', 'sistema', 'gcode'];
+
+export type BackupPrefs = {
+  printerId: string;
+  secoes: BackupSecao[];
+  /**
+   * Caminhos de config desmarcados pelo usuário. É lista de exclusão, não de
+   * inclusão, de propósito: um arquivo novo que apareça na impressora entra no
+   * backup sozinho, em vez de ficar de fora até alguém lembrar de marcá-lo.
+   */
+  excluidos: string[];
+  /** null = usa o intervalo global */
+  intervaloHoras: number | null;
+  /** null = usa a retenção global; quantas cópias guardar antes de apagar */
+  retencao: number | null;
+};
+
+export type BackupPrefsInput = {
+  secoes?: BackupSecao[];
+  excluidos?: string[];
+  intervaloHoras?: number | null;
+  retencao?: number | null;
+};
+
+/** Os valores globais que valem quando a impressora não tem os seus. */
+export type BackupPadroes = { intervaloHoras: number; retencao: number };
+
+/** Um arquivo de config visto na impressora, para a tela de seleção. */
+export type ArquivoDeConfig = { caminho: string; bytes: number; incluso: boolean };
 
 export type BackupResumo = {
   /** expressão cron crua; o front descreve em palavras */
@@ -161,6 +204,8 @@ export type BackupResumo = {
   ultimoCicloEm: string | null;
   bytes: number;
   falhas: number;
+  /** intervalo e retenção que valem para quem não configurou os seus */
+  padroes: BackupPadroes;
 };
 
 export type BackupSnapshot = {
@@ -170,6 +215,10 @@ export type BackupSnapshot = {
   estado: BackupEstado;
   bytes: number;
   arquivos: number;
+  /** quantos G-code o snapshot referencia — decide a oferta de baixar com eles */
+  gcodeArquivos: number;
+  /** formato do arquivo guardado; `tar.gz` é de snapshots anteriores à mudança */
+  formato: 'zip' | 'tar.gz';
 };
 
 // ── Stream (SSE) ────────────────────────────────────────────────────────────

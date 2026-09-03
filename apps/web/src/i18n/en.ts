@@ -196,7 +196,40 @@ export const en: Dicionario = {
       `The configuration files on ${nome} will be replaced by the ones in the chosen snapshot. Anything there now that is not in the backup is lost. The machine needs a FIRMWARE_RESTART afterwards.`,
     sobrescrever: 'Overwrite',
     restaurado: (n: number) => `Restore finished: ${n} configuration files sent.`,
-    falhaRestaurar: 'Restore failed.'
+    falhaRestaurar: 'Restore failed.',
+    plano: 'PLAN',
+    resumoPlano: (secoes: string, horas: number, copias: number) =>
+      `${secoes} · ${horas} h · ${copias} copies`,
+    semSecao: 'nothing selected',
+    secoes: {
+      config: 'Configuration (printer.cfg, macros)',
+      banco: 'Mainsail/Fluidd profiles',
+      sistema: 'Firmware and calibration',
+      gcode: 'G-code library'
+    },
+    secoesCurtas: { config: 'config', banco: 'profiles', sistema: 'firmware', gcode: 'G-code' },
+    configurar: (nome: string) => `Configure the backup of ${nome}`,
+    configTitulo: 'BACKUP SETTINGS',
+    oQueCopiar: 'WHAT TO BACK UP',
+    arquivosDeConfig: 'CONFIGURATION FILES',
+    arquivosDica: 'Uncheck what should stay out. A new file on the printer is included on its own.',
+    arquivosOffline: 'The printer has to be on the network to list its files.',
+    arquivosVazio: 'No configuration files on the printer.',
+    intervalo: 'EVERY HOW MANY HOURS',
+    retencaoLabel: 'COPIES KEPT',
+    padraoGlobal: (v: number) => `default (${v})`,
+    retencaoAviso: (n: number) => `Keeps the ${n} most recent; older ones are deleted.`,
+    salvar: 'Save',
+    salvando: 'Saving…',
+    salvo: (nome: string) => `Backup settings for ${nome} saved.`,
+    falhaSalvar: 'Could not save the settings.',
+    copias: (nome: string) => `Stored copies of ${nome}`,
+    copiasTitulo: 'STORED COPIES',
+    copiasVazio: 'No copies stored yet.',
+    baixar: 'Download .zip',
+    baixarComGcode: 'Download with the G-code',
+    comGcode: (n: number) => `+ ${n} G-code`,
+    fechar: 'Close'
   },
 
   alertas: {

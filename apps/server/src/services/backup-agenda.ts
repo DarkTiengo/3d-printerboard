@@ -57,7 +57,8 @@ export function podeCopiarAgora(printer: Printer | null | undefined): boolean {
 export function backupEstaVencido(printerId: string, agora = Date.now()): boolean {
   const cfg = acharPrinter(printerId);
   if (!cfg?.backupEnabled) return false;
-  return backupVencido(ultimoBackupUtilEm(printerId), intervaloBackupHoras(), agora);
+  // cada máquina pode ter o seu intervalo; sem o dela, vale o global
+  return backupVencido(ultimoBackupUtilEm(printerId), intervaloBackupHoras(printerId), agora);
 }
 
 export function estaPendente(printerId: string): boolean {
@@ -107,11 +108,25 @@ export function rodarCicloCompleto(motivo: Motivo = 'ciclo'): {
   iniciados: string[];
   adiados: string[];
   offline: string[];
+  emDia: string[];
 } {
-  const alvos = listarPrinters().filter((p) => p.backupEnabled);
+  const candidatas = listarPrinters().filter((p) => p.backupEnabled);
   const iniciados: string[] = [];
   const adiados: string[] = [];
   const offline: string[] = [];
+  const emDia: string[] = [];
+
+  // O ciclo agendado respeita o intervalo de cada máquina: quem pediu backup
+  // semanal não é copiada toda madrugada só porque o cron disparou. O pedido
+  // manual copia todo mundo — quem clicou quer uma cópia agora.
+  const alvos =
+    motivo === 'manual'
+      ? candidatas
+      : candidatas.filter((p) => {
+          if (backupEstaVencido(p.id)) return true;
+          emDia.push(p.id);
+          return false;
+        });
 
   for (const p of alvos) {
     switch (pedirBackup(p.id, motivo)) {
@@ -127,10 +142,16 @@ export function rodarCicloCompleto(motivo: Motivo = 'ciclo'): {
   }
 
   logger.info(
-    { total: alvos.length, iniciados: iniciados.length, adiados: adiados.length, offline: offline.length },
+    {
+      total: candidatas.length,
+      iniciados: iniciados.length,
+      adiados: adiados.length,
+      offline: offline.length,
+      emDia: emDia.length
+    },
     'ciclo de backup disparado'
   );
-  return { iniciados, adiados, offline };
+  return { iniciados, adiados, offline, emDia };
 }
 
 /**
@@ -194,8 +215,8 @@ async function processarPendentes(): Promise<void> {
  * Depois de dois intervalos esperando, isso vira alerta.
  */
 function avisarEsperaLonga(): void {
-  const limite = intervaloBackupHoras() * 2 * 3_600_000;
   for (const [printerId, pendente] of pendentes) {
+    const limite = intervaloBackupHoras(printerId) * 2 * 3_600_000;
     if (Date.now() - pendente.desde < limite) continue;
     const printer = farm.printer(printerId);
     if (!printer) continue;

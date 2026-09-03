@@ -156,10 +156,39 @@ operating-system credentials. It covers the three lines on each card:
 - **firmware/calibration** — `machine.system_info` and `machine.update.status`
 - **G-code** — the `gcodes` root
 
-Each run becomes `data/backups/<printer>/<timestamp>.tar.gz` with a
-`manifest.json`. G-code goes into a content-addressed store under `data/blobs/`:
-eight machines print largely the same files, and without deduplication a 7-day
-retention would fill the disk.
+Each run becomes `data/backups/<printer>/<timestamp>.zip` with a
+`manifest.json` beside it. The content goes into a content-addressed store under
+`data/blobs/`: eight machines print largely the same files, and the `printer.cfg`
+that has not changed in a month is one blob, not thirty — without deduplication a
+7-day retention would fill the disk. Archives written before this change are
+`.tar.gz`; they still restore and still download, as they are.
+
+### Per printer: what, how often, how many
+
+Every card has a settings button. Per machine you choose:
+
+- **what to copy** — the four sections above, plus a checklist of the individual
+  configuration files, read live from the printer. It is an exclusion list: a new
+  file that appears on the machine is included on its own, instead of staying out
+  until somebody remembers to tick it.
+- **how often** — its own interval in hours. The nightly cycle skips a machine
+  that is still within its interval, so a printer set to weekly is not copied
+  every night. The manual button copies regardless.
+- **how many copies to keep** — the older ones are deleted, archive and all.
+  Lowering the number applies immediately.
+
+Blank means "use the farm default" (`BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP`).
+Changing the settings needs the admin role, since a smaller retention deletes
+copies right away.
+
+### Download
+
+The copies button lists what is stored, newest first, with a link to download
+each one. The stored `.zip` carries the configuration, the database dump and the
+system info; the G-code library is not repeated inside it, so a second link
+rebuilds the archive on the fly with the G-code included when you want the whole
+thing. Downloading requires the operator role — those files are the machine's
+configuration.
 
 ### Idle printers only
 

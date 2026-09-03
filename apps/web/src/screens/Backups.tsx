@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Clock, Download, Upload } from 'lucide-react';
-import type { BackupCard, User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
-import { api } from '../lib/api';
+import { Archive, Clock, Download, HardDriveDownload, SlidersHorizontal, Upload } from 'lucide-react';
+import type { BackupCard, BackupPadroes, BackupSecao, User } from '@3dfarm/shared';
+import { BACKUP_SECOES, pode } from '@3dfarm/shared';
+import { api, urlDownloadBackup } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Tag } from '../components/Tag';
 import { Confirm } from '../components/Confirm';
@@ -36,7 +36,10 @@ export function Backups({ usuario }: { usuario: User }) {
   const cards = cardsStream.length > 0 ? cardsStream : (data?.cards ?? []);
 
   const podeRodar = pode(usuario.role, 'rodarBackup');
+  const podeConfigurar = pode(usuario.role, 'restaurarBackup');
   const [restaurando, setRestaurando] = useState<BackupCard | null>(null);
+  const [configurando, setConfigurando] = useState<BackupCard | null>(null);
+  const [vendoCopias, setVendoCopias] = useState<BackupCard | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const rodarTodas = useMutation({
@@ -133,10 +136,13 @@ export function Backups({ usuario }: { usuario: User }) {
               t={t}
               f={f}
               card={c}
+              padroes={resumo?.padroes}
               podeRodar={podeRodar}
-              podeRestaurar={pode(usuario.role, 'restaurarBackup')}
+              podeRestaurar={podeConfigurar}
               aoRodar={() => rodarUma.mutate(c.printerId)}
               aoRestaurar={() => setRestaurando(c)}
+              aoConfigurar={() => setConfigurando(c)}
+              aoVerCopias={() => setVendoCopias(c)}
             />
           ))}
         </div>
@@ -152,6 +158,27 @@ export function Backups({ usuario }: { usuario: User }) {
           setAviso(msg);
         }}
       />
+
+      <DialogoConfiguracao
+        t={t}
+        f={f}
+        card={configurando}
+        podeEditar={podeConfigurar}
+        aoFechar={() => setConfigurando(null)}
+        aoConcluir={(msg) => {
+          setConfigurando(null);
+          setAviso(msg);
+          void qc.invalidateQueries({ queryKey: ['backups'] });
+        }}
+      />
+
+      <DialogoCopias
+        t={t}
+        f={f}
+        card={vendoCopias}
+        padroes={resumo?.padroes}
+        aoFechar={() => setVendoCopias(null)}
+      />
     </div>
   );
 }
@@ -160,24 +187,31 @@ function CardBackup({
   t,
   f,
   card,
+  padroes,
   podeRodar,
   podeRestaurar,
   aoRodar,
-  aoRestaurar
+  aoRestaurar,
+  aoConfigurar,
+  aoVerCopias
 }: {
   t: Dicionario;
   f: ReturnType<typeof useFormato>;
   card: BackupCard;
+  padroes: BackupPadroes | undefined;
   podeRodar: boolean;
   podeRestaurar: boolean;
   aoRodar: () => void;
   aoRestaurar: () => void;
+  aoConfigurar: () => void;
+  aoVerCopias: () => void;
 }) {
   const ok = card.estado === 'OK';
   const linhas = [
     { rotulo: t.backups.perfis, valor: f.quandoCurto(card.ultimoEm) },
     { rotulo: t.backups.firmware, valor: card.firmware },
-    { rotulo: t.backups.gcode, valor: card.ultimoEm ? `${card.gcodeArquivos} · ${f.bytes(card.bytes)}` : '—' }
+    { rotulo: t.backups.gcode, valor: card.ultimoEm ? `${card.gcodeArquivos} · ${f.bytes(card.bytes)}` : '—' },
+    { rotulo: t.backups.plano, valor: descreverPlano(t, card, padroes) }
   ];
 
   return (
@@ -238,6 +272,19 @@ function CardBackup({
           disabled={!podeRodar}
           onClick={aoRodar}
           icone={<Download size={16} strokeWidth={2} aria-hidden />}
+        />
+        <IconButton
+          rotulo={t.backups.copias(card.nome)}
+          variante="secundaria"
+          disabled={card.copias === 0}
+          onClick={aoVerCopias}
+          icone={<Archive size={16} strokeWidth={2} aria-hidden />}
+        />
+        <IconButton
+          rotulo={t.backups.configurar(card.nome)}
+          variante="secundaria"
+          onClick={aoConfigurar}
+          icone={<SlidersHorizontal size={16} strokeWidth={2} aria-hidden />}
         />
         <IconButton
           rotulo={t.backups.restaurarDe(card.nome)}
@@ -410,4 +457,353 @@ const botaoPrimario: React.CSSProperties = {
   border: 0,
   background: 'var(--color-accent)',
   color: 'var(--color-bg)'
+};
+
+
+/** 'config, perfis, firmware · 24 h · 7 cópias' — o plano do card, em uma linha. */
+function descreverPlano(t: Dicionario, card: BackupCard, padroes: BackupPadroes | undefined): string {
+  const secoes = card.prefs.secoes.map((s) => t.backups.secoesCurtas[s]).join(', ') || t.backups.semSecao;
+  const horas = card.prefs.intervaloHoras ?? padroes?.intervaloHoras ?? 24;
+  const copias = card.prefs.retencao ?? padroes?.retencao ?? 7;
+  return t.backups.resumoPlano(secoes, horas, copias);
+}
+
+/**
+ * O que esta máquina copia, de quanto em quanto tempo e quantas cópias guarda.
+ *
+ * A lista de arquivos vem ao vivo da impressora, e não do último backup: o que
+ * interessa marcar é o que está lá agora. Com a máquina fora da rede o resto do
+ * diálogo continua editável — só a seleção fina de arquivos fica indisponível.
+ */
+function DialogoConfiguracao({
+  t,
+  f,
+  card,
+  podeEditar,
+  aoFechar,
+  aoConcluir
+}: {
+  t: Dicionario;
+  f: ReturnType<typeof useFormato>;
+  card: BackupCard | null;
+  podeEditar: boolean;
+  aoFechar: () => void;
+  aoConcluir: (msg: string) => void;
+}) {
+  const [secoes, setSecoes] = useState<BackupSecao[]>([]);
+  const [excluidos, setExcluidos] = useState<string[]>([]);
+  const [intervalo, setIntervalo] = useState('');
+  const [retencao, setRetencao] = useState('');
+
+  const { data } = useQuery({
+    queryKey: ['backup-prefs', card?.printerId],
+    queryFn: () => api.prefsBackup(card!.printerId),
+    enabled: !!card
+  });
+
+  const arquivos = useQuery({
+    queryKey: ['backup-arquivos', card?.printerId],
+    queryFn: () => api.arquivosDeConfig(card!.printerId),
+    enabled: !!card,
+    retry: false
+  });
+
+  // recarrega o formulário quando o diálogo abre em outra impressora
+  useEffect(() => {
+    if (!data) return;
+    setSecoes(data.prefs.secoes);
+    setExcluidos(data.prefs.excluidos);
+    setIntervalo(data.prefs.intervaloHoras == null ? '' : String(data.prefs.intervaloHoras));
+    setRetencao(data.prefs.retencao == null ? '' : String(data.prefs.retencao));
+  }, [data]);
+
+  const salvar = useMutation({
+    mutationFn: () =>
+      api.salvarPrefsBackup(card!.printerId, {
+        secoes,
+        excluidos,
+        // vazio quer dizer "usa o padrão da fazenda", não zero
+        intervaloHoras: intervalo.trim() === '' ? null : Number(intervalo),
+        retencao: retencao.trim() === '' ? null : Number(retencao)
+      }),
+    onSuccess: () => aoConcluir(t.backups.salvo(card!.nome)),
+    onError: (err) => aoConcluir(err instanceof Error ? err.message : t.backups.falhaSalvar)
+  });
+
+  if (!card) return null;
+
+  const padroes = data?.padroes;
+  const alternar = (s: BackupSecao) =>
+    setSecoes((atual) => (atual.includes(s) ? atual.filter((x) => x !== s) : [...atual, s]));
+  const alternarArquivo = (caminho: string) =>
+    setExcluidos((atual) =>
+      atual.includes(caminho) ? atual.filter((x) => x !== caminho) : [...atual, caminho]
+    );
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.backups.configurar(card.nome)}
+      onClick={(e) => e.target === e.currentTarget && aoFechar()}
+      style={fundoModal}
+    >
+      <div style={{ ...caixaModal, width: 'min(560px, 100%)' }}>
+        <div>
+          <div className="mono">{t.backups.configTitulo}</div>
+          <h2 style={{ fontSize: 24, marginTop: 8 }}>{card.nome}</h2>
+        </div>
+
+        <fieldset style={{ border: 0, margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <legend className="mono" style={{ padding: 0, marginBottom: 4 }}>
+            {t.backups.oQueCopiar}
+          </legend>
+          {BACKUP_SECOES.map((s) => (
+            <label key={s} style={linhaCheck}>
+              <input
+                type="checkbox"
+                checked={secoes.includes(s)}
+                disabled={!podeEditar}
+                onChange={() => alternar(s)}
+              />
+              {t.backups.secoes[s]}
+            </label>
+          ))}
+        </fieldset>
+
+        {secoes.includes('config') && (
+          <fieldset style={{ border: 0, margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <legend className="mono" style={{ padding: 0, marginBottom: 4 }}>
+              {t.backups.arquivosDeConfig}
+            </legend>
+            <p style={dica}>{t.backups.arquivosDica}</p>
+
+            {arquivos.isLoading && <span className="mono">{t.comum.carregando}</span>}
+            {arquivos.isError && <span style={dica}>{t.backups.arquivosOffline}</span>}
+            {arquivos.data?.length === 0 && <span style={dica}>{t.backups.arquivosVazio}</span>}
+
+            {(arquivos.data?.length ?? 0) > 0 && (
+              <div style={listaArquivos}>
+                {arquivos.data!.map((a) => (
+                  <label key={a.caminho} style={linhaCheck}>
+                    <input
+                      type="checkbox"
+                      checked={!excluidos.includes(a.caminho)}
+                      disabled={!podeEditar}
+                      onChange={() => alternarArquivo(a.caminho)}
+                    />
+                    <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{a.caminho}</span>
+                    <span style={{ marginLeft: 'auto', color: 'var(--color-neutral-500)' }}>{f.bytes(a.bytes)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
+        )}
+
+        <div style={{ display: 'flex', gap: 14 }}>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span className="mono">{t.backups.intervalo}</span>
+            <input
+              type="number"
+              min={1}
+              max={2160}
+              value={intervalo}
+              disabled={!podeEditar}
+              placeholder={padroes ? t.backups.padraoGlobal(padroes.intervaloHoras) : ''}
+              onChange={(e) => setIntervalo(e.target.value)}
+              style={campoSelect}
+            />
+          </label>
+          <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span className="mono">{t.backups.retencaoLabel}</span>
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={retencao}
+              disabled={!podeEditar}
+              placeholder={padroes ? t.backups.padraoGlobal(padroes.retencao) : ''}
+              onChange={(e) => setRetencao(e.target.value)}
+              style={campoSelect}
+            />
+          </label>
+        </div>
+        <p style={dica}>
+          {t.backups.retencaoAviso(retencao.trim() === '' ? (padroes?.retencao ?? 7) : Number(retencao))}
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={aoFechar} style={botaoSecundario}>
+            {t.comum.cancelar}
+          </button>
+          <button
+            type="button"
+            disabled={!podeEditar || salvar.isPending}
+            onClick={() => salvar.mutate()}
+            style={{ ...botaoPrimario, opacity: !podeEditar || salvar.isPending ? 0.5 : 1 }}
+          >
+            {salvar.isPending ? t.backups.salvando : t.backups.salvar}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * As cópias guardadas desta impressora, da mais nova para a mais velha, com o
+ * link para baixar cada uma. O zip guardado não repete a biblioteca de G-code
+ * (ela é deduplicada entre máquinas e entre dias), então quem quer o pacote
+ * completo pede a versão com G-code — montada na hora pelo servidor.
+ */
+function DialogoCopias({
+  t,
+  f,
+  card,
+  padroes,
+  aoFechar
+}: {
+  t: Dicionario;
+  f: ReturnType<typeof useFormato>;
+  card: BackupCard | null;
+  padroes: BackupPadroes | undefined;
+  aoFechar: () => void;
+}) {
+  const { data: snapshots, isLoading } = useQuery({
+    queryKey: ['snapshots', card?.printerId],
+    queryFn: () => api.snapshots(card!.printerId),
+    enabled: !!card
+  });
+
+  if (!card) return null;
+  const guardadas = card.prefs.retencao ?? padroes?.retencao ?? 7;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.backups.copias(card.nome)}
+      onClick={(e) => e.target === e.currentTarget && aoFechar()}
+      style={fundoModal}
+    >
+      <div style={{ ...caixaModal, width: 'min(620px, 100%)' }}>
+        <div>
+          <div className="mono">{t.backups.copiasTitulo}</div>
+          <h2 style={{ fontSize: 24, marginTop: 8 }}>{card.nome}</h2>
+        </div>
+
+        {isLoading && <span className="mono">{t.comum.carregando}</span>}
+        {snapshots?.length === 0 && <span style={dica}>{t.backups.copiasVazio}</span>}
+
+        {(snapshots?.length ?? 0) > 0 && (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 320, overflow: 'auto' }}>
+            {snapshots!.map((s) => (
+              <li
+                key={s.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 0',
+                  borderBottom: '1px solid var(--color-neutral-800)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11
+                }}
+              >
+                <span style={{ minWidth: 120 }}>{f.quandoCurto(s.criadoEm)}</span>
+                <span style={{ color: 'var(--color-neutral-500)' }}>{t.backups.estados[s.estado]}</span>
+                <span style={{ color: 'var(--color-neutral-500)' }}>{f.bytes(s.bytes)}</span>
+                {s.gcodeArquivos > 0 && (
+                  <span style={{ color: 'var(--color-neutral-500)' }}>{t.backups.comGcode(s.gcodeArquivos)}</span>
+                )}
+                <a
+                  href={urlDownloadBackup(s.id, false)}
+                  style={{ ...linkBaixar, marginLeft: 'auto' }}
+                  title={t.backups.baixar}
+                >
+                  <Download size={14} strokeWidth={2} aria-hidden />
+                  {t.backups.baixar}
+                </a>
+                {s.gcodeArquivos > 0 && (
+                  <a href={urlDownloadBackup(s.id, true)} style={linkBaixar} title={t.backups.baixarComGcode}>
+                    <HardDriveDownload size={14} strokeWidth={2} aria-hidden />
+                    {t.backups.baixarComGcode}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p style={dica}>{t.backups.retencaoAviso(guardadas)}</p>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={aoFechar} style={botaoSecundario}>
+            {t.backups.fechar}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const fundoModal: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 70,
+  display: 'grid',
+  placeItems: 'center',
+  padding: 24,
+  background: 'rgba(20, 19, 18, 0.72)'
+};
+
+const caixaModal: React.CSSProperties = {
+  background: 'var(--color-text)',
+  border: '2px solid var(--color-neutral-700)',
+  padding: 28,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 18,
+  maxHeight: 'calc(100vh - 48px)',
+  overflow: 'auto'
+};
+
+const linhaCheck: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontFamily: 'var(--font-mono)',
+  fontSize: 12,
+  color: 'var(--color-neutral-300)',
+  cursor: 'pointer'
+};
+
+const listaArquivos: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  maxHeight: 200,
+  overflow: 'auto',
+  border: '1px solid var(--color-neutral-800)',
+  padding: 10
+};
+
+const dica: React.CSSProperties = {
+  margin: 0,
+  fontFamily: 'var(--font-mono)',
+  fontSize: 11,
+  color: 'var(--color-neutral-500)'
+};
+
+const linkBaixar: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  border: '1px solid var(--color-neutral-700)',
+  borderRadius: 999,
+  padding: '6px 12px',
+  color: 'var(--color-bg)',
+  textDecoration: 'none',
+  whiteSpace: 'nowrap'
 };

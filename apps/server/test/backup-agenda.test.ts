@@ -10,6 +10,7 @@ const mundo = vi.hoisted(() => ({
   printers: new Map<string, any>(),
   configs: new Map<string, any>(),
   ultimoBackup: new Map<string, string | null>(),
+  intervalos: new Map<string, number>(),
   copiadas: [] as string[]
 }));
 
@@ -31,7 +32,7 @@ vi.mock('../src/services/backup.js', () => ({
   ultimoBackupUtilEm: (id: string) => mundo.ultimoBackup.get(id) ?? null,
   backupVencido: (ultimo: string | null, horas: number, agora = Date.now()) =>
     !ultimo || agora - new Date(ultimo).getTime() >= horas * 3_600_000,
-  intervaloBackupHoras: () => 24,
+  intervaloBackupHoras: (id?: string) => (id && mundo.intervalos.has(id) ? mundo.intervalos.get(id)! : 24),
   registrarCiclo: () => {},
   coletarLixo: async () => 0,
   definirVerificadorDePendencia: () => {}
@@ -68,6 +69,7 @@ beforeEach(() => {
   mundo.printers.clear();
   mundo.configs.clear();
   mundo.ultimoBackup.clear();
+  mundo.intervalos.clear();
   mundo.copiadas = [];
   _limparEstado();
 });
@@ -163,6 +165,31 @@ describe('rodarCicloCompleto', () => {
 
     expect(r.iniciados).toEqual([]);
     expect(idsPendentes().sort()).toEqual(['P01', 'P02']);
+  });
+
+  it('respeita o intervalo de cada impressora: quem está em dia não é copiada', () => {
+    cadastrar('P01', 'ociosa');
+    cadastrar('P02', 'ociosa');
+    // P02 pede backup semanal e foi copiada ontem; P01 é diária e venceu
+    mundo.intervalos.set('P02', 168);
+    mundo.ultimoBackup.set('P01', new Date(Date.now() - 30 * 3_600_000).toISOString());
+    mundo.ultimoBackup.set('P02', new Date(Date.now() - 24 * 3_600_000).toISOString());
+
+    const r = rodarCicloCompleto('ciclo');
+
+    expect(r.iniciados).toEqual(['P01']);
+    expect(r.emDia).toEqual(['P02']);
+  });
+
+  it('mas o pedido manual copia todo mundo, esteja em dia ou não', () => {
+    cadastrar('P01', 'ociosa');
+    mundo.intervalos.set('P01', 168);
+    mundo.ultimoBackup.set('P01', new Date().toISOString());
+
+    const r = rodarCicloCompleto('manual');
+
+    expect(r.iniciados).toEqual(['P01']);
+    expect(r.emDia).toEqual([]);
   });
 
   it('pula quem está com o backup desligado', () => {

@@ -1,11 +1,18 @@
+import { createReadStream } from 'node:fs';
 import type { FastifyInstance } from 'fastify';
-import type { RestorePayload } from '@3dfarm/shared';
+import type { BackupPrefsInput, RestorePayload } from '@3dfarm/shared';
 import {
+  aplicarRetencaoDeTodas,
   cardsDeBackup,
   coletarLixo,
+  listarArquivosDeConfig,
   listarSnapshots,
+  padroesBackup,
+  prefsDe,
+  prepararDownload,
   restaurar,
-  resumoDeBackup
+  resumoDeBackup,
+  salvarPrefs
 } from '../services/backup.js';
 import { pedirBackup, rodarCicloCompleto } from '../services/backup-agenda.js';
 import { exigirLogin, exigirPermissao } from '../lib/guard.js';
@@ -38,6 +45,87 @@ export async function rotasBackups(app: FastifyInstance): Promise<void> {
       adiadasIds: r.adiados
     };
   });
+
+  // ── o que cada impressora copia, de quanto em quanto tempo, quantas cópias ──
+
+  app.get<{ Params: { id: string } }>('/api/backups/:id/prefs', { preHandler: exigirLogin }, async (req, reply) => {
+    const cfg = acharPrinter(req.params.id);
+    if (!cfg) return reply.code(404).send({ erro: 'impressora não encontrada' });
+    return { prefs: prefsDe(req.params.id), padroes: padroesBackup() };
+  });
+
+  /**
+   * Mudar a retenção para menos apaga cópias na hora — por isso é papel admin,
+   * o mesmo de restaurar.
+   */
+  app.put<{ Params: { id: string }; Body: BackupPrefsInput }>(
+    '/api/backups/:id/prefs',
+    { preHandler: exigirPermissao('restaurarBackup') },
+    async (req, reply) => {
+      const cfg = acharPrinter(req.params.id);
+      if (!cfg) return reply.code(404).send({ erro: 'impressora não encontrada' });
+
+      const prefs = salvarPrefs(req.params.id, req.body ?? {});
+      logger.info({ printer: req.params.id, por: req.sessao!.usuario, prefs }, 'preferências de backup alteradas');
+      // a retenção nova pode ser menor que a antiga: aplica já
+      await aplicarRetencaoDeTodas();
+      await coletarLixo();
+      return { ok: true, prefs, padroes: padroesBackup() };
+    }
+  );
+
+  /**
+   * Os arquivos de config que estão na máquina agora, para o usuário marcar
+   * quais entram. Vai buscar ao vivo: só funciona com a impressora na rede.
+   */
+  app.get<{ Params: { id: string } }>(
+    '/api/backups/:id/arquivos',
+    { preHandler: exigirLogin },
+    async (req, reply) => {
+      try {
+        return await listarArquivosDeConfig(req.params.id);
+      } catch (err) {
+        return reply
+          .code(503)
+          .send({ erro: err instanceof Error ? err.message : 'não foi possível listar os arquivos' });
+      }
+    }
+  );
+
+  /**
+   * Baixar uma cópia. `gcode=1` remonta o zip com a biblioteca de peças junto —
+   * o que fica guardado no disco não a repete, para não multiplicar gigabytes
+   * por cópia.
+   */
+  app.get<{ Params: { id: string }; Querystring: { gcode?: string } }>(
+    '/api/backups/snapshots/:id/baixar',
+    { preHandler: exigirPermissao('rodarBackup') },
+    async (req, reply) => {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id)) return reply.code(400).send({ erro: 'snapshot inválido' });
+
+      try {
+        const comGcode = req.query.gcode === '1' || req.query.gcode === 'true';
+        const download = await prepararDownload(id, comGcode);
+        logger.info({ snapshot: id, por: req.sessao!.usuario, comGcode }, 'download de backup');
+
+        reply
+          .header('content-type', 'application/zip')
+          .header('content-disposition', `attachment; filename="${download.nome}"`);
+
+        if (download.tipo === 'arquivo') {
+          if (download.nome.endsWith('.tar.gz')) reply.header('content-type', 'application/gzip');
+          return reply.send(createReadStream(download.caminho));
+        }
+        // zip montado na hora: pipa primeiro, fecha depois
+        void reply.send(download.zip);
+        void download.zip.finalize();
+        return reply;
+      } catch (err) {
+        return reply.code(404).send({ erro: err instanceof Error ? err.message : 'snapshot não encontrado' });
+      }
+    }
+  );
 
   app.post<{ Params: { id: string } }>(
     '/api/backups/:id/rodar',

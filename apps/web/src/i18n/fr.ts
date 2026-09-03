@@ -196,7 +196,40 @@ export const fr: Dicionario = {
       `Les fichiers de configuration de ${nome} seront remplacés par ceux de la sauvegarde choisie. Ce qui s’y trouve aujourd’hui et n’est pas dans la sauvegarde sera perdu. La machine aura besoin d’un FIRMWARE_RESTART ensuite.`,
     sobrescrever: 'Écraser',
     restaurado: (n: number) => `Restauration terminée : ${n} fichiers de configuration envoyés.`,
-    falhaRestaurar: 'La restauration a échoué.'
+    falhaRestaurar: 'La restauration a échoué.',
+    plano: 'PLAN',
+    resumoPlano: (secoes: string, horas: number, copias: number) =>
+      `${secoes} · ${horas} h · ${copias} copies`,
+    semSecao: 'rien de sélectionné',
+    secoes: {
+      config: 'Configuration (printer.cfg, macros)',
+      banco: 'Profils Mainsail/Fluidd',
+      sistema: 'Firmware et calibration',
+      gcode: 'Bibliothèque de G-code'
+    },
+    secoesCurtas: { config: 'config', banco: 'profils', sistema: 'firmware', gcode: 'G-code' },
+    configurar: (nome: string) => `Configurer la sauvegarde de ${nome}`,
+    configTitulo: 'RÉGLAGES DE SAUVEGARDE',
+    oQueCopiar: 'QUOI SAUVEGARDER',
+    arquivosDeConfig: 'FICHIERS DE CONFIGURATION',
+    arquivosDica: 'Décochez ce qui ne doit pas y entrer. Un nouveau fichier sur l’imprimante y entre tout seul.',
+    arquivosOffline: 'L’imprimante doit être sur le réseau pour lister ses fichiers.',
+    arquivosVazio: 'Aucun fichier de configuration sur l’imprimante.',
+    intervalo: 'TOUTES LES COMBIEN D’HEURES',
+    retencaoLabel: 'COPIES CONSERVÉES',
+    padraoGlobal: (v: number) => `par défaut (${v})`,
+    retencaoAviso: (n: number) => `Conserve les ${n} plus récentes ; les précédentes sont supprimées.`,
+    salvar: 'Enregistrer',
+    salvando: 'Enregistrement…',
+    salvo: (nome: string) => `Réglages de sauvegarde de ${nome} enregistrés.`,
+    falhaSalvar: 'Impossible d’enregistrer les réglages.',
+    copias: (nome: string) => `Copies conservées de ${nome}`,
+    copiasTitulo: 'COPIES CONSERVÉES',
+    copiasVazio: 'Aucune copie conservée pour l’instant.',
+    baixar: 'Télécharger le .zip',
+    baixarComGcode: 'Télécharger avec le G-code',
+    comGcode: (n: number) => `+ ${n} G-code`,
+    fechar: 'Fermer'
   },
 
   alertas: {
