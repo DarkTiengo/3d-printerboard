@@ -3,7 +3,7 @@
 Run your 3D print farm from one screen — remotely, from your own server.
 Live cameras, print control, a G-code library with a queue, alerts, and the
 thing Moonraker does not do: **automatic backups of every machine's
-configuration**.
+configuration** — on each machine's own schedule, and downloadable as a zip.
 
 Built for people who own several Klipper/Moonraker printers and are tired of
 keeping one browser tab open per machine.
@@ -18,7 +18,9 @@ web app, and holds a persistent WebSocket to each Moonraker host.
 
 ![Sign in](docs/login.jpg)
 
-![Backups — per-machine state, with printers queued until they go idle](docs/backups.jpg)
+![Backups — per-machine state and plan, with printers queued until they go idle](docs/backups.jpg)
+
+![Backup settings — what to copy, how often, how many copies to keep](docs/backup-settings.jpg)
 
 </details>
 
@@ -99,7 +101,9 @@ the column shows the farm-wide queue.
 already holds a file and which one will print it. Queueing from a group sends
 the job to that group's printer; the selector at the top can override this to
 "next free" or to one specific machine.
-**Backups** — per-machine state, manual runs and restore.
+**Backups** — per-machine state, manual runs, per-machine settings (what to
+copy, how often, how many copies to keep), download of any stored copy, and
+restore.
 **Alerts** — list by severity, with the camera frame captured at that moment.
 **Settings** — printer CRUD.
 
@@ -141,8 +145,8 @@ own `print_stats.state`, so it also covers prints you started from Mainsail.
 | --- | --- | --- | --- |
 | See everything | ✓ | ✓ | ✓ |
 | Pause/resume/cancel, emergency stop, queue | | ✓ | ✓ |
-| Run a backup | | ✓ | ✓ |
-| Restore a backup, manage printers and users | | | ✓ |
+| Run a backup, download a stored copy | | ✓ | ✓ |
+| Restore a backup, change a printer's backup settings, manage printers and users | | | ✓ |
 
 Enforced on the server. The front end only mirrors it by disabling buttons.
 
@@ -272,7 +276,8 @@ npm run build -w @3dfarm/shared          # everything else depends on its dist
 MOCK_PRINTERS=true npm run dev:server    # API on :8080, data in ./data
 npm run dev:web                          # Vite on :5173, proxying the API
 
-npm test         # Vitest: normalizer, queue engine, MJPEG demuxer, mDNS codec, formatters
+npm test         # Vitest: normalizer, queue engine, backup schedule and packer,
+                 # MJPEG demuxer, mDNS codec, formatters
 npm run typecheck
 ```
 
