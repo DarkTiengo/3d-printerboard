@@ -705,10 +705,12 @@ function DialogoCopias({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
+                  flexWrap: 'wrap',
                   padding: '10px 0',
                   borderBottom: '1px solid var(--color-neutral-800)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 11
+                  fontSize: 11,
+                  whiteSpace: 'nowrap'
                 }}
               >
                 <span style={{ minWidth: 120 }}>{f.quandoCurto(s.criadoEm)}</span>

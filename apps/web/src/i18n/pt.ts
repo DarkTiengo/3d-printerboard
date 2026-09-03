@@ -217,7 +217,10 @@ export const pt = {
     intervalo: 'A CADA QUANTAS HORAS',
     retencaoLabel: 'CÓPIAS GUARDADAS',
     padraoGlobal: (v: number) => `padrão (${v})`,
-    retencaoAviso: (n: number) => `Guarda as ${n} mais recentes; as anteriores são apagadas.`,
+    retencaoAviso: (n: number) =>
+      n === 1
+        ? 'Guarda só a cópia mais recente; as anteriores são apagadas.'
+        : `Guarda as ${n} mais recentes; as anteriores são apagadas.`,
     salvar: 'Salvar',
     salvando: 'Salvando…',
     salvo: (nome: string) => `Configuração de backup de ${nome} salva.`,

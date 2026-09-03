@@ -218,7 +218,10 @@ export const fr: Dicionario = {
     intervalo: 'TOUTES LES COMBIEN D’HEURES',
     retencaoLabel: 'COPIES CONSERVÉES',
     padraoGlobal: (v: number) => `par défaut (${v})`,
-    retencaoAviso: (n: number) => `Conserve les ${n} plus récentes ; les précédentes sont supprimées.`,
+    retencaoAviso: (n: number) =>
+      n === 1
+        ? 'Ne conserve que la copie la plus récente ; les précédentes sont supprimées.'
+        : `Conserve les ${n} plus récentes ; les précédentes sont supprimées.`,
     salvar: 'Enregistrer',
     salvando: 'Enregistrement…',
     salvo: (nome: string) => `Réglages de sauvegarde de ${nome} enregistrés.`,

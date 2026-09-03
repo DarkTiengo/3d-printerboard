@@ -218,7 +218,10 @@ export const es: Dicionario = {
     intervalo: 'CADA CUÁNTAS HORAS',
     retencaoLabel: 'COPIAS GUARDADAS',
     padraoGlobal: (v: number) => `predeterminado (${v})`,
-    retencaoAviso: (n: number) => `Guarda las ${n} más recientes; las anteriores se borran.`,
+    retencaoAviso: (n: number) =>
+      n === 1
+        ? 'Guarda solo la copia más reciente; las anteriores se borran.'
+        : `Guarda las ${n} más recientes; las anteriores se borran.`,
     salvar: 'Guardar',
     salvando: 'Guardando…',
     salvo: (nome: string) => `Configuración de copia de ${nome} guardada.`,

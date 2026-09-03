@@ -218,7 +218,10 @@ export const it: Dicionario = {
     intervalo: 'OGNI QUANTE ORE',
     retencaoLabel: 'COPIE CONSERVATE',
     padraoGlobal: (v: number) => `predefinito (${v})`,
-    retencaoAviso: (n: number) => `Conserva le ${n} più recenti; le precedenti vengono cancellate.`,
+    retencaoAviso: (n: number) =>
+      n === 1
+        ? 'Conserva solo la copia più recente; le precedenti vengono cancellate.'
+        : `Conserva le ${n} più recenti; le precedenti vengono cancellate.`,
     salvar: 'Salva',
     salvando: 'Salvataggio…',
     salvo: (nome: string) => `Impostazioni di backup di ${nome} salvate.`,

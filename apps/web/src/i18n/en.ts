@@ -218,7 +218,10 @@ export const en: Dicionario = {
     intervalo: 'EVERY HOW MANY HOURS',
     retencaoLabel: 'COPIES KEPT',
     padraoGlobal: (v: number) => `default (${v})`,
-    retencaoAviso: (n: number) => `Keeps the ${n} most recent; older ones are deleted.`,
+    retencaoAviso: (n: number) =>
+      n === 1
+        ? 'Keeps only the most recent copy; older ones are deleted.'
+        : `Keeps the ${n} most recent; older ones are deleted.`,
     salvar: 'Save',
     salvando: 'Saving…',
     salvo: (nome: string) => `Backup settings for ${nome} saved.`,
