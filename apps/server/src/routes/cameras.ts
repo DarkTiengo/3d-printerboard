@@ -59,7 +59,15 @@ export async function rotasCameras(app: FastifyInstance): Promise<void> {
       if (!cfg?.cameraUrl) return reply.code(404).send({ erro: 'impressora sem câmera configurada' });
 
       const maxIdade = Math.max(200, Math.min(Number(req.query.maxIdade) || 800, 30_000));
-      const jpeg = await cameras.capturar(req.params.id, maxIdade);
+      /*
+       * Timeout curto de propósito, bem abaixo do padrão de 8 s de `capturar`.
+       * Isto aqui é um tile de parede: uma câmera que não fecha um quadro em
+       * 4 s não vai parecer ao vivo de jeito nenhum, e enquanto a requisição
+       * fica pendurada ela ocupa uma das 6 conexões que o navegador dá por
+       * origem — as mesmas que a API usa para pausar e cancelar impressão.
+       * O tile tenta de novo no ciclo seguinte.
+       */
+      const jpeg = await cameras.capturar(req.params.id, maxIdade, 4_000);
       if (!jpeg) return reply.code(503).send({ erro: 'câmera não respondeu' });
 
       return reply.header('Content-Type', 'image/jpeg').header('Cache-Control', 'no-store').send(jpeg);

@@ -22,7 +22,32 @@ type Fonte = {
   reconectarEm: NodeJS.Timeout | null;
   tentativas: number;
   lingerEm: NodeJS.Timeout | null;
+  /** quando a última tentativa de conexão falhou; 0 se ainda não falhou nenhuma */
+  ultimaFalhaEm: number;
+  /** última vez que alguém pediu esta câmera — por assinatura ou por snapshot */
+  ultimoPedidoEm: number;
 };
+
+/**
+ * Quanto tempo a fonte sobrevive sem ninguém pedindo nada.
+ *
+ * Vale para as duas pontas: o assinante que sai não derruba a câmera na hora,
+ * e a câmera que caiu continua tentando voltar enquanto os snapshots da parede
+ * ainda estiverem chegando dentro desta janela.
+ */
+const LINGER_MS = 10_000;
+
+/**
+ * Teto para o primeiro quadro de uma conexão nova.
+ *
+ * Uma câmera pendurada — o host aceita o TCP e nunca responde, que é o que se
+ * vê quando o switch cai ou o firewall passa a dropar — só estouraria no
+ * `headersTimeout` de 30 s do agente. Até lá a fonte não é marcada como falha,
+ * e cada snapshot da parede continua esperando o timeout inteiro. Com este
+ * relógio a falha é registrada em 10 s e todo pedido seguinte é respondido na
+ * hora.
+ */
+const ESPERA_PRIMEIRO_QUADRO_MS = 10_000;
 
 /**
  * Uma única conexão upstream por câmera, com fan-out para todos os assinantes.
@@ -41,6 +66,7 @@ class CameraHub extends EventEmitter {
     const fonte = this.garantirFonte(printerId);
     if (!fonte) return null;
 
+    fonte.ultimoPedidoEm = Date.now();
     const assinante: Assinante = { fps: Math.max(0.2, Math.min(fps, 30)), ultimoEnvio: 0, onFrame };
     fonte.assinantes.add(assinante);
 
@@ -93,6 +119,25 @@ class CameraHub extends EventEmitter {
     const existente = this.ultimoFrame(printerId);
     const fonte = this.fontes.get(printerId);
     if (existente && fonte && Date.now() - fonte.ultimoFrameEm < maxIdadeMs) return existente;
+
+    /*
+     * Câmera que já falhou e ainda não voltou: responde agora, com o mesmo que
+     * responderíamos depois de esperar — o último quadro conhecido, ou null.
+     *
+     * Sem isto, cada tile da parede segura uma requisição pelo timeout inteiro
+     * enquanto a câmera está fora. Como o navegador só dá 6 conexões por
+     * origem, oito tiles pendurados empurram as chamadas da API para trás da
+     * fila: medimos a mediana de /api/printers saindo de ~5 ms para 7 s. Numa
+     * tela que serve para pausar e cancelar impressão, isso é o que importa.
+     *
+     * Continuamos tentando reconectar por baixo — quem chamou não espera, mas
+     * a câmera volta sozinha assim que puder.
+     */
+    if (fonte && !fonte.online && fonte.ultimaFalhaEm > 0) {
+      fonte.ultimoPedidoEm = Date.now();
+      this.garantirTentativa(printerId, fonte);
+      return fonte.ultimoFrame;
+    }
 
     return new Promise((resolve) => {
       /*
@@ -162,7 +207,9 @@ class CameraHub extends EventEmitter {
       online: false,
       reconectarEm: null,
       tentativas: 0,
-      lingerEm: null
+      lingerEm: null,
+      ultimaFalhaEm: 0,
+      ultimoPedidoEm: Date.now()
     };
     this.fontes.set(printerId, fonte);
     return fonte;
@@ -181,7 +228,7 @@ class CameraHub extends EventEmitter {
         fonte.reconectarEm = null;
       }
       logger.debug(`câmera ${printerId}: sem assinantes, upstream fechado`);
-    }, 10_000);
+    }, LINGER_MS);
   }
 
   private conectar(printerId: string, fonte: Fonte): void {
@@ -192,6 +239,15 @@ class CameraHub extends EventEmitter {
     fonte.demux.reset();
 
     void (async () => {
+      // desarmado no primeiro quadro; até lá, é ele que impede a fonte de ficar
+      // pendurada sem nunca ser marcada como falha
+      let estourou = false;
+      let esperandoPrimeiro = true;
+      const relogio = setTimeout(() => {
+        estourou = true;
+        abort.abort();
+      }, ESPERA_PRIMEIRO_QUADRO_MS);
+
       try {
         const res = await fetch(fonte.url, { signal: abort.signal, dispatcher: agenteDaFazenda });
         if (!res.ok || !res.body) throw new Error(`câmera respondeu ${res.status}`);
@@ -205,20 +261,53 @@ class CameraHub extends EventEmitter {
         for await (const pedaco of res.body as unknown as AsyncIterable<Uint8Array>) {
           const quadros = fonte.demux.push(Buffer.from(pedaco));
           for (const jpeg of quadros) this.distribuir(fonte, jpeg);
+          if (esperandoPrimeiro && quadros.length > 0) {
+            esperandoPrimeiro = false;
+            clearTimeout(relogio);
+            // a câmera está de fato entregando: o atalho de `capturar` sai de cena
+            fonte.ultimaFalhaEm = 0;
+          }
         }
         throw new Error('fluxo encerrado pela câmera');
       } catch (err) {
-        if (abort.signal.aborted) return;
-        const msg = err instanceof Error ? err.message : String(err);
+        clearTimeout(relogio);
+        // abortos nossos — troca de URL, desligamento — não são falha da câmera;
+        // o do relógio é
+        if (abort.signal.aborted && !estourou) return;
+
+        const msg = estourou
+          ? `sem quadro em ${ESPERA_PRIMEIRO_QUADRO_MS / 1000}s`
+          : err instanceof Error
+            ? err.message
+            : String(err);
         logger.warn(`câmera ${printerId}: ${msg}`);
+        fonte.ultimaFalhaEm = Date.now();
         if (fonte.online) {
           fonte.online = false;
           this.emit('offline', printerId, msg);
         }
         fonte.abort = null;
-        if (fonte.assinantes.size > 0) this.agendarReconexao(printerId, fonte);
+        if (this.aindaInteressa(fonte)) this.agendarReconexao(printerId, fonte);
       }
     })();
+  }
+
+  /**
+   * Alguém ainda quer esta câmera?
+   *
+   * Um assinante vivo conta, e um snapshot recente também: a parede não assina
+   * nada — pede um quadro e sai. Sem esta segunda metade, a câmera que caiu
+   * pararia de tentar voltar assim que o último assinante saísse, e ficaria
+   * morta para sempre mesmo depois de a rede se recuperar.
+   */
+  private aindaInteressa(fonte: Fonte): boolean {
+    return fonte.assinantes.size > 0 || Date.now() - fonte.ultimoPedidoEm < LINGER_MS;
+  }
+
+  /** Garante que há uma tentativa de reconexão a caminho, sem duplicar. */
+  private garantirTentativa(printerId: string, fonte: Fonte): void {
+    if (fonte.abort || fonte.reconectarEm) return;
+    this.agendarReconexao(printerId, fonte);
   }
 
   private agendarReconexao(printerId: string, fonte: Fonte): void {
@@ -227,7 +316,7 @@ class CameraHub extends EventEmitter {
     fonte.tentativas = Math.min(fonte.tentativas + 1, 8);
     fonte.reconectarEm = setTimeout(() => {
       fonte.reconectarEm = null;
-      if (fonte.assinantes.size > 0) this.conectar(printerId, fonte);
+      if (this.aindaInteressa(fonte)) this.conectar(printerId, fonte);
     }, espera);
   }
 

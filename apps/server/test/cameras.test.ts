@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 /**
  * Regressão do bug que travava a fazenda inteira: `capturar` não resolvia
@@ -18,10 +18,11 @@ vi.mock('../src/lib/logger.js', () => ({
 
 const { cameras } = await import('../src/services/cameras.js');
 
+const fontes = () => (cameras as any).fontes as Map<string, any>;
+
 /** Injeta um quadro em cache com a idade pedida, sem abrir rede. */
-function semearQuadro(printerId: string, jpeg: Buffer, idadeMs: number) {
-  const fontes = (cameras as any).fontes as Map<string, any>;
-  fontes.set(printerId, {
+function semearQuadro(printerId: string, jpeg: Buffer | null, idadeMs: number, extra: Record<string, unknown> = {}) {
+  fontes().set(printerId, {
     url: mundo.cameraUrl,
     abort: null,
     demux: { push: () => [], reset: () => {} },
@@ -31,15 +32,32 @@ function semearQuadro(printerId: string, jpeg: Buffer, idadeMs: number) {
     online: true,
     reconectarEm: null,
     tentativas: 0,
-    lingerEm: null
+    lingerEm: null,
+    ultimaFalhaEm: 0,
+    ultimoPedidoEm: Date.now(),
+    ...extra
   });
+}
+
+/** Fonte de uma câmera que já falhou e ainda não voltou. */
+function semearCaida(printerId: string, jpeg: Buffer | null) {
+  semearQuadro(printerId, jpeg, 60_000, { online: false, ultimaFalhaEm: Date.now() - 1_000 });
 }
 
 const QUADRO = Buffer.from([0xff, 0xd8, 0xff, 0x41, 0xff, 0xd9]);
 
 beforeEach(() => {
   mundo.cameraUrl = 'http://camera.local/stream';
-  ((cameras as any).fontes as Map<string, any>).clear();
+  fontes().clear();
+});
+
+// não deixar temporizador de reconexão vivo entre os testes
+afterEach(() => {
+  for (const fonte of fontes().values()) {
+    if (fonte.reconectarEm) clearTimeout(fonte.reconectarEm);
+    if (fonte.lingerEm) clearTimeout(fonte.lingerEm);
+  }
+  fontes().clear();
 });
 
 describe('cameras.capturar', () => {
@@ -72,6 +90,55 @@ describe('cameras.capturar', () => {
   it('devolve null quando a impressora não tem câmera', async () => {
     mundo.cameraUrl = null;
     await expect(cameras.capturar('P09', 400, 500)).resolves.toBeNull();
+  });
+
+  it('não espera o timeout quando a câmera já falhou e continua fora', async () => {
+    // é o caso do switch caído: o host aceita o TCP e nunca responde. Antes,
+    // cada tile da parede segurava a requisição por 8 s e afogava as 6
+    // conexões que o navegador dá por origem — a API do painel ia junto.
+    semearCaida('P01', QUADRO);
+
+    const inicio = Date.now();
+    const resultado = await cameras.capturar('P01', 400, 5_000);
+
+    expect(Date.now() - inicio).toBeLessThan(200);
+    // devolve o mesmo que devolveria depois de esperar: o último quadro conhecido
+    expect(resultado).toEqual(QUADRO);
+  });
+
+  it('devolve null na hora quando a câmera caiu sem nunca ter dado um quadro', async () => {
+    semearCaida('P01', null);
+
+    const inicio = Date.now();
+    await expect(cameras.capturar('P01', 400, 5_000)).resolves.toBeNull();
+    expect(Date.now() - inicio).toBeLessThan(200);
+  });
+
+  it('câmera caída continua com uma reconexão agendada', async () => {
+    // sem isto o atalho seria uma armadilha: ninguém assina, ninguém tenta
+    // reconectar, e a câmera ficaria morta mesmo depois de a rede voltar
+    semearCaida('P01', QUADRO);
+    await cameras.capturar('P01', 400, 5_000);
+
+    expect(fontes().get('P01').reconectarEm).not.toBeNull();
+  });
+
+  it('não usa o atalho numa fonte que ainda não falhou nenhuma vez', async () => {
+    /*
+     * Offline mas sem falha registrada é o estado de quem acabou de nascer: aí
+     * é preciso mesmo tentar, não responder "não deu" de graça.
+     *
+     * Sem quadro em cache de propósito — com um quadro guardado o `assinar` já
+     * o entrega num microtask e a captura assenta na hora, com ou sem atalho.
+     * É justamente a fonte que nunca deu quadro nenhum que ficava presa no
+     * timeout inteiro, e é o único caso em que a espera é legítima.
+     */
+    semearQuadro('P01', null, 60_000, { online: false, ultimaFalhaEm: 0 });
+
+    const inicio = Date.now();
+    await expect(cameras.capturar('P01', 400, 400)).resolves.toBeNull();
+
+    expect(Date.now() - inicio).toBeGreaterThanOrEqual(350);
   });
 
   it('várias capturas seguidas no mesmo quadro velho todas resolvem', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { VideoOff } from 'lucide-react';
 import { urlCamera, urlSnapshot } from '../lib/api';
 import { useT } from '../i18n';
@@ -23,6 +23,33 @@ type Props = {
   observarVisibilidade?: boolean;
   alt: string;
 };
+
+/**
+ * A aba está à vista?
+ *
+ * O `IntersectionObserver` acima só sabe de rolagem: para ele um tile numa aba
+ * minimizada continua visível. Isso importa porque as duas metades do feed se
+ * comportam de formas diferentes quando ninguém está olhando. O polling de
+ * snapshot é movido por `setTimeout`, e o navegador estrangula timer de aba de
+ * fundo — ele desacelera sozinho. Já o MJPEG é um fluxo de rede dentro de um
+ * `<img>`: nada o estrangula. Uma aba esquecida minimizada, um celular no
+ * bolso ou uma TV na oficina seguiriam puxando quadros a taxa cheia e
+ * segurando o upstream daquela câmera aberto no servidor por horas.
+ *
+ * Com isto, 10 segundos depois de a última pessoa desviar o olhar o linger do
+ * hub fecha as conexões e a fazenda para de falar com as câmeras.
+ */
+function useAbaVisivel(): boolean {
+  return useSyncExternalStore(
+    (aoMudar) => {
+      document.addEventListener('visibilitychange', aoMudar);
+      return () => document.removeEventListener('visibilitychange', aoMudar);
+    },
+    () => !document.hidden,
+    // no servidor não há aba; o valor não é usado, mas o hook exige o terceiro
+    () => true
+  );
+}
 
 export function CameraFeed({
   printerId,
@@ -50,7 +77,15 @@ export function CameraFeed({
     return () => obs.disconnect();
   }, [observarVisibilidade]);
 
+  const abaVisivel = useAbaVisivel();
+
   useEffect(() => setErro(false), [printerId, fps, modo]);
+
+  // voltar para a aba dá uma nova chance a uma câmera que falhou enquanto
+  // ninguém estava olhando — senão o tile fica em "sem sinal" até remontar
+  useEffect(() => {
+    if (abaVisivel) setErro(false);
+  }, [abaVisivel]);
 
   // precisa ser estável: o SSE re-renderiza o painel várias vezes por segundo,
   // e um callback novo a cada render reiniciaria o loop de polling — cada
@@ -63,7 +98,7 @@ export function CameraFeed({
 
   return (
     <div ref={ref} className={semImagem ? 'listrado' : undefined} style={{ position: 'absolute', inset: 0 }}>
-      {ativo && modo === 'stream' && (
+      {ativo && modo === 'stream' && abaVisivel && (
         <img
           // a chave força uma conexão nova quando o fps muda
           key={`${printerId}-${fps}`}
@@ -74,7 +109,15 @@ export function CameraFeed({
         />
       )}
       {ativo && modo === 'snapshot' && (
-        <SnapshotLoop printerId={printerId} fps={fps} alt={alt} aoFalhar={aoFalhar} />
+        /* pausado em vez de desmontado: o loop para, mas o último quadro fica
+           na tela — voltar para a aba não pisca a parede inteira de preto */
+        <SnapshotLoop
+          printerId={printerId}
+          fps={fps}
+          alt={alt}
+          pausado={!abaVisivel}
+          aoFalhar={aoFalhar}
+        />
       )}
 
       {semImagem && (
@@ -116,11 +159,13 @@ function SnapshotLoop({
   printerId,
   fps,
   alt,
+  pausado,
   aoFalhar
 }: {
   printerId: string;
   fps: number;
   alt: string;
+  pausado: boolean;
   aoFalhar: () => void;
 }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -131,6 +176,8 @@ function SnapshotLoop({
   aoFalharRef.current = aoFalhar;
 
   useEffect(() => {
+    if (pausado) return;
+
     let vivo = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const intervalo = 1000 / Math.max(0.1, fps);
@@ -165,7 +212,7 @@ function SnapshotLoop({
       vivo = false;
       if (timer) clearTimeout(timer);
     };
-  }, [printerId, fps]);
+  }, [printerId, fps, pausado]);
 
   if (!src) return null;
   return <img src={src} alt={alt} style={estiloImagem} />;
