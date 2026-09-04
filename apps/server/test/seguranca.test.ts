@@ -52,6 +52,7 @@ describe('matriz de permissões', () => {
     expect(pode('leitura', 'gerirImpressoras')).toBe(false);
     expect(pode('leitura', 'gerirUsuarios')).toBe(false);
     expect(pode('leitura', 'reiniciarMaquina')).toBe(false);
+    expect(pode('leitura', 'gerirNotificacoes')).toBe(false);
     expect(pode('leitura', 'desligarMaquina')).toBe(false);
   });
 
@@ -61,6 +62,9 @@ describe('matriz de permissões', () => {
     expect(pode('operador', 'restaurarBackup')).toBe(false);
     expect(pode('operador', 'gerirImpressoras')).toBe(false);
     expect(pode('operador', 'gerirUsuarios')).toBe(false);
+    // o token do bot é credencial: mesmo nível de cadastrar impressoras
+    expect(pode('operador', 'gerirNotificacoes')).toBe(false);
+    expect(pode('admin', 'gerirNotificacoes')).toBe(true);
   });
 
   it('reiniciar o host é operação; desligar é administração', () => {

@@ -85,6 +85,20 @@ export const config = {
   cameraFpsPadrao: int(process.env.CAMERA_FPS, 5),
   cameraTimeoutMs: int(process.env.CAMERA_TIMEOUT_MS, 60_000),
 
+  /**
+   * Telegram. Servem de valor inicial: o que estiver no banco (tela de gestão)
+   * ganha destes, do mesmo jeito que o intervalo de backup.
+   */
+  telegramToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+  telegramChatId: process.env.TELEGRAM_CHAT_ID ?? '',
+  /** base da API, trocável nos testes por um servidor local */
+  telegramApiBase: process.env.TELEGRAM_API_BASE ?? 'https://api.telegram.org',
+  /**
+   * Endereço público do painel, se houver — vira o link "abrir no painel" no
+   * rodapé da notificação. É onde entra o hostname de um túnel.
+   */
+  appBaseUrl: (process.env.APP_BASE_URL ?? '').replace(/\/+$/, ''),
+
   logLevel: process.env.LOG_LEVEL ?? 'info'
 };
 

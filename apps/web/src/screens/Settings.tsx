@@ -5,6 +5,7 @@ import type { PrinterConfig } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Confirm } from '../components/Confirm';
+import { NotificacoesCard } from '../panels/NotificacoesCard';
 import { useT } from '../i18n';
 import type { Dicionario } from '../i18n/pt';
 
@@ -221,6 +222,9 @@ export function Settings() {
             </article>
           ))}
         </div>
+
+        {/* segunda seção da tela: para onde os alertas saem da fazenda */}
+        <NotificacoesCard />
       </div>
 
       {editando && (

@@ -11,6 +11,8 @@ import { ligarGeradorDeAlertas, aoCriarAlerta, criarAlerta, podarFrames } from '
 import { ligarMotorDaFila, aoMudarFila, listarFila } from './services/queue.js';
 import { aoMudarBackup, cardsDeBackup, resumoDeBackup } from './services/backup.js';
 import { ligarAgendaDeBackup, rodarCicloCompleto } from './services/backup-agenda.js';
+import { ligarNotificacoes } from './services/notificacoes.js';
+import { ligarBot, pararBot } from './services/bot-telegram.js';
 import { criarClienteMock, criarHttpMock, semearImpressoras } from './moonraker/mock.js';
 import { farmPrinterNome } from './lib/util.js';
 
@@ -36,6 +38,9 @@ async function main(): Promise<void> {
   ligarAgendaDeBackup();
 
   aoCriarAlerta((alerta) => hub.publicar({ tipo: 'alerta', alerta }));
+  // segundo inscrito nos alertas: o que sai da fazenda
+  ligarNotificacoes();
+  ligarBot();
   aoMudarFila(() => hub.publicar({ tipo: 'fila', fila: listarFila() }));
   aoMudarBackup(() => hub.publicar({ tipo: 'backup', resumo: resumoDeBackup(), cards: cardsDeBackup() }));
 
@@ -82,6 +87,7 @@ async function main(): Promise<void> {
     logger.info(`${sinal} recebido, encerrando…`);
     try {
       await app.close();
+      pararBot();
       farm.parar();
       cameras.parar();
       fecharBanco();

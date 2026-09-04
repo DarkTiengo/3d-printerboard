@@ -8,6 +8,8 @@ import type {
   BackupResumo,
   BackupSnapshot,
   GcodeFile,
+  NotificacaoConfig,
+  NotificacaoPrefs,
   Printer,
   PrinterConfig,
   QueueJob,
@@ -120,6 +122,15 @@ export const api = {
   criarPrinter: (p: Partial<PrinterConfig>) => post<PrinterConfig>('/api/config/printers', p),
   atualizarPrinter: (id: string, p: Partial<PrinterConfig>) => put<PrinterConfig>(`/api/config/printers/${id}`, p),
   removerPrinter: (id: string) => del<{ ok: true }>(`/api/config/printers/${id}`),
+  // notificações
+  notificacoes: () => get<NotificacaoConfig>('/api/config/notificacoes'),
+  salvarNotificacoes: (p: NotificacaoPrefs & { token?: string }) =>
+    put<NotificacaoConfig>('/api/config/notificacoes', p),
+  // como o teste de impressora, responde 200 com { ok, erro } — a recusa do
+  // Telegram aparece ao lado do botão, não num catch
+  testarNotificacoes: (p: { token?: string; chatId: string }) =>
+    post<{ ok: boolean; erro?: string }>('/api/config/notificacoes/testar', p),
+
   testarPrinter: (p: Partial<PrinterConfig>) =>
     post<{
       ok: boolean;

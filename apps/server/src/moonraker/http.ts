@@ -34,7 +34,7 @@ export type MetadadosGcode = {
  * Sem desembrulhar, um nome .local que não resolve e um cabo solto viram a
  * mesma mensagem inútil na tela.
  */
-function descreverFalha(err: unknown): string {
+export function descreverFalha(err: unknown): string {
   if (err instanceof Error) {
     const causa = (err as Error & { cause?: unknown }).cause;
     if (causa instanceof Error && causa.message) return causa.message;

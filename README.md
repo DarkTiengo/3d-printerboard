@@ -112,6 +112,57 @@ bar down the side of the row, a `CRITICAL` tag, a banner on the detail pane, and
 a counter in the top bar that jumps straight to the list from any screen.
 **Settings** — printer CRUD.
 
+### Getting told about it
+
+Alerts also go out over **Telegram**, which is the point of them existing: an
+alert nobody sees is a printer that spent the night broken. Critical ones arrive
+with the camera frame from the moment it happened, and the Klipper reason
+verbatim.
+
+Set it up under Settings → Notifications: the bot token from @BotFather and a
+chat id (message your bot, then read `chat.id` from
+`https://api.telegram.org/bot<TOKEN>/getUpdates`; a group starts with `-100`).
+The token never leaves the server — the screen only ever sees `••••`. A **Send a
+test** button tells you immediately whether it works, quoting Telegram's own
+refusal when it does not, and the last failure stays visible on the card until a
+send succeeds.
+
+You pick what is worth a phone buzzing, per alert type. Out of the box that is
+the problems plus the end of a print; camera hiccups and backup housekeeping
+stay quiet. When an alert clears itself — Klipper back up, printer back on the
+network — a ✅ follows, but only for alerts you were told about in the first
+place.
+
+Messages go out in Portuguese: that is the language the server writes alert text
+in, and translating them would mean moving those sentences out of the server.
+
+You can also **ask** the bot, rather than only being told:
+
+- `/status` — one line per machine: what it is doing, how far along, how long is
+  left.
+- `/status P05`, or `/status voron` — one machine in detail, with a **live**
+  camera photo taken right then. Partial names work; an ambiguous one gets you
+  the list to pick from.
+- `/ajuda` — the same list, in the chat.
+
+Two boundaries worth stating. Only the chat you configured is answered — anyone
+can find a bot by name, and even replying "not allowed" would confirm to a
+stranger that there is a farm behind it, so everything else is ignored in
+silence. And it is **read-only**: a Telegram chat is not an authenticated
+session, so pausing or cancelling a print still means opening the app, where
+there is a user, a role, and a record of who did it.
+
+This works over long polling, not webhooks — nothing needs to be reachable from
+the internet, which is the same reason it keeps working on a LAN-only install.
+Commands that arrive while the server is restarting are dropped rather than
+replayed: `/status` asks about now, and answering one from six hours ago would
+only confuse.
+
+Browser push notifications are **not** available, and cannot be: service workers
+and the notification API only exist over HTTPS, and this app is built to be
+reached over `http://` on the LAN. Telegram has no such constraint, works with
+the app closed, and reaches a phone that is not even on the same network.
+
 ### Powering a printer down
 
 The panel's last section, **Machine**, reboots or shuts down the *host* — the Pi

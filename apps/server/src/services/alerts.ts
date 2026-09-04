@@ -119,7 +119,7 @@ export async function criarAlerta(novo: NovoAlerta): Promise<Alert | null> {
 
   const alert = acharAlerta(id)!.alert;
   logger.info({ alerta: id, sev: novo.sev, printer: novo.printerId }, novo.titulo);
-  emissor?.(alert);
+  emitir(alert);
   return alert;
 }
 
@@ -132,15 +132,39 @@ async function capturarFrame(alertaId: number, printerId: string): Promise<void>
     await fs.writeFile(arquivo, jpeg);
     getDb().prepare('UPDATE alerts SET frame_path = ? WHERE id = ?').run(arquivo, alertaId);
     const alert = acharAlerta(alertaId)?.alert;
-    if (alert) emissor?.(alert);
+    if (alert) emitir(alert);
   } catch (err) {
     logger.warn(`não foi possível capturar o frame do alerta ${alertaId}: ${err}`);
   }
 }
 
-let emissor: ((a: Alert) => void) | null = null;
+/**
+ * Inscritos em cada alerta criado ou resolvido. É lista, e não um slot só,
+ * porque o mesmo alerta agora vai para dois lugares: o SSE das abas abertas e
+ * as notificações que saem da fazenda.
+ *
+ * Um inscrito que explode não pode derrubar os outros nem o alerta em si — daí
+ * o try/catch por inscrito.
+ */
+const inscritos: ((a: Alert) => void)[] = [];
+
 export function aoCriarAlerta(fn: (a: Alert) => void): void {
-  emissor = fn;
+  inscritos.push(fn);
+}
+
+function emitir(alert: Alert): void {
+  for (const fn of inscritos) {
+    try {
+      fn(alert);
+    } catch (err) {
+      logger.warn(`inscrito em alertas falhou: ${err}`);
+    }
+  }
+}
+
+/** Só para os testes: esquece os inscritos entre casos. */
+export function _limparInscritos(): void {
+  inscritos.length = 0;
 }
 
 /**
@@ -155,7 +179,7 @@ function resolverPorChave(chave: string): void {
     | undefined;
   if (!row) return;
   const alert = resolverAlerta(row.id, 'sistema');
-  if (alert) emissor?.(alert);
+  if (alert) emitir(alert);
 }
 
 /**

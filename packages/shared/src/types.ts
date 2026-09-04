@@ -101,6 +101,8 @@ export const PODE = {
   restaurarBackup: ['admin'] as Role[],
   resolverAlerta: ['admin', 'operador'] as Role[],
   gerirImpressoras: ['admin'] as Role[],
+  /* um token de bot é credencial: mesmo nível de quem cadastra impressoras */
+  gerirNotificacoes: ['admin'] as Role[],
   gerirUsuarios: ['admin'] as Role[]
 };
 
@@ -174,6 +176,83 @@ export type Alert = {
   resolvidoEm: string | null;
   resolvidoPor: string | null;
 };
+
+// ── Notificações ────────────────────────────────────────────────────────────
+
+/**
+ * O que mandar para fora, e para onde.
+ *
+ * O token do bot não está aqui de propósito: ele nunca sai do servidor, do
+ * mesmo jeito que a chave de API do Moonraker. A tela sabe apenas se existe um,
+ * por `NotificacaoConfig.tokenDefinido`.
+ */
+export type NotificacaoPrefs = {
+  ligado: boolean;
+  /** chat, grupo ou canal de destino — o `chat_id` do Telegram */
+  chatId: string;
+  /**
+   * Códigos de alerta que geram mensagem. É lista de inclusão, e não um limiar
+   * de severidade, porque "problemas e fim de impressão" mistura os extremos:
+   * `impressao_concluida` é baixa e `backup_recuperacao` também.
+   */
+  codigos: string[];
+  /** Avisa também quando o alerta se resolve sozinho. */
+  avisarResolucao: boolean;
+  /**
+   * Responde /status no chat. Separado de `ligado` porque são vontades
+   * diferentes: dá para querer perguntar sem querer ser avisado.
+   */
+  responderComandos: boolean;
+};
+
+/** O que aconteceu com os últimos envios — a tela mostra para dar diagnóstico. */
+export type NotificacaoEstado = {
+  ultimoEnvioEm: string | null;
+  ultimoErro: string | null;
+  ultimoErroEm: string | null;
+};
+
+export type NotificacaoConfig = {
+  prefs: NotificacaoPrefs;
+  tokenDefinido: boolean;
+  estado: NotificacaoEstado;
+};
+
+/**
+ * Todo alerta que o servidor sabe emitir, com a severidade que ele usa. É a
+ * fonte única: o servidor valida contra ela e a tela monta as caixas a partir
+ * dela, agrupadas por severidade. Um código novo em `alerts.ts` precisa entrar
+ * aqui para virar notificação.
+ */
+export const CODIGOS_DE_ALERTA: { codigo: string; sev: Severidade }[] = [
+  { codigo: 'klipper_parado', sev: 'critica' },
+  { codigo: 'impressora_offline', sev: 'critica' },
+  { codigo: 'erro_impressao', sev: 'alta' },
+  { codigo: 'backup_falhou', sev: 'alta' },
+  { codigo: 'filamento_acabando', sev: 'media' },
+  { codigo: 'camera_offline', sev: 'media' },
+  { codigo: 'camera_muda', sev: 'media' },
+  { codigo: 'backup_esperando', sev: 'media' },
+  { codigo: 'impressao_concluida', sev: 'baixa' },
+  { codigo: 'backup_recuperacao', sev: 'baixa' }
+];
+
+/**
+ * O que notifica sem ninguém configurar nada: os problemas, mais o fim de
+ * impressão. Fica de fora o que é ruído para quem só quer saber de máquina
+ * parada — câmera muda, backup em espera e backup de recuperação.
+ */
+export const CODIGOS_PADRAO = [
+  'klipper_parado',
+  'impressora_offline',
+  'erro_impressao',
+  'backup_falhou',
+  'filamento_acabando',
+  'impressao_concluida'
+];
+
+/** Sentinela de "mantém o que está guardado" — igual ao da chave do Moonraker. */
+export const SEGREDO_MASCARADO = '••••••••';
 
 // ── Backups ─────────────────────────────────────────────────────────────────
 
