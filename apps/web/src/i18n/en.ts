@@ -63,6 +63,8 @@ export const en: Dicionario = {
     paradaSemPermissao: 'Emergency stop (no permission)',
     resumo: (a: number, f: number, at: number) => `${a} active · queue ${f} · ${at} attention`,
     alertas_n: (n: number) => ` · ${n} ${n === 1 ? 'alert' : 'alerts'}`,
+    criticos_n: (n: number) => `${n} CRITICAL`,
+    verCriticos: 'See the critical alerts',
     semConexao: ' · DISCONNECTED',
     pararTudo: 'Stop everything',
     confirmaParada: (n: number) =>
@@ -98,6 +100,22 @@ export const en: Dicionario = {
   },
 
   impressora: {
+    maquina: 'MACHINE',
+    reiniciar: 'Reboot the printer host',
+    desligar: 'Shut down the printer host',
+    reiniciarSemPermissao: 'Reboot the host (no permission)',
+    desligarSemPermissao: 'Shut down the host (no permission)',
+    reiniciarCurto: 'Reboot',
+    desligarCurto: 'Shut down',
+    confirmaReiniciar: (nome: string, imprimindo: boolean) =>
+      `Reboots the computer running Klipper and Moonraker on ${nome}. The machine drops off the dashboard for about a minute and comes back on its own.${
+        imprimindo ? ' The print in progress will be lost.' : ''
+      }`,
+    confirmaDesligar: (nome: string, imprimindo: boolean) =>
+      `Shuts down the computer running Klipper and Moonraker on ${nome}. It only comes back if someone powers the machine on in person.${
+        imprimindo ? ' The print in progress will be lost.' : ''
+      }`,
+    falhaEnergia: 'The command could not be sent.',
     fechar: 'Close panel',
     trabalho: 'JOB',
     camada: (c: string) => `LAYER ${c}`,
@@ -240,13 +258,16 @@ export const en: Dicionario = {
     nenhum: 'NO OPEN ALERTS.',
     selecione: 'PICK AN ALERT ON THE LEFT.',
     severidade: (s: string) => `${s.toUpperCase()} SEVERITY`,
-    sevNomes: { alta: 'high', media: 'medium', baixa: 'low' },
+    sevNomes: { critica: 'critical', alta: 'high', media: 'medium', baixa: 'low' },
     resolver: 'Mark alert as resolved',
     resolverSemPermissao: 'Resolve alert (no permission)',
     abrirImpressora: 'Open the printer on the dashboard',
     semImagem: 'NO IMAGE FROM THAT MOMENT',
     frameDe: (nome: string) => `Camera image at the moment of the alert on ${nome}`,
+    critico: 'CRITICAL',
+    bannerCritico: 'THE MACHINE IS HALTED — ACT NOW',
     titulos: {
+      klipper_parado: 'Klipper halted',
       erro_impressao: 'Print stopped by an error',
       impressora_offline: 'Printer unreachable',
       impressao_concluida: 'Print finished',

@@ -61,7 +61,16 @@ export function rotuloRestante(printer: Printer, t: Dicionario, f: Formatador): 
   return rotuloStatus(printer.status, t).toLowerCase();
 }
 
+/**
+ * Ponto de severidade — design/README.md § 6.
+ *
+ * 'crítica' divide o vermelho vivo com 'alta' de propósito: o que a separa não
+ * é matiz, é estrutura (barra lateral, tag e fundo tingido na lista, faixa no
+ * detalhe). Distinguir só por cor deixaria o sinal mais forte da tela
+ * inacessível para quem não distingue os dois vermelhos.
+ */
 export const CORES_SEVERIDADE = {
+  critica: 'var(--color-accent)',
   alta: 'var(--color-accent)',
   media: 'var(--color-accent-700)',
   baixa: 'var(--color-neutral-600)'

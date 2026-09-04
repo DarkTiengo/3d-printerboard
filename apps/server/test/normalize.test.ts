@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PrinterConfig } from '@3dfarm/shared';
-import type { EstadoBruto } from '../src/moonraker/client.js';
+import { motivoDoKlipper, type EstadoBruto } from '../src/moonraker/client.js';
 import { camadaDe, normalizar, progressoDe, restanteSegundos, statusDe } from '../src/moonraker/normalize.js';
 
 const cfg: PrinterConfig = {
@@ -19,6 +19,7 @@ function bruto(patch: Partial<EstadoBruto> = {}, objetos: Record<string, any> = 
     klippy: 'ready',
     macros: [],
     ultimoErro: null,
+    mensagemKlippy: null,
     ...patch,
     objetos: {
       print_stats: { state: 'standby', filename: '', print_duration: 0, info: {} },
@@ -41,11 +42,35 @@ describe('statusDe', () => {
   it('vira atenção quando o Klipper cai com um trabalho aberto', () => {
     const comJob = bruto({ klippy: 'shutdown' }, { print_stats: { state: 'printing', filename: 'a.gcode' } });
     expect(statusDe(comJob)).toBe('atenção');
+    // o shutdown durante a impressão costuma chegar já com print_stats em 'error'
+    const jaEmErro = bruto({ klippy: 'shutdown' }, { print_stats: { state: 'error', filename: 'a.gcode' } });
+    expect(statusDe(jaEmErro)).toBe('atenção');
   });
 
   it('não acusa atenção quando o Klipper cai com a máquina ociosa', () => {
     const semJob = bruto({ klippy: 'shutdown' }, { print_stats: { state: 'standby', filename: '' } });
     expect(statusDe(semJob)).toBe('ociosa');
+  });
+
+  it('não acusa atenção por causa do filename que sobra de uma impressão concluída', () => {
+    // print_stats guarda o arquivo muito depois do fim; olhar só o filename
+    // faria todo shutdown com a máquina parada virar "impressão interrompida"
+    const depoisDeConcluir = bruto(
+      { klippy: 'shutdown' },
+      { print_stats: { state: 'complete', filename: 'a.gcode' } }
+    );
+    expect(statusDe(depoisDeConcluir)).toBe('ociosa');
+  });
+
+  it('não mostra imprimindo quando o Moonraker perde o Klipper', () => {
+    // o socket com o Moonraker segue de pé, então print_stats congela em
+    // 'printing'; repetir isso deixaria a tela com uma impressão que não anda
+    const klipperCaido = bruto(
+      { klippy: 'disconnected' },
+      { print_stats: { state: 'printing', filename: 'a.gcode' } }
+    );
+    expect(statusDe(klipperCaido)).toBe('atenção');
+    expect(normalizar(cfg, klipperCaido).restanteSegundos).toBeNull();
   });
 
   it('trata desconectado como ociosa — quem sinaliza a queda é o campo online', () => {
@@ -145,5 +170,23 @@ describe('normalizar', () => {
       { print_stats: { state: 'printing', print_duration: 3600 }, display_status: { progress: 0.5 } }
     );
     expect(normalizar(cfg, imprimindo).restanteSegundos).toBeCloseTo(3600, 0);
+  });
+});
+
+describe('motivoDoKlipper', () => {
+  it('fica só com a primeira linha — o resto é a instrução genérica do Klipper', () => {
+    const bruta =
+      "MCU 'mcu' shutdown: Lost communication with MCU 'mcu'\n" +
+      'Once the underlying issue is corrected, use the "FIRMWARE_RESTART" command to reset the firmware.';
+    expect(motivoDoKlipper('shutdown', bruta)).toBe("MCU 'mcu' shutdown: Lost communication with MCU 'mcu'");
+  });
+
+  it('ignora a mensagem quando o Klipper está pronto — lá ela é só "Printer is ready"', () => {
+    expect(motivoDoKlipper('ready', 'Printer is ready')).toBeNull();
+  });
+
+  it('devolve null quando não veio mensagem nenhuma', () => {
+    expect(motivoDoKlipper('shutdown', undefined)).toBeNull();
+    expect(motivoDoKlipper('shutdown', '   \n  ')).toBeNull();
   });
 });

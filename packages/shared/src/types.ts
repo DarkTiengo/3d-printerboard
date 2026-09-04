@@ -6,6 +6,14 @@
 
 export type Status = 'imprimindo' | 'pausada' | 'cancelada' | 'ociosa' | 'atenção';
 
+/**
+ * Estado do Klipper visto pelo Moonraker. Não é o mesmo que `Status`: descreve
+ * o firmware, não o trabalho. 'shutdown' e 'error' são o Klipper vivo mas
+ * parado (MCU perdido, config quebrada, thermal runaway); 'disconnected' é o
+ * processo do Klipper fora do ar, com o Moonraker ainda de pé.
+ */
+export type EstadoKlippy = 'ready' | 'startup' | 'shutdown' | 'error' | 'disconnected';
+
 /** Impressora normalizada, do jeito que a UI consome. */
 export type Printer = {
   id: string; // 'P01'
@@ -26,6 +34,14 @@ export type Printer = {
   concluiuComSucesso: boolean;
   /** false quando o WebSocket do Moonraker está caído ou o Klipper não respondeu. */
   online: boolean;
+  /**
+   * Estado do firmware. Fora de 'ready' a máquina não aceita comandos e os
+   * outros campos são o último valor conhecido, não o valor de agora.
+   */
+  klippy: EstadoKlippy;
+  /** Motivo cru do Klipper quando `klippy` não é 'ready' — a primeira linha do
+   * `state_message`, ex.: "MCU 'mcu' shutdown: Lost communication with MCU". */
+  mensagemKlippy: string | null;
   temTaCamera: boolean;
   temperaturas: Temperatura[];
   posicao: Posicao | null;
@@ -72,6 +88,14 @@ export type User = {
 export const PODE = {
   controlarImpressao: ['admin', 'operador'] as Role[],
   pararEmergencia: ['admin', 'operador'] as Role[],
+  /*
+   * O reinício do host se desfaz sozinho — a máquina volta em um minuto — e é
+   * a saída para um Klipper travado, então acompanha a parada de emergência.
+   * O desligamento não volta sem alguém no lugar apertando o botão, e por isso
+   * fica só com quem administra a fazenda.
+   */
+  reiniciarMaquina: ['admin', 'operador'] as Role[],
+  desligarMaquina: ['admin'] as Role[],
   enfileirar: ['admin', 'operador'] as Role[],
   rodarBackup: ['admin', 'operador'] as Role[],
   restaurarBackup: ['admin'] as Role[],
@@ -119,7 +143,20 @@ export type QueueJob = {
 
 // ── Alertas ─────────────────────────────────────────────────────────────────
 
-export type Severidade = 'alta' | 'media' | 'baixa';
+export type Severidade = 'critica' | 'alta' | 'media' | 'baixa';
+
+/**
+ * Ordem de exibição: o mais grave primeiro, e só então o mais recente. Numa
+ * fazenda com dezenas de alertas abertos, um MCU perdido não pode ficar
+ * embaixo de três "impressão concluída".
+ */
+export const PESO_SEVERIDADE: Record<Severidade, number> = { critica: 0, alta: 1, media: 2, baixa: 3 };
+
+/** Comparador pronto para `sort` — grave primeiro, recente primeiro. */
+export function porGravidade(a: Alert, b: Alert): number {
+  const peso = PESO_SEVERIDADE[a.sev] - PESO_SEVERIDADE[b.sev];
+  return peso !== 0 ? peso : b.criadoEm.localeCompare(a.criadoEm);
+}
 
 export type Alert = {
   id: number;

@@ -61,6 +61,8 @@ export const pt = {
     paradaSemPermissao: 'Parada de emergência (sem permissão)',
     resumo: (a: number, f: number, at: number) => `${a} ativas · fila ${f} · ${at} atenção`,
     alertas_n: (n: number) => ` · ${n} ${n === 1 ? 'alerta' : 'alertas'}`,
+    criticos_n: (n: number) => `${n} ${n === 1 ? 'CRÍTICO' : 'CRÍTICOS'}`,
+    verCriticos: 'Ver os alertas críticos',
     semConexao: ' · SEM CONEXÃO',
     pararTudo: 'Parar tudo',
     confirmaParada: (n: number) =>
@@ -97,6 +99,22 @@ export const pt = {
   },
 
   impressora: {
+    maquina: 'MÁQUINA',
+    reiniciar: 'Reiniciar o host da impressora',
+    desligar: 'Desligar o host da impressora',
+    reiniciarSemPermissao: 'Reiniciar o host (sem permissão)',
+    desligarSemPermissao: 'Desligar o host (sem permissão)',
+    reiniciarCurto: 'Reiniciar',
+    desligarCurto: 'Desligar',
+    confirmaReiniciar: (nome: string, imprimindo: boolean) =>
+      `Reinicia o computador que roda o Klipper e o Moonraker em ${nome}. A máquina some do painel por cerca de um minuto e volta sozinha.${
+        imprimindo ? ' A impressão em andamento será perdida.' : ''
+      }`,
+    confirmaDesligar: (nome: string, imprimindo: boolean) =>
+      `Desliga o computador que roda o Klipper e o Moonraker em ${nome}. Ela só volta com alguém ligando a máquina no lugar.${
+        imprimindo ? ' A impressão em andamento será perdida.' : ''
+      }`,
+    falhaEnergia: 'Não foi possível enviar o comando.',
     fechar: 'Fechar painel',
     trabalho: 'TRABALHO',
     camada: (c: string) => `CAMADA ${c}`,
@@ -239,13 +257,16 @@ export const pt = {
     nenhum: 'NENHUM ALERTA ABERTO.',
     selecione: 'SELECIONE UM ALERTA À ESQUERDA.',
     severidade: (s: string) => `SEVERIDADE ${s.toUpperCase()}`,
-    sevNomes: { alta: 'alta', media: 'média', baixa: 'baixa' },
+    sevNomes: { critica: 'crítica', alta: 'alta', media: 'média', baixa: 'baixa' },
     resolver: 'Marcar alerta como resolvido',
     resolverSemPermissao: 'Resolver alerta (sem permissão)',
     abrirImpressora: 'Abrir a impressora no painel',
     semImagem: 'SEM IMAGEM DO MOMENTO',
     frameDe: (nome: string) => `Imagem da câmera no momento do alerta em ${nome}`,
+    critico: 'CRÍTICO',
+    bannerCritico: 'A MÁQUINA ESTÁ PARADA — AÇÃO IMEDIATA',
     titulos: {
+      klipper_parado: 'Klipper parado',
       erro_impressao: 'Impressão interrompida por erro',
       impressora_offline: 'Impressora fora do ar',
       impressao_concluida: 'Impressão concluída',

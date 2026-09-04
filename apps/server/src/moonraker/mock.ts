@@ -1,4 +1,4 @@
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { EstadoKlippy, PrinterConfig } from '@3dfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from './client.js';
 import { MoonrakerHttp, type ArquivoMoonraker, type MetadadosGcode } from './http.js';
 import { criarPrinter, listarPrinters } from '../services/printers.repo.js';
@@ -55,6 +55,10 @@ class MockClient extends MoonrakerClient {
   private bico = { atual: 24, alvo: 0 };
   private mesa = { atual: 23, alvo: 0 };
   private pos = { x: 110, y: 110, z: 8.4 };
+  private klippy: EstadoKlippy = 'ready';
+  private mensagem: string | null = null;
+  /** false enquanto o "host" está desligado ou reiniciando. */
+  private ligada = true;
 
   constructor(cfg: PrinterConfig, semente: Semente) {
     super(cfg);
@@ -81,10 +85,11 @@ class MockClient extends MoonrakerClient {
 
   override getEstado(): EstadoBruto {
     return {
-      conectado: true,
-      klippy: 'ready',
+      conectado: this.ligada,
+      klippy: this.klippy,
       macros: MACROS,
       ultimoErro: null,
+      mensagemKlippy: this.mensagem,
       objetos: {
         print_stats: {
           state: this.semente.estado,
@@ -103,7 +108,7 @@ class MockClient extends MoonrakerClient {
   }
 
   private tick(): void {
-    if (this.semente.estado === 'printing') {
+    if (this.ligada && this.klippy === 'ready' && this.semente.estado === 'printing') {
       // 4 h de impressão em tempo real seria inútil para testar; 40× é o suficiente
       this.decorrido += 40;
       this.progresso = Math.min(1, this.progresso + 40 / (4 * 3600));
@@ -155,7 +160,11 @@ class MockClient extends MoonrakerClient {
     this.emitir();
   }
   override async paradaEmergencia(): Promise<void> {
+    // a parada real derruba o Klipper, não só a impressão — é assim que o
+    // alerta crítico e a recuperação por FIRMWARE_RESTART se testam sem hardware
     this.semente.estado = 'error';
+    this.klippy = 'shutdown';
+    this.mensagem = 'Shutdown due to emergency stop';
     logger.warn(`[mock ${this.id}] PARADA DE EMERGÊNCIA`);
     this.emitir();
   }
@@ -167,6 +176,11 @@ class MockClient extends MoonrakerClient {
       this.pos[eixo] = Number((this.pos[eixo] + Number(jog[2])).toFixed(2));
     }
     if (script.includes('G28')) this.pos = { x: 0, y: 0, z: 0 };
+    if (script.includes('FIRMWARE_RESTART')) {
+      this.klippy = 'ready';
+      this.mensagem = null;
+      this.semente.estado = 'standby';
+    }
     this.emitir();
   }
   override async iniciarImpressao(filename: string): Promise<void> {
@@ -178,6 +192,36 @@ class MockClient extends MoonrakerClient {
     this.bico = { atual: 180, alvo: 210 };
     this.mesa = { atual: 45, alvo: 60 };
     logger.info(`[mock ${this.id}] iniciando ${filename}`);
+    this.emitir();
+  }
+
+  /*
+   * Desligar e reiniciar derrubam o host de verdade no simulador: a impressora
+   * some da fazenda, o que faz o alerta de "fora do ar" nascer e — no reinício
+   * — se resolver sozinho quando ela volta. É o percurso inteiro sem hardware.
+   */
+  override async reiniciarMaquina(): Promise<void> {
+    logger.warn(`[mock ${this.id}] REINICIANDO O HOST`);
+    this.derrubar();
+    const volta = setTimeout(() => {
+      this.ligada = true;
+      this.klippy = 'ready';
+      this.emitir();
+      logger.info(`[mock ${this.id}] host de volta`);
+    }, 20_000);
+    volta.unref();
+  }
+
+  override async desligarMaquina(): Promise<void> {
+    logger.warn(`[mock ${this.id}] DESLIGANDO O HOST`);
+    this.derrubar();
+  }
+
+  private derrubar(): void {
+    this.ligada = false;
+    this.klippy = 'disconnected';
+    this.mensagem = null;
+    if (this.semente.estado === 'printing') this.semente.estado = 'error';
     this.emitir();
   }
 

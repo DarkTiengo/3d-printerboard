@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { GcodePayload, JogPayload, PrinterConfigInput } from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
+import type { MoonrakerClient } from '../moonraker/client.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
 import {
   acharPrinter,
@@ -169,6 +170,49 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       return { ok: true };
     }
   );
+
+  /*
+   * Energia do host — `machine.reboot` e `machine.shutdown`.
+   *
+   * Falam com o Moonraker, não com o Klipper, então respondem mesmo com o
+   * firmware caído: é o caminho para levantar uma máquina que travou. O que
+   * precisa estar de pé é o próprio Moonraker, e é isso que `clienteVivo`
+   * garante.
+   */
+  const energia = {
+    reboot: {
+      permissao: 'reiniciarMaquina',
+      executar: (c: MoonrakerClient) => c.reiniciarMaquina()
+    },
+    shutdown: {
+      permissao: 'desligarMaquina',
+      executar: (c: MoonrakerClient) => c.desligarMaquina()
+    }
+  } as const;
+
+  for (const [rota, { permissao, executar }] of Object.entries(energia)) {
+    app.post<{ Params: { id: string } }>(
+      `/api/printers/:id/machine/${rota}`,
+      {
+        preHandler: exigirPermissao(permissao),
+        config: { rateLimit: { max: 10, timeWindow: '1 minute' } }
+      },
+      async (req, reply) => {
+        const cliente = farm.clienteVivo(req.params.id);
+        if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
+        try {
+          await executar(cliente);
+        } catch (err) {
+          // recusa do Moonraker: quase sempre container ou sudo faltando
+          const motivo = err instanceof Error ? err.message : 'falha no comando';
+          logger.warn({ printer: req.params.id, motivo }, `${rota} recusado`);
+          return reply.code(502).send({ erro: motivo });
+        }
+        logger.warn({ printer: req.params.id, por: req.sessao!.usuario }, `máquina: ${rota}`);
+        return { ok: true };
+      }
+    );
+  }
 
   // ── gestão (admin) ───────────────────────────────────────────────────────
 

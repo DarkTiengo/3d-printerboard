@@ -13,6 +13,7 @@ import { api } from '../lib/api';
 import { JogPad } from './JogPad';
 import { TempList } from './TempList';
 import { MacroGrid } from './MacroGrid';
+import { PowerControls } from './PowerControls';
 import { OfertaDeReimpressao, PrinterQueue } from './PrinterQueue';
 
 const secao: React.CSSProperties = { borderTop: '1px solid var(--color-neutral-800)' };
@@ -184,6 +185,11 @@ export function PrinterPanel({
       {/* 8. macros */}
       <div style={secao}>
         <MacroGrid printerId={printer.id} macros={printer.macros} desabilitado={!podeControlar} />
+      </div>
+
+      {/* 9. energia do host — por último: tira a máquina do ar */}
+      <div style={secao}>
+        <PowerControls printer={printer} usuario={usuario} />
       </div>
     </div>
   );

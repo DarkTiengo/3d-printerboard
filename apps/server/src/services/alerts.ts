@@ -40,10 +40,20 @@ function paraAlert(r: Row): Alert {
   };
 }
 
+/*
+ * O mais grave primeiro, e só então o mais recente: com a fazenda cheia, um MCU
+ * perdido não pode aparecer abaixo de três "impressão concluída". O front
+ * reordena com o mesmo critério (`porGravidade`), porque alertas novos chegam
+ * pelo SSE fora desta consulta.
+ */
+const ORDEM = `ORDER BY CASE severity
+                 WHEN 'critica' THEN 0 WHEN 'alta' THEN 1 WHEN 'media' THEN 2 ELSE 3
+               END, created_at DESC`;
+
 export function listarAlertas(incluirResolvidos = false, limite = 100): Alert[] {
   const sql = incluirResolvidos
-    ? 'SELECT * FROM alerts ORDER BY created_at DESC LIMIT ?'
-    : 'SELECT * FROM alerts WHERE resolved_at IS NULL ORDER BY created_at DESC LIMIT ?';
+    ? `SELECT * FROM alerts ${ORDEM} LIMIT ?`
+    : `SELECT * FROM alerts WHERE resolved_at IS NULL ${ORDEM} LIMIT ?`;
   return (getDb().prepare(sql).all(limite) as Row[]).map(paraAlert);
 }
 
@@ -133,9 +143,41 @@ export function aoCriarAlerta(fn: (a: Alert) => void): void {
   emissor = fn;
 }
 
+/**
+ * Fecha em nome do sistema o alerta aberto com esta chave, se houver.
+ *
+ * Emite pelo SSE: sem isso o alerta some do banco mas fica na tela de quem já
+ * estava com ela aberta, até um F5.
+ */
+function resolverPorChave(chave: string): void {
+  const row = getDb().prepare('SELECT id FROM alerts WHERE dedupe_key = ? AND resolved_at IS NULL').get(chave) as
+    | { id: number }
+    | undefined;
+  if (!row) return;
+  const alert = resolverAlerta(row.id, 'sistema');
+  if (alert) emissor?.(alert);
+}
+
 // ── gerador ─────────────────────────────────────────────────────────────────
 
 const nomeCurto = (p: Printer) => p.nome;
+
+/**
+ * Firmware parado com o host ainda respondendo. Exige `online`: sem Moonraker
+ * não sabemos nada sobre o Klipper, e quem cobre esse caso é o alerta de
+ * impressora fora do ar.
+ */
+const klipperCaido = (p: Printer) => p.online && p.klippy !== 'ready';
+
+/** O motivo do Klipper, ou a melhor explicação que temos sem ele. */
+function motivoDaParada(p: Printer): string {
+  if (p.klippy === 'disconnected') {
+    return 'O Moonraker perdeu a conexão com o Klipper — o processo caiu ou está reiniciando.';
+  }
+  // é o texto cru do Klipper, em inglês; traduzi-lo esconderia o termo que a
+  // pessoa vai jogar no buscador ou colar no fórum
+  return p.mensagemKlippy ?? 'O Klipper parou sem informar o motivo.';
+}
 
 /**
  * Observa o Farm e as câmeras e transforma transições em alertas.
@@ -144,9 +186,63 @@ const nomeCurto = (p: Printer) => p.nome;
  */
 export function ligarGeradorDeAlertas(): void {
   farm.on('printer', (atual: Printer, anterior: Printer | null) => {
+    /*
+     * Resoluções primeiro, e valendo também no primeiro snapshot.
+     *
+     * Um alerta que se fecha sozinho depende de ver a transição de volta — e
+     * quem reinicia o app perde a que aconteceu enquanto ele estava fora. Sem o
+     * `!anterior` aqui, uma máquina que se recuperou durante a parada ficaria
+     * com o alerta aberto para sempre. Continua sendo barato: só roda na
+     * primeira leitura de cada impressora e nas viradas de estado.
+     */
+    if (atual.klippy === 'ready' && (!anterior || anterior.klippy !== 'ready')) {
+      resolverPorChave(`klippy:${atual.id}`);
+    }
+    if (atual.online && (!anterior || !anterior.online)) {
+      resolverPorChave(`offline:${atual.id}`);
+    }
+
+    // Criar alerta, ao contrário, exige transição: sem o estado anterior não dá
+    // para saber se algo mudou, e o primeiro snapshot alertaria a fazenda toda.
     if (!anterior) return;
 
-    if (anterior.status !== 'atenção' && atual.status === 'atenção') {
+    /*
+     * Klipper parado — a classe crítica.
+     *
+     * Cobre tudo que derruba o firmware: perda de comunicação com o MCU,
+     * thermal runaway, config quebrada, e o processo do Klipper morrendo
+     * debaixo de um Moonraker que continua de pé. A máquina não aceita mais
+     * comandos e não há impressão possível até um FIRMWARE_RESTART.
+     *
+     * A condição é "caiu agora" e não `anterior.klippy === 'ready'`: quando o
+     * app sobe com a impressora já em shutdown, o estado anterior é o inicial
+     * (offline), e essa máquina precisa alertar do mesmo jeito.
+     */
+    if (klipperCaido(atual) && !klipperCaido(anterior)) {
+      void criarAlerta({
+        printerId: atual.id,
+        printerNome: nomeCurto(atual),
+        sev: 'critica',
+        codigo: 'klipper_parado',
+        titulo: 'Klipper parado',
+        detalhe: `${motivoDaParada(atual)} ${
+          atual.status === 'atenção'
+            ? `A impressão de ${atual.job} foi interrompida na camada ${atual.camada}.`
+            : 'Não havia impressão em andamento.'
+        } A máquina não aceita comandos até um FIRMWARE_RESTART.`,
+        frameLabel: `CAM ${atual.id}`,
+        dedupeKey: `klippy:${atual.id}`,
+        capturarFrame: true
+      });
+    }
+
+    /*
+     * Erro de impressão com o firmware saudável: um G-code que abortou, um
+     * sensor que mandou parar. Quando o Klipper está caído a causa é outra e o
+     * alerta acima já a nomeia — abrir os dois seria contar o mesmo problema
+     * duas vezes, com o menos informativo por cima.
+     */
+    if (anterior.status !== 'atenção' && atual.status === 'atenção' && atual.klippy === 'ready') {
       void criarAlerta({
         printerId: atual.id,
         printerNome: nomeCurto(atual),
@@ -161,14 +257,17 @@ export function ligarGeradorDeAlertas(): void {
     }
 
     if (anterior.online && !atual.online) {
+      // Sumir com uma impressão em curso é crítico: ela segue rodando sem
+      // ninguém olhando. Sumir ociosa é sério, mas não urgente.
+      const imprimia = anterior.status === 'imprimindo';
       void criarAlerta({
         printerId: atual.id,
         printerNome: nomeCurto(atual),
-        sev: 'alta',
+        sev: imprimia ? 'critica' : 'alta',
         codigo: 'impressora_offline',
         titulo: 'Impressora fora do ar',
         detalhe: `O host do Moonraker parou de responder. ${
-          anterior.status === 'imprimindo'
+          imprimia
             ? `Havia uma impressão em ${anterior.pct}% (${anterior.job}) — ela pode ter continuado sem monitoramento.`
             : 'A máquina estava ociosa.'
         }`,
@@ -228,10 +327,6 @@ export function ligarGeradorDeAlertas(): void {
 
   cameras.on('online', (printerId: string) => {
     // câmera voltou: fecha o alerta sozinha, ninguém precisa resolver na mão
-    getDb()
-      .prepare(
-        "UPDATE alerts SET resolved_at = datetime('now'), resolved_by = 'sistema' WHERE dedupe_key = ? AND resolved_at IS NULL"
-      )
-      .run(`camera:${printerId}`);
+    resolverPorChave(`camera:${printerId}`);
   });
 }

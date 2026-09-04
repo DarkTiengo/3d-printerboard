@@ -1,10 +1,18 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { lookupComMdns } from '../lib/mdns.js';
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { EstadoKlippy, PrinterConfig } from '@3dfarm/shared';
+
+export type { EstadoKlippy };
 
 /** Objetos que assinamos no Klipper. É daqui que sai tudo que a UI mostra. */
 export const OBJETOS_ASSINADOS: Record<string, null> = {
+  /*
+   * `webhooks` é o único objeto que carrega o diagnóstico: `state` e o
+   * `state_message` onde o Klipper escreve por que parou. Sem ele, um shutdown
+   * de MCU chega como um estado sem motivo.
+   */
+  webhooks: null,
   print_stats: null,
   display_status: null,
   extruder: null,
@@ -14,16 +22,31 @@ export const OBJETOS_ASSINADOS: Record<string, null> = {
   gcode_move: null
 };
 
-export type EstadoKlippy = 'ready' | 'startup' | 'shutdown' | 'error' | 'disconnected';
-
 /** Snapshot cru do Klipper, antes de normalizar. */
 export type EstadoBruto = {
   conectado: boolean;
   klippy: EstadoKlippy;
   objetos: Record<string, any>;
   macros: string[];
+  /** Falha de transporte: socket, DNS, timeout. Nada a ver com o Klipper. */
   ultimoErro: string | null;
+  /** Motivo do Klipper para não estar 'ready'. Null quando está tudo bem. */
+  mensagemKlippy: string | null;
 };
+
+/**
+ * O `state_message` do Klipper vem em várias linhas: a primeira é o motivo, o
+ * resto é a instrução genérica de rodar FIRMWARE_RESTART. Só a primeira
+ * interessa — a instrução nós mesmos damos, traduzida.
+ */
+export function motivoDoKlipper(estado: EstadoKlippy, mensagem: unknown): string | null {
+  if (estado === 'ready') return null; // aqui o texto é só "Printer is ready"
+  const linha = String(mensagem ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l.length > 0);
+  return linha ? linha.slice(0, 200) : null;
+}
 
 type Pendente = {
   resolve: (v: any) => void;
@@ -34,6 +57,21 @@ type Pendente = {
 const RECONNECT_MIN_MS = 1_000;
 const RECONNECT_MAX_MS = 30_000;
 const RPC_TIMEOUT_MS = 10_000;
+/*
+ * `machine.reboot` e `machine.shutdown` respondem "ok", mas o host começa a
+ * cair no mesmo instante: a resposta perde a corrida com frequência. A espera
+ * é curta porque o que interessa é dar tempo de o Moonraker *recusar* —
+ * recusas (rodando em container, sem sudo) voltam na hora.
+ */
+const MAQUINA_TIMEOUT_MS = 3_000;
+
+/** Chamada que não voltou a tempo. Distinta de "voltou com erro". */
+export class TimeoutRpc extends Error {
+  constructor(metodo: string) {
+    super(`timeout em ${metodo}`);
+    this.name = 'TimeoutRpc';
+  }
+}
 
 /**
  * Uma conexão persistente com um host Moonraker.
@@ -58,7 +96,8 @@ export class MoonrakerClient extends EventEmitter {
     klippy: 'disconnected',
     objetos: {},
     macros: [],
-    ultimoErro: null
+    ultimoErro: null,
+    mensagemKlippy: null
   };
 
   constructor(cfg: PrinterConfig) {
@@ -162,8 +201,16 @@ export class MoonrakerClient extends EventEmitter {
 
   private async aposConectar(): Promise<void> {
     try {
-      const info = await this.chamar<{ state: EstadoKlippy }>('printer.info');
-      this.definirEstado({ klippy: info.state ?? 'ready' });
+      const info = await this.chamar<{ state: EstadoKlippy; state_message?: string }>('printer.info');
+      const klippy = info.state ?? 'ready';
+      this.definirEstado({ klippy, mensagemKlippy: motivoDoKlipper(klippy, info.state_message) });
+
+      if (klippy !== 'ready') {
+        // Com o Klipper parado, subscribe e objects.list respondem erro. O que
+        // importava — o motivo — já veio no state_message acima.
+        this.emit('log', 'warn', `[${this.id}] Klipper em ${klippy}: ${this.estado.mensagemKlippy ?? 'sem motivo'}`);
+        return;
+      }
 
       const sub = await this.chamar<{ status: Record<string, any> }>('printer.objects.subscribe', {
         objects: OBJETOS_ASSINADOS
@@ -180,7 +227,6 @@ export class MoonrakerClient extends EventEmitter {
       this.definirEstado({ macros });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Klipper em shutdown responde erro no printer.info — não é falha de rede.
       this.definirEstado({ klippy: 'error', ultimoErro: msg });
       this.emit('log', 'warn', `[${this.id}] handshake falhou: ${msg}`);
     }
@@ -188,7 +234,7 @@ export class MoonrakerClient extends EventEmitter {
 
   // ── JSON-RPC ──────────────────────────────────────────────────────────────
 
-  chamar<T = any>(metodo: string, params?: Record<string, unknown>): Promise<T> {
+  chamar<T = any>(metodo: string, params?: Record<string, unknown>, timeoutMs = RPC_TIMEOUT_MS): Promise<T> {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error(`impressora ${this.id} offline`));
@@ -199,8 +245,8 @@ export class MoonrakerClient extends EventEmitter {
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pendentes.delete(id);
-        reject(new Error(`timeout em ${metodo}`));
-      }, RPC_TIMEOUT_MS);
+        reject(new TimeoutRpc(metodo));
+      }, timeoutMs);
       this.pendentes.set(id, { resolve, reject, timer });
       ws.send(msg, (err) => {
         if (err) {
@@ -242,14 +288,18 @@ export class MoonrakerClient extends EventEmitter {
         this.mesclarObjetos(params?.[0] ?? {});
         break;
       case 'notify_klippy_ready':
-        this.definirEstado({ klippy: 'ready', ultimoErro: null });
+        this.definirEstado({ klippy: 'ready', ultimoErro: null, mensagemKlippy: null });
         void this.aposConectar();
         break;
       case 'notify_klippy_shutdown':
+        // A notificação não traz motivo; o subscribe de `webhooks` costuma
+        // trazer, mas não é garantido que chegue — perguntamos direto.
         this.definirEstado({ klippy: 'shutdown' });
+        void this.buscarMotivo();
         break;
       case 'notify_klippy_disconnected':
-        this.definirEstado({ klippy: 'disconnected' });
+        // O Moonraker perdeu o socket do Klipper: não há a quem perguntar.
+        this.definirEstado({ klippy: 'disconnected', mensagemKlippy: null });
         break;
     }
     this.emit('evento', metodo, params);
@@ -261,7 +311,28 @@ export class MoonrakerClient extends EventEmitter {
     for (const [nome, valor] of Object.entries(parcial)) {
       objetos[nome] = { ...(objetos[nome] ?? {}), ...(valor ?? {}) };
     }
-    this.definirEstado({ objetos });
+
+    const patch: Partial<EstadoBruto> = { objetos };
+    // `webhooks` é a fonte mais rápida e completa: chega junto com a mudança
+    // e já traz o motivo, sem uma volta extra de RPC.
+    const wh = parcial.webhooks;
+    if (wh && typeof wh.state === 'string') {
+      const klippy = wh.state as EstadoKlippy;
+      patch.klippy = klippy;
+      patch.mensagemKlippy = motivoDoKlipper(klippy, wh.state_message);
+    }
+    this.definirEstado(patch);
+  }
+
+  /** Pergunta ao Moonraker por que o Klipper parou. Silencioso se falhar. */
+  private async buscarMotivo(): Promise<void> {
+    try {
+      const info = await this.chamar<{ state: EstadoKlippy; state_message?: string }>('printer.info');
+      const klippy = info.state ?? this.estado.klippy;
+      this.definirEstado({ klippy, mensagemKlippy: motivoDoKlipper(klippy, info.state_message) });
+    } catch {
+      // sem motivo é melhor que motivo errado: o alerta sai com o texto genérico
+    }
   }
 
   private definirEstado(patch: Partial<EstadoBruto>): void {
@@ -296,5 +367,35 @@ export class MoonrakerClient extends EventEmitter {
   }
   iniciarImpressao(filename: string) {
     return this.chamar('printer.print.start', { filename });
+  }
+
+  /**
+   * Reinicia o host (o Raspberry, não o Klipper).
+   *
+   * É um comando do Moonraker, não do Klipper: continua funcionando com o
+   * firmware caído — que é justamente quando alguém quer usá-lo.
+   */
+  reiniciarMaquina() {
+    return this.comandoDeMaquina('machine.reboot');
+  }
+
+  /** Desliga o host. Só volta com alguém apertando o botão na máquina. */
+  desligarMaquina() {
+    return this.comandoDeMaquina('machine.shutdown');
+  }
+
+  /**
+   * O silêncio aqui é sucesso: o host caiu antes de responder. O que não pode
+   * passar por sucesso é uma recusa explícita — o Moonraker nega estes dois
+   * quando roda dentro de um container ou sem permissão de sudo, e sem isto a
+   * tela diria "desligando" com a máquina intacta.
+   */
+  private async comandoDeMaquina(metodo: string): Promise<void> {
+    try {
+      await this.chamar(metodo, {}, MAQUINA_TIMEOUT_MS);
+    } catch (err) {
+      if (err instanceof TimeoutRpc) return;
+      throw err;
+    }
   }
 }

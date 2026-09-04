@@ -111,6 +111,9 @@ export const api = {
   home: (id: string) => post<{ ok: true }>(`/api/printers/${id}/home`),
   gcode: (id: string, script: string) => post<{ ok: true }>(`/api/printers/${id}/gcode`, { script }),
   paradaEmergencia: () => post<{ ok: boolean; total: number; falhas: string[] }>('/api/emergency-stop'),
+  // energia do host: falam com o Moonraker, então valem com o Klipper caído
+  reiniciarMaquina: (id: string) => post<{ ok: true }>(`/api/printers/${id}/machine/reboot`),
+  desligarMaquina: (id: string) => post<{ ok: true }>(`/api/printers/${id}/machine/shutdown`),
 
   // gestão
   configPrinters: () => get<PrinterConfig[]>('/api/config/printers'),

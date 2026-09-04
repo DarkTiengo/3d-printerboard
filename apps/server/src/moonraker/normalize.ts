@@ -2,20 +2,38 @@ import type { Printer, Status, Temperatura, Posicao, PrinterConfig } from '@3dfa
 import type { EstadoBruto } from './client.js';
 
 /**
+ * print_stats.state que significam "havia um trabalho em curso". 'error' entra
+ * porque é o que o Klipper grava ao abortar uma impressão — inclusive quando
+ * quem abortou foi o próprio shutdown.
+ */
+const JOB_EM_CURSO = new Set(['printing', 'paused', 'error']);
+
+/**
  * print_stats.state do Klipper → o vocabulário de status do design.
  *
  * 'atenção' não existe no Klipper: é a nossa combinação de "tinha um trabalho
- * rodando e algo deu errado" (error / shutdown com job aberto). É o que o design
- * pinta em accent-700.
+ * rodando e algo deu errado". É o que o design pinta em accent-700.
  */
 export function statusDe(bruto: EstadoBruto): Status {
   const stats = bruto.objetos.print_stats ?? {};
   const estadoKlipper: string = stats.state ?? 'standby';
 
-  if (bruto.klippy === 'shutdown' || bruto.klippy === 'error') {
-    return stats.filename ? 'atenção' : 'ociosa';
-  }
+  // A queda do host tem sinal próprio (`online`) e alerta próprio; aqui ela não
+  // vira 'atenção' para não contar o mesmo problema duas vezes.
   if (!bruto.conectado) return 'ociosa';
+
+  /*
+   * Klippy fora de 'ready' — MCU perdido, config quebrada, Klipper caído — quer
+   * dizer que print_stats congelou no último valor conhecido. Nunca é
+   * 'imprimindo': repetir o estado congelado deixaria a tela mostrando uma
+   * impressão que não anda. Só vira 'atenção' se o valor congelado era um
+   * trabalho em curso — 'complete' e 'cancelled' persistem em print_stats muito
+   * depois da impressão, e tratá-los como job aberto viraria falso alarme a
+   * cada shutdown com a máquina parada.
+   */
+  if (bruto.klippy !== 'ready') {
+    return JOB_EM_CURSO.has(estadoKlipper) ? 'atenção' : 'ociosa';
+  }
 
   switch (estadoKlipper) {
     case 'printing':
@@ -123,6 +141,8 @@ export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
     camada: camadaDe(bruto),
     status,
     online: bruto.conectado,
+    klippy: bruto.klippy,
+    mensagemKlippy: bruto.mensagemKlippy,
     temTaCamera: !!cfg.cameraUrl,
     temperaturas: temperaturasDe(bruto),
     posicao: posicaoDe(bruto),

@@ -38,8 +38,57 @@ export function abrirBanco(): DB {
 
   const schema = fs.readFileSync(path.join(aqui, 'schema.sql'), 'utf8');
   db.exec(schema);
+  migrarSeveridadeCritica(db);
 
   return db;
+}
+
+/**
+ * Migração 002 — a severidade 'critica' entrou depois do esquema inicial.
+ *
+ * O CHECK de uma tabela é imutável no SQLite, e `CREATE TABLE IF NOT EXISTS` é
+ * um no-op onde `alerts` já existe: bancos criados antes desta versão
+ * rejeitariam todo alerta crítico. A saída é o rebuild clássico — tabela nova,
+ * cópia, troca — e ele só roda quando o CHECK antigo ainda está lá.
+ */
+function migrarSeveridadeCritica(db: DB): void {
+  const atual = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'alerts'")
+    .get() as { sql: string } | undefined;
+  if (!atual || atual.sql.includes("'critica'")) return;
+
+  db.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN;
+    ALTER TABLE alerts RENAME TO alerts_antiga;
+    CREATE TABLE alerts (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_id   TEXT REFERENCES printers(id) ON DELETE SET NULL,
+      printer_name TEXT NOT NULL,
+      severity     TEXT NOT NULL CHECK (severity IN ('critica','alta','media','baixa')),
+      codigo       TEXT NOT NULL DEFAULT '',
+      title        TEXT NOT NULL,
+      detail       TEXT NOT NULL DEFAULT '',
+      frame_label  TEXT NOT NULL DEFAULT '',
+      frame_path   TEXT,
+      dedupe_key   TEXT,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      resolved_at  TEXT,
+      resolved_by  TEXT
+    );
+    INSERT INTO alerts (id, printer_id, printer_name, severity, codigo, title, detail,
+                        frame_label, frame_path, dedupe_key, created_at, resolved_at, resolved_by)
+      SELECT id, printer_id, printer_name, severity, codigo, title, detail,
+             frame_label, frame_path, dedupe_key, created_at, resolved_at, resolved_by
+      FROM alerts_antiga;
+    -- os índices seguiram a tabela no RENAME e morrem com ela
+    DROP TABLE alerts_antiga;
+    CREATE INDEX idx_alerts_created ON alerts(created_at DESC);
+    CREATE UNIQUE INDEX idx_alerts_dedupe
+      ON alerts(dedupe_key) WHERE dedupe_key IS NOT NULL AND resolved_at IS NULL;
+    COMMIT;
+    PRAGMA foreign_keys = ON;
+  `);
 }
 
 export function getDb(): DB {

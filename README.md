@@ -105,7 +105,38 @@ the job to that group's printer; the selector at the top can override this to
 copy, how often, how many copies to keep), download of any stored copy, and
 restore.
 **Alerts** — list by severity, with the camera frame captured at that moment.
+Critical ones are pulled to the top and marked out by more than colour: a red
+bar down the side of the row, a `CRITICAL` tag, a banner on the detail pane, and
+a counter in the top bar that jumps straight to the list from any screen.
 **Settings** — printer CRUD.
+
+### Powering a printer down
+
+The panel's last section, **Machine**, reboots or shuts down the *host* — the Pi
+running Klipper and Moonraker — not the firmware. Both go through Moonraker
+rather than Klipper, so they still answer when Klipper itself has halted, which
+is exactly when a reboot is what you want. Each asks for confirmation first, and
+says out loud that a print in progress will be lost.
+
+Reboot is available to operators: it undoes itself, the machine is back in about
+a minute, and it is the way out of a wedged Klipper. Shutdown is admin-only —
+nothing brings the machine back but someone standing next to it. If Moonraker
+refuses (it does when it runs inside a container, or without sudo rights), the
+refusal is shown as it came, rather than a hopeful "shutting down".
+
+### What raises an alert
+
+The serious class is **Klipper halted** — an MCU that stopped answering, thermal
+runaway, a broken config, or the Klipper process dying under a Moonraker that is
+still up. The alert carries Klipper's own reason verbatim (`MCU 'mcu' shutdown:
+Lost communication with MCU 'mcu'`), untranslated, because that is the string you
+will paste into a search or a forum. It clears itself once the machine is ready
+again, normally after a `FIRMWARE_RESTART`.
+
+The rest: a printer that stops answering (critical if it was mid-print, since
+that print carries on unwatched — it clears itself on reconnect), a print
+aborted with the firmware still healthy, filament running out, a camera that
+went dark, and the backup alerts described further down.
 
 ## Language
 

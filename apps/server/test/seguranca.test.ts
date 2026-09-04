@@ -51,6 +51,8 @@ describe('matriz de permissões', () => {
     expect(pode('leitura', 'restaurarBackup')).toBe(false);
     expect(pode('leitura', 'gerirImpressoras')).toBe(false);
     expect(pode('leitura', 'gerirUsuarios')).toBe(false);
+    expect(pode('leitura', 'reiniciarMaquina')).toBe(false);
+    expect(pode('leitura', 'desligarMaquina')).toBe(false);
   });
 
   it('operador opera mas não administra', () => {
@@ -59,6 +61,15 @@ describe('matriz de permissões', () => {
     expect(pode('operador', 'restaurarBackup')).toBe(false);
     expect(pode('operador', 'gerirImpressoras')).toBe(false);
     expect(pode('operador', 'gerirUsuarios')).toBe(false);
+  });
+
+  it('reiniciar o host é operação; desligar é administração', () => {
+    // o reinício se desfaz sozinho e é a saída para um Klipper travado; o
+    // desligamento só volta com alguém no lugar apertando o botão
+    expect(pode('operador', 'reiniciarMaquina')).toBe(true);
+    expect(pode('operador', 'desligarMaquina')).toBe(false);
+    expect(pode('admin', 'reiniciarMaquina')).toBe(true);
+    expect(pode('admin', 'desligarMaquina')).toBe(true);
   });
 
   it('papel ausente nunca autoriza', () => {

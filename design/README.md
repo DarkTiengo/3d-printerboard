@@ -194,11 +194,23 @@ botão redondo "Backup agora" à direita, borda inferior 2px. Abaixo, grade
 (OK / PARCIAL / FALHOU — não-OK em vermelho) e três linhas em mono (perfis, firmware/calibração,
 G-code), mais dois botões redondos: backup agora e restaurar em outra impressora.
 
+A última seção do mini painel é **MÁQUINA**: duas pílulas iguais às das macros — reiniciar e
+desligar o host —, ícone em `--color-accent`, cada uma atrás de um `Confirm`. Fica no fim de
+propósito: são as ações que tiram a impressora do ar e não devem dividir espaço com os controles
+de impressão. Desabilitadas quando a máquina está fora do ar ou o papel não permite.
+
 ### 6. Alertas
 
-Duas colunas. Esquerda 420px: lista com ponto de severidade 8px (alta = `--color-accent`,
+Duas colunas. Esquerda 420px: lista com ponto de severidade 8px (crítica e alta = `--color-accent`,
 média = `--color-accent-700`, baixa = `--color-neutral-600`), título 13px/800 e "quando · impressora"
-em mono; item selecionado com fundo `--color-neutral-900`. Direita: metadados em mono, título 28px/800,
+em mono; item selecionado com fundo `--color-neutral-900`.
+
+A severidade **crítica** divide o vermelho vivo com "alta" de propósito — o que a separa é
+estrutura, não matiz, para o sinal mais forte da tela não depender de distinguir dois vermelhos:
+barra de 4px `--color-accent` na borda esquerda da linha, fundo `--color-accent-900` quando não
+selecionada, tag `CRÍTICO` em mono 9px sobre `--color-accent`, e faixa cheia no topo do detalhe.
+A lista vem ordenada por gravidade e, dentro dela, pelo mais recente. Fora da tela de Alertas, a
+barra superior mostra um contador de críticos em vermelho cheio que leva direto à lista. Direita: metadados em mono, título 28px/800,
 descrição 14px `--color-neutral-300` (máx. 520px, `text-wrap: pretty`), frame 16:9 do momento do alerta
 e dois botões redondos (resolver, abrir impressora).
 
@@ -217,6 +229,10 @@ type Printer = {
   restante: string;    // '1h 14m'
   camada: string;      // '84/210'
   status: Status;
+  // estado do firmware, separado do estado do trabalho: fora de 'ready' a
+  // máquina não aceita comandos e os campos acima são o último valor conhecido
+  klippy: 'ready' | 'startup' | 'shutdown' | 'error' | 'disconnected';
+  mensagemKlippy: string | null;  // motivo cru do Klipper, quando há
 };
 ```
 

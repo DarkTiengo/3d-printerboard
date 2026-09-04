@@ -63,6 +63,8 @@ export const fr: Dicionario = {
     paradaSemPermissao: 'Arrêt d’urgence (sans autorisation)',
     resumo: (a: number, f: number, at: number) => `${a} actives · file ${f} · ${at} attention`,
     alertas_n: (n: number) => ` · ${n} ${n === 1 ? 'alerte' : 'alertes'}`,
+    criticos_n: (n: number) => `${n} ${n === 1 ? 'CRITIQUE' : 'CRITIQUES'}`,
+    verCriticos: 'Voir les alertes critiques',
     semConexao: ' · HORS CONNEXION',
     pararTudo: 'Tout arrêter',
     confirmaParada: (n: number) =>
@@ -98,6 +100,22 @@ export const fr: Dicionario = {
   },
 
   impressora: {
+    maquina: 'MACHINE',
+    reiniciar: 'Redémarrer l’hôte de l’imprimante',
+    desligar: 'Éteindre l’hôte de l’imprimante',
+    reiniciarSemPermissao: 'Redémarrer l’hôte (sans autorisation)',
+    desligarSemPermissao: 'Éteindre l’hôte (sans autorisation)',
+    reiniciarCurto: 'Redémarrer',
+    desligarCurto: 'Éteindre',
+    confirmaReiniciar: (nome: string, imprimindo: boolean) =>
+      `Redémarre l’ordinateur qui fait tourner Klipper et Moonraker sur ${nome}. La machine disparaît du tableau de bord pendant une minute environ, puis revient d’elle-même.${
+        imprimindo ? ' L’impression en cours sera perdue.' : ''
+      }`,
+    confirmaDesligar: (nome: string, imprimindo: boolean) =>
+      `Éteint l’ordinateur qui fait tourner Klipper et Moonraker sur ${nome}. Elle ne revient que si quelqu’un rallume la machine sur place.${
+        imprimindo ? ' L’impression en cours sera perdue.' : ''
+      }`,
+    falhaEnergia: 'La commande n’a pas pu être envoyée.',
     fechar: 'Fermer le panneau',
     trabalho: 'TÂCHE',
     camada: (c: string) => `COUCHE ${c}`,
@@ -240,13 +258,16 @@ export const fr: Dicionario = {
     nenhum: 'AUCUNE ALERTE OUVERTE.',
     selecione: 'CHOISISSEZ UNE ALERTE À GAUCHE.',
     severidade: (s: string) => `GRAVITÉ ${s.toUpperCase()}`,
-    sevNomes: { alta: 'haute', media: 'moyenne', baixa: 'basse' },
+    sevNomes: { critica: 'critique', alta: 'haute', media: 'moyenne', baixa: 'basse' },
     resolver: 'Marquer l’alerte comme résolue',
     resolverSemPermissao: 'Résoudre l’alerte (sans autorisation)',
     abrirImpressora: 'Ouvrir l’imprimante sur le tableau de bord',
     semImagem: 'PAS D’IMAGE DE CE MOMENT',
     frameDe: (nome: string) => `Image de la caméra au moment de l’alerte sur ${nome}`,
+    critico: 'CRITIQUE',
+    bannerCritico: 'LA MACHINE EST À L’ARRÊT — AGISSEZ MAINTENANT',
     titulos: {
+      klipper_parado: 'Klipper à l’arrêt',
       erro_impressao: 'Impression interrompue par une erreur',
       impressora_offline: 'Imprimante injoignable',
       impressao_concluida: 'Impression terminée',

@@ -63,6 +63,8 @@ export const it: Dicionario = {
     paradaSemPermissao: 'Arresto di emergenza (senza permesso)',
     resumo: (a: number, f: number, at: number) => `${a} attive · coda ${f} · ${at} attenzione`,
     alertas_n: (n: number) => ` · ${n} ${n === 1 ? 'avviso' : 'avvisi'}`,
+    criticos_n: (n: number) => `${n} ${n === 1 ? 'CRITICO' : 'CRITICI'}`,
+    verCriticos: 'Vedi gli avvisi critici',
     semConexao: ' · NESSUNA CONNESSIONE',
     pararTudo: 'Ferma tutto',
     confirmaParada: (n: number) =>
@@ -98,6 +100,22 @@ export const it: Dicionario = {
   },
 
   impressora: {
+    maquina: 'MACCHINA',
+    reiniciar: 'Riavviare l’host della stampante',
+    desligar: 'Spegnere l’host della stampante',
+    reiniciarSemPermissao: 'Riavviare l’host (senza permesso)',
+    desligarSemPermissao: 'Spegnere l’host (senza permesso)',
+    reiniciarCurto: 'Riavvia',
+    desligarCurto: 'Spegni',
+    confirmaReiniciar: (nome: string, imprimindo: boolean) =>
+      `Riavvia il computer che esegue Klipper e Moonraker su ${nome}. La macchina sparisce dal pannello per circa un minuto e torna da sola.${
+        imprimindo ? ' La stampa in corso andrà persa.' : ''
+      }`,
+    confirmaDesligar: (nome: string, imprimindo: boolean) =>
+      `Spegne il computer che esegue Klipper e Moonraker su ${nome}. Torna solo se qualcuno accende la macchina di persona.${
+        imprimindo ? ' La stampa in corso andrà persa.' : ''
+      }`,
+    falhaEnergia: 'Non è stato possibile inviare il comando.',
     fechar: 'Chiudi il pannello',
     trabalho: 'LAVORO',
     camada: (c: string) => `STRATO ${c}`,
@@ -240,13 +258,16 @@ export const it: Dicionario = {
     nenhum: 'NESSUN AVVISO APERTO.',
     selecione: 'SCEGLI UN AVVISO A SINISTRA.',
     severidade: (s: string) => `GRAVITÀ ${s.toUpperCase()}`,
-    sevNomes: { alta: 'alta', media: 'media', baixa: 'bassa' },
+    sevNomes: { critica: 'critica', alta: 'alta', media: 'media', baixa: 'bassa' },
     resolver: 'Segna l’avviso come risolto',
     resolverSemPermissao: 'Risolvi l’avviso (senza permesso)',
     abrirImpressora: 'Apri la stampante nel pannello',
     semImagem: 'NESSUNA IMMAGINE DI QUEL MOMENTO',
     frameDe: (nome: string) => `Immagine della telecamera al momento dell’avviso su ${nome}`,
+    critico: 'CRITICO',
+    bannerCritico: 'LA MACCHINA È FERMA — AGISCI SUBITO',
     titulos: {
+      klipper_parado: 'Klipper fermo',
       erro_impressao: 'Stampa interrotta da un errore',
       impressora_offline: 'Stampante irraggiungibile',
       impressao_concluida: 'Stampa completata',

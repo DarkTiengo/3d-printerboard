@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS alerts (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   printer_id   TEXT REFERENCES printers(id) ON DELETE SET NULL,
   printer_name TEXT NOT NULL,
-  severity     TEXT NOT NULL CHECK (severity IN ('alta','media','baixa')),
+  severity     TEXT NOT NULL CHECK (severity IN ('critica','alta','media','baixa')),
   -- chave estável do tipo de alerta; o título traduzido é montado no front
   codigo       TEXT NOT NULL DEFAULT '',
   title        TEXT NOT NULL,

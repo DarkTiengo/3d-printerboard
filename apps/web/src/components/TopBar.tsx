@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Archive, Clock, FileText, LayoutGrid, LogOut, OctagonX, SlidersHorizontal, Video } from 'lucide-react';
+import {
+  Archive,
+  Clock,
+  FileText,
+  LayoutGrid,
+  LogOut,
+  OctagonX,
+  SlidersHorizontal,
+  TriangleAlert,
+  Video
+} from 'lucide-react';
 import type { User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
 import { useUi, type Tela } from '../store/ui';
@@ -48,6 +58,7 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
 
   const ativas = printers.filter((p) => p.status === 'imprimindo' || p.status === 'atenção').length;
   const atencao = printers.filter((p) => p.status === 'atenção').length;
+  const criticos = alertas.filter((a) => a.sev === 'critica').length;
   const podeParar = pode(usuario.role, 'pararEmergencia');
 
   async function dispararParada() {
@@ -92,6 +103,36 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
             />
           ))}
         </nav>
+
+        {/*
+          Um Klipper parado não pode depender de a pessoa estar na aba certa:
+          o contador vive na barra, em vermelho cheio, e leva direto à lista.
+        */}
+        {criticos > 0 && (
+          <button
+            type="button"
+            aria-label={t.barra.verCriticos}
+            onClick={() => irPara('alerts')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              border: 0,
+              borderRadius: 0,
+              cursor: 'pointer',
+              background: 'var(--color-accent)',
+              color: 'var(--color-bg)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              padding: '5px 10px'
+            }}
+          >
+            <TriangleAlert size={14} strokeWidth={2.5} aria-hidden />
+            {t.barra.criticos_n(criticos)}
+          </button>
+        )}
 
         <span
           style={{
