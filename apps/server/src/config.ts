@@ -74,6 +74,13 @@ export const config = {
   /** teto por impressora para o download de G-code, evita encher o volume */
   backupGcodeMaxBytes: int(process.env.BACKUP_GCODE_MAX_BYTES, 2 * 1024 * 1024 * 1024),
 
+  /**
+   * Por quantos dias guardar o quadro da câmera anexado a um alerta.
+   * Passado esse tempo a imagem não diz mais nada e só ocupa disco — o alerta
+   * em si continua no histórico, sem a foto.
+   */
+  alertaFrameDias: int(process.env.ALERT_FRAME_KEEP_DAYS, 14),
+
   /** quadros por segundo do proxy MJPEG quando o cliente não pede nada */
   cameraFpsPadrao: int(process.env.CAMERA_FPS, 5),
   cameraTimeoutMs: int(process.env.CAMERA_TIMEOUT_MS, 60_000),

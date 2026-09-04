@@ -158,6 +158,38 @@ function resolverPorChave(chave: string): void {
   if (alert) emissor?.(alert);
 }
 
+/**
+ * Apaga os quadros de câmera velhos.
+ *
+ * Eles eram só escritos: cada alerta com câmera deixava um JPEG em `framesDir`
+ * para sempre, e "impressão concluída" — o que mais aparece numa fazenda ativa —
+ * nunca se resolve sozinho, então nem uma poda por alerta resolvido daria conta.
+ * O critério é idade: depois de duas semanas a imagem não diz mais nada.
+ *
+ * O alerta continua no histórico, só sem a foto — `frameUrl` vira null e a tela
+ * mostra "sem imagem do momento", que é exatamente o que aconteceu.
+ */
+export async function podarFrames(dias = config.alertaFrameDias): Promise<number> {
+  if (!(dias > 0)) return 0;
+  const velhos = getDb()
+    .prepare(
+      `SELECT id, frame_path FROM alerts
+       WHERE frame_path IS NOT NULL AND created_at < datetime('now', ?)`
+    )
+    .all(`-${Math.floor(dias)} days`) as { id: number; frame_path: string }[];
+
+  let apagados = 0;
+  for (const linha of velhos) {
+    // solta a referência mesmo se o arquivo já tinha sumido: o que não pode é
+    // a tela oferecer um link para uma imagem que não existe mais
+    await fs.rm(linha.frame_path, { force: true }).catch(() => {});
+    getDb().prepare('UPDATE alerts SET frame_path = NULL WHERE id = ?').run(linha.id);
+    apagados += 1;
+  }
+  if (apagados > 0) logger.info(`${apagados} quadros de alerta com mais de ${dias} dias apagados`);
+  return apagados;
+}
+
 // ── gerador ─────────────────────────────────────────────────────────────────
 
 const nomeCurto = (p: Printer) => p.nome;

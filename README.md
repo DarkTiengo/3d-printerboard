@@ -105,6 +105,8 @@ the job to that group's printer; the selector at the top can override this to
 copy, how often, how many copies to keep), download of any stored copy, and
 restore.
 **Alerts** — list by severity, with the camera frame captured at that moment.
+Those frames are deleted after `ALERT_FRAME_KEEP_DAYS` (14 by default); the alert
+itself stays in the history, just without the picture.
 Critical ones are pulled to the top and marked out by more than colour: a red
 bar down the side of the row, a `CRITICAL` tag, a banner on the detail pane, and
 a counter in the top bar that jumps straight to the list from any screen.
