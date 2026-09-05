@@ -11,6 +11,7 @@ export const it: Dicionario = {
     salvando: 'Salvataggio…',
     editar: 'Modifica',
     entendi: 'Ho capito',
+    voltar: 'Indietro',
     carregando: 'CARICAMENTO…',
     sair: 'Esci',
     semPermissao: 'senza permesso'
@@ -122,6 +123,8 @@ export const it: Dicionario = {
     pausar: 'Metti in pausa la stampa',
     continuar: 'Riprendi la stampa',
     cancelar: 'Annulla la stampa',
+    confirmaCancelar: (nome: string, job: string, pct: number) =>
+      `Interrompe ${job} su ${nome}, ora al ${pct}%. Non si può riprendere da dove si è fermata: il pezzo è perso e la stampa ricomincia da capo.`,
     temperaturas: 'TEMPERATURE',
     bico: 'Ugello',
     mesa: 'Piano',

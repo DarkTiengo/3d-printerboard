@@ -11,6 +11,7 @@ export const fr: Dicionario = {
     salvando: 'Enregistrement…',
     editar: 'Modifier',
     entendi: 'Compris',
+    voltar: 'Retour',
     carregando: 'CHARGEMENT…',
     sair: 'Se déconnecter',
     semPermissao: 'sans autorisation'
@@ -122,6 +123,8 @@ export const fr: Dicionario = {
     pausar: 'Mettre l’impression en pause',
     continuar: 'Reprendre l’impression',
     cancelar: 'Annuler l’impression',
+    confirmaCancelar: (nome: string, job: string, pct: number) =>
+      `Interrompt ${job} sur ${nome}, à ${pct}%. Impossible de reprendre où elle s’est arrêtée : la pièce est perdue et l’impression repart de zéro.`,
     temperaturas: 'TEMPÉRATURES',
     bico: 'Buse',
     mesa: 'Plateau',

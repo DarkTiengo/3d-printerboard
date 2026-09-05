@@ -11,6 +11,7 @@ export const es: Dicionario = {
     salvando: 'Guardando…',
     editar: 'Editar',
     entendi: 'Entendido',
+    voltar: 'Volver',
     carregando: 'CARGANDO…',
     sair: 'Salir',
     semPermissao: 'sin permiso'
@@ -122,6 +123,8 @@ export const es: Dicionario = {
     pausar: 'Pausar la impresión',
     continuar: 'Reanudar la impresión',
     cancelar: 'Cancelar la impresión',
+    confirmaCancelar: (nome: string, job: string, pct: number) =>
+      `Interrumpe ${job} en ${nome}, ahora al ${pct}%. No se puede retomar donde quedó: la pieza se pierde y la impresión empieza de cero.`,
     temperaturas: 'TEMPERATURAS',
     bico: 'Boquilla',
     mesa: 'Cama',

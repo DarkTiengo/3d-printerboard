@@ -4,6 +4,7 @@ import { pode } from '@3dfarm/shared';
 import { usePrinters, usePrintersVisiveis } from '../store/printers';
 import { useUi } from '../store/ui';
 import { CameraFeed } from '../components/CameraFeed';
+import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';
 import { controlesHabilitados, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
@@ -120,6 +121,8 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
     void chamada().catch(() => {});
   };
 
+  const cancelamento = useConfirmarCancelamento(printer, comandar('cancelada', () => api.cancelar(printer.id)));
+
   return (
     <div style={{ position: 'relative', minHeight: 0, background: 'var(--color-neutral-900)' }}>
       <CameraFeed
@@ -202,12 +205,14 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
             variante="secundaria"
             pequeno
             disabled={!habilitado.cancelar || !podeControlar}
-            onClick={comandar('cancelada', () => api.cancelar(printer.id))}
+            onClick={cancelamento.pedir}
             icone={<X size={14} strokeWidth={2} aria-hidden />}
             style={{ background: 'rgba(32,30,29,.55)' }}
           />
         </div>
       </div>
+
+      {cancelamento.dialogo}
     </div>
   );
 }

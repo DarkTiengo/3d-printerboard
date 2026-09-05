@@ -11,6 +11,7 @@ export const en: Dicionario = {
     salvando: 'Saving…',
     editar: 'Edit',
     entendi: 'Got it',
+    voltar: 'Go back',
     carregando: 'LOADING…',
     sair: 'Sign out',
     semPermissao: 'no permission'
@@ -122,6 +123,8 @@ export const en: Dicionario = {
     pausar: 'Pause print',
     continuar: 'Resume print',
     cancelar: 'Cancel print',
+    confirmaCancelar: (nome: string, job: string, pct: number) =>
+      `Stops ${job} on ${nome}, now at ${pct}%. There is no resuming from where it stopped: the part is lost and the print starts over.`,
     temperaturas: 'TEMPERATURES',
     bico: 'Nozzle',
     mesa: 'Bed',

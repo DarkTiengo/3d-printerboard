@@ -11,6 +11,7 @@ export function Confirm({
   titulo,
   descricao,
   rotuloConfirmar,
+  rotuloCancelar,
   perigoso = true,
   semCancelar = false,
   onConfirmar,
@@ -20,6 +21,11 @@ export function Confirm({
   titulo: string;
   descricao: ReactNode;
   rotuloConfirmar?: string;
+  /**
+   * Troca o "Cancelar" do botão seguro. Num diálogo que pergunta se cancela
+   * alguma coisa os dois cancelares se confundem, e errar ali é caro.
+   */
+  rotuloCancelar?: string;
   perigoso?: boolean;
   /** Diálogo de aviso: só o botão de fechar, sem a escolha de cancelar. */
   semCancelar?: boolean;
@@ -91,7 +97,7 @@ export function Confirm({
               cursor: 'pointer'
             }}
           >
-            {t.comum.cancelar}
+            {rotuloCancelar ?? t.comum.cancelar}
           </button>
           <button
             ref={confirmarRef}

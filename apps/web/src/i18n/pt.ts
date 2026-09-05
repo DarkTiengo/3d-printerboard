@@ -9,6 +9,7 @@ export const pt = {
     salvando: 'Salvando…',
     editar: 'Editar',
     entendi: 'Entendi',
+    voltar: 'Voltar',
     carregando: 'CARREGANDO…',
     sair: 'Sair',
     semPermissao: 'sem permissão'
@@ -121,6 +122,8 @@ export const pt = {
     pausar: 'Pausar impressão',
     continuar: 'Continuar impressão',
     cancelar: 'Cancelar impressão',
+    confirmaCancelar: (nome: string, job: string, pct: number) =>
+      `Interrompe ${job} em ${nome}, agora em ${pct}%. Não dá para retomar de onde parou: a peça se perde e a impressão recomeça do zero.`,
     temperaturas: 'TEMPERATURAS',
     bico: 'Bico',
     mesa: 'Mesa',

@@ -5,6 +5,7 @@ import { IconButton } from '../components/IconButton';
 import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';
 import { CameraFeed } from '../components/CameraFeed';
+import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
 import { controlesHabilitados, coresStatus, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
 import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
@@ -47,6 +48,8 @@ export function PrinterPanel({
     otimista(printer.id, status);
     void chamada().catch(() => {});
   };
+
+  const cancelamento = useConfirmarCancelamento(printer, comandar('cancelada', () => api.cancelar(printer.id)));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'auto', height: '100%' }}>
@@ -156,7 +159,7 @@ export function PrinterPanel({
             rotulo={t.impressora.cancelar}
             variante="controle"
             disabled={!habilitado.cancelar || !podeControlar}
-            onClick={comandar('cancelada', () => api.cancelar(printer.id))}
+            onClick={cancelamento.pedir}
             icone={<X size={15} strokeWidth={2} aria-hidden />}
           />
         </div>
@@ -197,6 +200,8 @@ export function PrinterPanel({
       <div style={secao}>
         <PowerControls printer={printer} usuario={usuario} />
       </div>
+
+      {cancelamento.dialogo}
     </div>
   );
 }
