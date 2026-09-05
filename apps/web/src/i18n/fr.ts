@@ -125,6 +125,10 @@ export const fr: Dicionario = {
     cancelar: 'Annuler l’impression',
     confirmaCancelar: (nome: string, job: string, pct: number) =>
       `Interrompt ${job} sur ${nome}, à ${pct}%. Impossible de reprendre où elle s’est arrêtée : la pièce est perdue et l’impression repart de zéro.`,
+    excluirPeca: 'Exclure cette pièce de l’impression',
+    excluirPecaCurto: 'Exclure la pièce',
+    confirmaExcluirPeca: (peca: string) =>
+      `Retire ${peca} de cette impression. La buse cesse d’y passer et les autres pièces du plateau continuent normalement. Impossible de revenir en arrière — et si c’était la dernière, l’impression se termine.`,
     temperaturas: 'TEMPÉRATURES',
     bico: 'Buse',
     mesa: 'Plateau',

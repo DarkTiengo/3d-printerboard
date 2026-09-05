@@ -29,17 +29,27 @@ type Semente = {
    */
   fechada?: boolean;
   exaustao?: boolean;
+  /**
+   * Placa de várias peças rotuladas pelo fatiador — é o que liga o
+   * `[exclude_object]`. Só duas sementes têm, porque numa fazenda de verdade
+   * também é a minoria: a maioria dos arquivos sai sem rótulo nenhum.
+   */
+  pecas?: string[];
 };
+
+/** Nomes como o fatiador escreve: base, `id:` e o índice da cópia. */
+const pecasDe = (base: string, n: number): string[] =>
+  Array.from({ length: n }, (_, i) => `${base} id:${i}`);
 
 export const SEMENTES: Semente[] = [
   { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, camadaAtual: 84, camadaTotal: 210, estado: 'printing' },
-  { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, camadaAtual: 61, camadaTotal: 196, estado: 'printing' },
+  { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, camadaAtual: 61, camadaTotal: 196, estado: 'printing', pecas: pecasDe('clipe_cabo', 12) },
   { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, camadaAtual: 188, camadaTotal: 200, estado: 'printing', fechada: true },
   { id: 'P04', nome: 'Prusa MK4', job: '', pct: 0, camadaAtual: 0, camadaTotal: 142, estado: 'standby' },
   { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, camadaAtual: 96, camadaTotal: 204, estado: 'printing', fechada: true, exaustao: true },
   { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, camadaAtual: 18, camadaTotal: 150, estado: 'error' },
   { id: 'P07', nome: 'Sovol SV06', job: 'pé_antivibração.gcode', pct: 66, camadaAtual: 58, camadaTotal: 88, estado: 'printing' },
-  { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, camadaAtual: 24, camadaTotal: 120, estado: 'paused' }
+  { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, camadaAtual: 24, camadaTotal: 120, estado: 'paused', pecas: pecasDe('chaveiro', 24) }
 ];
 
 const MACROS = ['HOME_ALL', 'BED_MESH_CALIBRATE', 'PURGE_LINE', 'PARK_HEAD', 'LOAD_FILAMENT', 'UNLOAD_FILAMENT'];
@@ -71,6 +81,8 @@ class MockClient extends MoonrakerClient {
   private mensagem: string | null = null;
   /** false enquanto o "host" está desligado ou reiniciando. */
   private ligada = true;
+  /** Peças já tiradas da impressão por EXCLUDE_OBJECT. */
+  private excluidas = new Set<string>();
 
   constructor(cfg: PrinterConfig, semente: Semente) {
     super(cfg);
@@ -133,9 +145,31 @@ class MockClient extends MoonrakerClient {
         // toda máquina tem os dois: é o que o Klipper expõe com
         // sensor_type temperature_mcu e temperature_host
         'temperature_sensor MCU': { temperature: this.mcu },
-        'temperature_sensor Raspberry Pi': { temperature: this.host }
+        'temperature_sensor Raspberry Pi': { temperature: this.host },
+        ...(this.semente.pecas
+          ? {
+              exclude_object: {
+                objects: this.semente.pecas.map((nome) => ({ name: nome })),
+                excluded_objects: [...this.excluidas],
+                // o Klipper manda '' entre uma peça e outra, não null
+                current_object: this.pecaAtual() ?? ''
+              }
+            }
+          : {})
       }
     };
+  }
+
+  /**
+   * Qual peça o bico está fazendo agora: anda com o progresso e pula as que já
+   * foram excluídas, que é o que o Klipper faz de verdade.
+   */
+  private pecaAtual(): string | null {
+    const pecas = this.semente.pecas;
+    if (!pecas || (this.semente.estado !== 'printing' && this.semente.estado !== 'paused')) return null;
+    const vivas = pecas.filter((nome) => !this.excluidas.has(nome));
+    if (vivas.length === 0) return null;
+    return vivas[Math.min(vivas.length - 1, Math.floor(this.progresso * vivas.length))];
   }
 
   /** Aproxima o valor lido do alvo, como um aquecedor de verdade faria. */
@@ -237,6 +271,13 @@ class MockClient extends MoonrakerClient {
       this.bico.alvo = 0;
       this.mesa.alvo = 0;
       this.camara.alvo = 0;
+    }
+
+    if (/EXCLUDE_OBJECT\s+CURRENT=1/i.test(script)) {
+      const atual = this.pecaAtual();
+      if (atual) this.excluidas.add(atual);
+      // excluir a última encerra a impressão, como no Klipper
+      if (this.pecaAtual() === null && this.semente.pecas) this.semente.estado = 'complete';
     }
 
     if (script.includes('FIRMWARE_RESTART')) {

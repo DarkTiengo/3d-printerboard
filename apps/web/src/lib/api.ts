@@ -115,6 +115,9 @@ export const api = {
   definirAlvo: (id: string, chave: string, alvo: number) =>
     post<{ ok: true }>(`/api/printers/${id}/heater`, { chave, alvo }),
   desligarAquecedores: (id: string) => post<{ ok: true }>(`/api/printers/${id}/heaters/off`),
+
+  /** Exclui a peça em curso; qual é ela quem decide é o servidor. */
+  excluirPecaAtual: (id: string) => post<{ ok: true }>(`/api/printers/${id}/exclude-object`),
   gcode: (id: string, script: string) => post<{ ok: true }>(`/api/printers/${id}/gcode`, { script }),
   paradaEmergencia: () => post<{ ok: boolean; total: number; falhas: string[] }>('/api/emergency-stop'),
   // energia do host: falam com o Moonraker, então valem com o Klipper caído

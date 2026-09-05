@@ -124,6 +124,10 @@ export const pt = {
     cancelar: 'Cancelar impressão',
     confirmaCancelar: (nome: string, job: string, pct: number) =>
       `Interrompe ${job} em ${nome}, agora em ${pct}%. Não dá para retomar de onde parou: a peça se perde e a impressão recomeça do zero.`,
+    excluirPeca: 'Excluir esta peça da impressão',
+    excluirPecaCurto: 'Excluir peça',
+    confirmaExcluirPeca: (peca: string) =>
+      `Tira ${peca} desta impressão. O bico deixa de passar por ela e as outras peças da mesa continuam normalmente. Não dá para trazer de volta — e, se for a última que restava, a impressão termina.`,
     temperaturas: 'TEMPERATURAS',
     bico: 'Bico',
     mesa: 'Mesa',

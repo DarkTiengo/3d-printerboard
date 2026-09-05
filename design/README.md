@@ -87,6 +87,7 @@ Em React usar `lucide-react`. Mapa dos ícones usados:
 | Parada de emergência | `octagon-x` |
 | Pausar / Continuar | `pause` / `play` |
 | Cancelar / fechar | `x` |
+| Excluir peça da impressão | `package-x` |
 | Expandir (canto do tile) | `maximize-2` |
 | Fila | `menu` |
 | Temperatura | `thermometer` |
@@ -163,7 +164,9 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
     1. Cabeçalho: ponto de status, nome, tag de status, botão fechar.
     2. Feed 16:10 com o nome da câmera.
     3. Trabalho: nome do arquivo em mono, barra 5px, linha "72% · CAMADA 84/210" e tempo restante,
-       e os três controles em pílula (pausar / continuar / cancelar).
+       e os controles em pílula (pausar / continuar / cancelar). Numa máquina com
+       `[exclude_object]`, e só enquanto o fatiador tiver rotulado as peças, aparece um quarto:
+       `package-x`, que tira da impressão a peça sendo feita agora e deixa as outras seguirem.
     4. Temperaturas: uma linha por sensor com ícone `thermometer` (`fan` nas ventoinhas
        por temperatura), na ordem bico → mesa → câmara → ventoinhas → sensores de leitura.
        Quem aquece mostra "atual / campo de alvo em °C" e o alvo é editável ali mesmo;
@@ -175,6 +178,7 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
 
 **Regras dos controles:** *Pausar* habilitado quando imprimindo ou em atenção; *Continuar* apenas
 quando pausada (é a única ação em vermelho); *Cancelar* quando imprimindo, em atenção ou pausada.
+*Cancelar* e *excluir peça* perguntam antes — o clique não tem desfazer.
 Desabilitado = borda `--color-neutral-800`, texto `--color-neutral-700`, `pointer-events: none`.
 
 ### 3. Câmeras

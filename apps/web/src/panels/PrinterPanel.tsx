@@ -1,10 +1,12 @@
-import { Pause, Play, X } from 'lucide-react';
+import { useState } from 'react';
+import { PackageX, Pause, Play, X } from 'lucide-react';
 import type { Printer, User } from '@3dfarm/shared';
 import { pode } from '@3dfarm/shared';
 import { IconButton } from '../components/IconButton';
 import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';
 import { CameraFeed } from '../components/CameraFeed';
+import { Confirm } from '../components/Confirm';
 import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
 import { controlesHabilitados, coresStatus, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
 import { useT } from '../i18n';
@@ -50,6 +52,13 @@ export function PrinterPanel({
   };
 
   const cancelamento = useConfirmarCancelamento(printer, comandar('cancelada', () => api.cancelar(printer.id)));
+
+  /*
+   * Excluir a peça em curso só existe em máquina com [exclude_object] e em
+   * arquivo que o fatiador rotulou — `pecaAtual` é null em todo o resto, e o
+   * botão simplesmente não aparece.
+   */
+  const [excluindoPeca, setExcluindoPeca] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'auto', height: '100%' }}>
@@ -162,6 +171,15 @@ export function PrinterPanel({
             onClick={cancelamento.pedir}
             icone={<X size={15} strokeWidth={2} aria-hidden />}
           />
+          {printer.pecaAtual && (
+            <IconButton
+              rotulo={t.impressora.excluirPeca}
+              variante="controle"
+              disabled={!habilitado.cancelar || !podeControlar}
+              onClick={() => setExcluindoPeca(true)}
+              icone={<PackageX size={15} strokeWidth={2} aria-hidden />}
+            />
+          )}
         </div>
       </section>
 
@@ -202,6 +220,19 @@ export function PrinterPanel({
       </div>
 
       {cancelamento.dialogo}
+
+      <Confirm
+        aberto={excluindoPeca}
+        titulo={t.impressora.excluirPecaCurto}
+        descricao={t.impressora.confirmaExcluirPeca(printer.pecaAtual ?? '')}
+        rotuloConfirmar={t.impressora.excluirPecaCurto}
+        rotuloCancelar={t.comum.voltar}
+        onConfirmar={() => {
+          setExcluindoPeca(false);
+          void api.excluirPecaAtual(printer.id).catch(() => {});
+        }}
+        onCancelar={() => setExcluindoPeca(false)}
+      />
     </div>
   );
 }

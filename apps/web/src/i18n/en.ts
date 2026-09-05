@@ -125,6 +125,10 @@ export const en: Dicionario = {
     cancelar: 'Cancel print',
     confirmaCancelar: (nome: string, job: string, pct: number) =>
       `Stops ${job} on ${nome}, now at ${pct}%. There is no resuming from where it stopped: the part is lost and the print starts over.`,
+    excluirPeca: 'Exclude this object from the print',
+    excluirPecaCurto: 'Exclude object',
+    confirmaExcluirPeca: (peca: string) =>
+      `Drops ${peca} from this print. The nozzle stops going over it and the other objects on the bed carry on. There is no bringing it back — and if it was the last one left, the print ends.`,
     temperaturas: 'TEMPERATURES',
     bico: 'Nozzle',
     mesa: 'Bed',

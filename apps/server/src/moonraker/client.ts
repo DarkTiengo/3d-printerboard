@@ -40,6 +40,12 @@ export const PREFIXOS_DE_SENSOR: [prefixo: string, tipo: TipoSensor][] = [
   ['temperature_sensor ', 'sensor']
 ];
 
+/**
+ * O objeto que a máquina só tem quando `[exclude_object]` está no printer.cfg.
+ * É ele que sabe qual peça da mesa o bico está fazendo agora.
+ */
+export const OBJETO_PECAS = 'exclude_object';
+
 /** Extrusoras além da primeira: 'extruder1', 'extruder2'. */
 const EXTRUSORA_EXTRA = /^extruder\d+$/;
 
@@ -276,8 +282,11 @@ export class MoonrakerClient extends EventEmitter {
       const sensores = sensoresDaLista(objetos);
       this.definirEstado({ macros });
 
+      // exclude_object entra pela mesma porta dos sensores: existe ou não existe
+      const pecas = objetos.includes(OBJETO_PECAS) ? { [OBJETO_PECAS]: null } : {};
+
       const sub = await this.chamar<{ status: Record<string, any> }>('printer.objects.subscribe', {
-        objects: { ...OBJETOS_BASE, ...Object.fromEntries(sensores.map((n) => [n, null])) }
+        objects: { ...OBJETOS_BASE, ...Object.fromEntries(sensores.map((n) => [n, null])), ...pecas }
       });
       /*
        * O subscribe devolve o estado inteiro do que foi assinado, então aqui
@@ -488,6 +497,17 @@ export class MoonrakerClient extends EventEmitter {
   /** Zera todos os alvos de uma vez — a saída rápida quando algo vai mal. */
   desligarAquecedores() {
     return this.gcode('TURN_OFF_HEATERS');
+  }
+
+  /**
+   * Tira da impressão a peça que está sendo feita agora. As outras seguem.
+   *
+   * `CURRENT=1` e não `NAME=`: o nome vem do fatiador e costuma ter espaço no
+   * meio — "Shape-Box id:0 copy 1" —, e parâmetro de G-code quebra no espaço.
+   * Perguntar pela atual evita o problema em vez de tentar escapá-lo.
+   */
+  excluirPecaAtual() {
+    return this.gcode('EXCLUDE_OBJECT CURRENT=1');
   }
 
   /**

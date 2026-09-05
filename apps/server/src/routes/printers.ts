@@ -166,6 +166,39 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
     }
   );
 
+  /**
+   * Tira da impressão a peça que está sendo feita agora — as outras da mesa
+   * continuam.
+   *
+   * Quem diz qual peça é a impressora, não o pedido: o corpo vem vazio e nada
+   * dele chega ao G-code. Recusa quando não há peça em curso porque aí o
+   * `EXCLUDE_OBJECT CURRENT=1` erraria no Klipper, e um 409 explica melhor.
+   */
+  app.post<{ Params: { id: string } }>(
+    '/api/printers/:id/exclude-object',
+    {
+      preHandler: exigirPermissao('controlarImpressao'),
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } }
+    },
+    async (req, reply) => {
+      const printer = farm.printer(req.params.id);
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!printer || !cliente) return reply.code(503).send({ erro: 'impressora offline' });
+      if (!printer.pecaAtual) return reply.code(409).send({ erro: 'nenhuma peça em impressão' });
+
+      try {
+        await cliente.excluirPecaAtual();
+        logger.info(
+          { printer: req.params.id, por: req.sessao!.usuario, peca: printer.pecaAtual },
+          'peça excluída da impressão'
+        );
+        return { ok: true };
+      } catch (err) {
+        return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao excluir a peça' });
+      }
+    }
+  );
+
   app.post<{ Params: { id: string } }>(
     '/api/printers/:id/home',
     { preHandler: exigirPermissao('controlarImpressao') },

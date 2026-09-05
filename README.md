@@ -105,6 +105,11 @@ touching this app. Anything that heats gets an **editable target** next to the
 reading — bounded by the `min_temp`/`max_temp` of your own config — plus one
 button that turns every heater off. What only measures shows the reading and
 nothing else.
+On a machine running `[exclude_object]`, and only while the slicer labelled the
+objects, the job controls gain a fourth button: it drops **the object being
+printed right now** from the print and lets the rest of the plate carry on —
+which beats losing a full plate to one part that lifted. Only the current
+object's name travels in the live snapshot; the plate geometry does not.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip.
 **Files** — G-code library **grouped by printer**, so it is obvious which machine
 already holds a file and which one will print it. Queueing from a group sends

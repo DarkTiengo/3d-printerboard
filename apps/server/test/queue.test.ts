@@ -69,6 +69,7 @@ function printer(id: string, patch: Partial<Printer> = {}): Printer {
     status: 'ociosa',
     online: true,
     temTaCamera: false,
+    pecaAtual: null,
     temperaturas: [],
     posicao: null,
     macros: [],

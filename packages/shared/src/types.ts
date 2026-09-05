@@ -43,6 +43,16 @@ export type Printer = {
    * `state_message`, ex.: "MCU 'mcu' shutdown: Lost communication with MCU". */
   mensagemKlippy: string | null;
   temTaCamera: boolean;
+  /**
+   * Peça da mesa sendo impressa agora, quando a máquina tem `[exclude_object]`
+   * e o fatiador rotulou os objetos. Null em todo o resto — que é a maioria —
+   * e é ela que decide se o botão de excluir peça existe.
+   *
+   * Só o nome da atual entra no snapshot. A mesa inteira, com os polígonos de
+   * cada peça, seriam uns 8 KB por máquina republicados a 4 Hz; o que se quer
+   * aqui cabe em 36 bytes.
+   */
+  pecaAtual: string | null;
   temperaturas: Temperatura[];
   posicao: Posicao | null;
   macros: string[];

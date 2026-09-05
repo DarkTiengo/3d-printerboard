@@ -125,6 +125,10 @@ export const it: Dicionario = {
     cancelar: 'Annulla la stampa',
     confirmaCancelar: (nome: string, job: string, pct: number) =>
       `Interrompe ${job} su ${nome}, ora al ${pct}%. Non si può riprendere da dove si è fermata: il pezzo è perso e la stampa ricomincia da capo.`,
+    excluirPeca: 'Escludi questo pezzo dalla stampa',
+    excluirPecaCurto: 'Escludi pezzo',
+    confirmaExcluirPeca: (peca: string) =>
+      `Toglie ${peca} da questa stampa. L’ugello smette di passarci sopra e gli altri pezzi sul piano proseguono normalmente. Non si può recuperare e, se era l’ultimo rimasto, la stampa finisce.`,
     temperaturas: 'TEMPERATURE',
     bico: 'Ugello',
     mesa: 'Piano',
