@@ -8,6 +8,13 @@ configuration** — on each machine's own schedule, and downloadable as a zip.
 Built for people who own several Klipper/Moonraker printers and are tired of
 keeping one browser tab open per machine.
 
+Scope, plainly: it is aimed at **small and medium farms** — a handful of
+machines up to a few dozen, all on the same LAN. Nothing here assumes a
+datacentre: no clustering, no multiple sites, no tenants.
+
+And it is a **personal project**, built at home for a farm of my own and shared
+as it is. There is no company behind it, and it grows at the pace of spare time.
+
 Everything runs in a single container: the same process serves the API and the
 web app, and holds a persistent WebSocket to each Moonraker host.
 
