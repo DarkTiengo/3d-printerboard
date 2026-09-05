@@ -275,6 +275,7 @@ export const it: Dicionario = {
       erro_impressao: 'Stampa interrotta da un errore',
       impressora_offline: 'Stampante irraggiungibile',
       impressao_concluida: 'Stampa completata',
+      impressao_pausada: 'Stampa in pausa',
       filamento_acabando: 'Filamento in esaurimento',
       camera_offline: 'Telecamera non in linea',
       camera_muda: 'La telecamera non risponde più',

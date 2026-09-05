@@ -275,6 +275,7 @@ export const fr: Dicionario = {
       erro_impressao: 'Impression interrompue par une erreur',
       impressora_offline: 'Imprimante injoignable',
       impressao_concluida: 'Impression terminée',
+      impressao_pausada: 'Impression en pause',
       filamento_acabando: 'Filament bientôt épuisé',
       camera_offline: 'Caméra hors ligne',
       camera_muda: 'La caméra ne répond plus',

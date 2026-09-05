@@ -275,6 +275,7 @@ export const en: Dicionario = {
       erro_impressao: 'Print stopped by an error',
       impressora_offline: 'Printer unreachable',
       impressao_concluida: 'Print finished',
+      impressao_pausada: 'Print paused',
       filamento_acabando: 'Filament running out',
       camera_offline: 'Camera offline',
       camera_muda: 'Camera stopped responding',

@@ -257,6 +257,10 @@ export function ligarGeradorDeAlertas(): void {
     if (atual.online && (!anterior || !anterior.online)) {
       resolverPorChave(`offline:${atual.id}`);
     }
+    // retomar, cancelar ou terminar fecha a pausa: em todos, alguém já foi lá
+    if (atual.status !== 'pausada' && (!anterior || anterior.status === 'pausada')) {
+      resolverPorChave(`pausa:${atual.id}`);
+    }
 
     // Criar alerta, ao contrário, exige transição: sem o estado anterior não dá
     // para saber se algo mudou, e o primeiro snapshot alertaria a fazenda toda.
@@ -308,6 +312,31 @@ export function ligarGeradorDeAlertas(): void {
         detalhe: `${atual.job} parou na camada ${atual.camada}. O Klipper reportou erro e a impressão não avança. Verifique a máquina antes de retomar.`,
         frameLabel: `CAM ${atual.id}`,
         dedupeKey: `erro:${atual.id}:${atual.job}`,
+        capturarFrame: true
+      });
+    }
+
+    /*
+     * Impressão pausada.
+     *
+     * Quase nunca é alguém no painel: o normal é o sensor de filamento ou um
+     * M600 no G-code parando a máquina, e daí ela fica esquentando parada até
+     * alguém aparecer. É o caso em que o aviso no celular vale mais — quem
+     * pausou pela tela já sabe, e vê a mensagem chegar como confirmação.
+     *
+     * `statusDe` só devolve 'pausada' com o Klipper em 'ready', então não há
+     * risco de confundir isto com o estado congelado de uma máquina caída.
+     */
+    if (anterior.status !== 'pausada' && atual.status === 'pausada') {
+      void criarAlerta({
+        printerId: atual.id,
+        printerNome: nomeCurto(atual),
+        sev: 'media',
+        codigo: 'impressao_pausada',
+        titulo: 'Impressão pausada',
+        detalhe: `${atual.job} parou em ${atual.pct}%, na camada ${atual.camada}. A máquina segue aquecida esperando alguém retomar.`,
+        frameLabel: `CAM ${atual.id}`,
+        dedupeKey: `pausa:${atual.id}`,
         capturarFrame: true
       });
     }

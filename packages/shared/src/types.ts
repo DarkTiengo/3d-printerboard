@@ -258,6 +258,7 @@ export const CODIGOS_DE_ALERTA: { codigo: string; sev: Severidade }[] = [
   { codigo: 'impressora_offline', sev: 'critica' },
   { codigo: 'erro_impressao', sev: 'alta' },
   { codigo: 'backup_falhou', sev: 'alta' },
+  { codigo: 'impressao_pausada', sev: 'media' },
   { codigo: 'filamento_acabando', sev: 'media' },
   { codigo: 'camera_offline', sev: 'media' },
   { codigo: 'camera_muda', sev: 'media' },
@@ -276,6 +277,7 @@ export const CODIGOS_PADRAO = [
   'impressora_offline',
   'erro_impressao',
   'backup_falhou',
+  'impressao_pausada',
   'filamento_acabando',
   'impressao_concluida'
 ];

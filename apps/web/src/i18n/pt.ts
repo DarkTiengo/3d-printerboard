@@ -275,6 +275,7 @@ export const pt = {
       erro_impressao: 'Impressão interrompida por erro',
       impressora_offline: 'Impressora fora do ar',
       impressao_concluida: 'Impressão concluída',
+      impressao_pausada: 'Impressão pausada',
       filamento_acabando: 'Filamento acabando',
       camera_offline: 'Câmera offline',
       camera_muda: 'Câmera parou de responder',
