@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="3D Printerboard">
+  <rect width="32" height="32" rx="7" fill="#201e1d"/>
+  <path d="M8 6h16v6h-4l-2.5 9h-3L12 12H8z" fill="#f3f2f2"/>
+  <circle cx="16" cy="25.7" r="2.4" fill="#ec3013"/>
+</svg>
