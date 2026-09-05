@@ -66,6 +66,22 @@ export function alvo(v: number | null | undefined): string {
   return `${Math.round(v)} °C`;
 }
 
+/**
+ * Nome de seção do printer.cfg em nome de tela: 'chamber' → 'Chamber',
+ * 'raspberry_pi' → 'Raspberry Pi', 'MCU' → 'MCU'.
+ *
+ * No printer.cfg o `_` é separador de palavra, e ninguém escreve maiúscula ali
+ * por hábito. Só a primeira letra de cada palavra sobe — baixar o resto viraria
+ * 'Mcu' e 'Ptc' justamente onde a sigla foi escrita de propósito.
+ */
+export function nomeBonito(nome: string): string {
+  return nome
+    .split(/[\s_]+/)
+    .filter(Boolean)
+    .map((palavra) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+    .join(' ');
+}
+
 /** 'suporte_camera_v3.gcode' → 'suporte_camera_v3'. */
 export function semExtensao(nome: string): string {
   return nome.replace(/\.(gcode|gco|g|ufp|bgcode)$/i, '');

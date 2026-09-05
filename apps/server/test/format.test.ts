@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, duracao, quando, quandoCurto, semExtensao, temperatura, alvo } from '@3dfarm/shared';
+import { bytes, duracao, nomeBonito, quando, quandoCurto, semExtensao, temperatura, alvo } from '@3dfarm/shared';
 
 describe('duracao', () => {
   it('formata como o design: 1h 14m', () => {
@@ -62,5 +62,23 @@ describe('semExtensao', () => {
     expect(semExtensao('suporte_camera_v3.gcode')).toBe('suporte_camera_v3');
     expect(semExtensao('peça.bgcode')).toBe('peça');
     expect(semExtensao('sem_extensao')).toBe('sem_extensao');
+  });
+});
+
+describe('nomeBonito', () => {
+  it('põe maiúscula e troca o _ por espaço', () => {
+    expect(nomeBonito('chamber')).toBe('Chamber');
+    expect(nomeBonito('raspberry_pi')).toBe('Raspberry Pi');
+  });
+
+  it('não mexe no resto da palavra: a sigla foi escrita assim de propósito', () => {
+    expect(nomeBonito('MCU')).toBe('MCU');
+    expect(nomeBonito('Raspberry Pi')).toBe('Raspberry Pi');
+    expect(nomeBonito('mcu_BTT')).toBe('Mcu BTT');
+  });
+
+  it('aguenta o que o printer.cfg deixa passar', () => {
+    expect(nomeBonito('_chamber__top ')).toBe('Chamber Top');
+    expect(nomeBonito('')).toBe('');
   });
 });

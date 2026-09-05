@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Fan, Power, Thermometer } from 'lucide-react';
 import type { Temperatura } from '@3dfarm/shared';
+import { nomeBonito } from '@3dfarm/shared';
 import type { Dicionario } from '../i18n/pt';
 import { IconButton } from '../components/IconButton';
 import { useT } from '../i18n';
@@ -23,15 +24,16 @@ const TTL_RASCUNHO_MS = 8_000;
  * Nome do sensor na tela.
  *
  * Bico e mesa toda impressora tem, e ganham o rótulo do idioma. O resto foi
- * batizado por quem escreveu o printer.cfg — "chamber", "MCU", "Raspberry Pi" —
+ * batizado por quem escreveu o printer.cfg — "chamber", "MCU", "raspberry_pi" —
  * e é esse nome que aparece: traduzir o que a pessoa nomeou seria inventar.
+ * Só a forma muda, para não destoar dos rótulos ao lado: `nomeBonito`.
  */
 export function rotuloDoSensor(temp: Temperatura, t: Dicionario): string {
   if (temp.chave === 'extruder') return t.impressora.bico;
   if (temp.chave === 'heater_bed') return t.impressora.mesa;
   const extra = EXTRUSORA_EXTRA.exec(temp.chave);
   if (extra) return `${t.impressora.bico} ${Number(extra[1]) + 1}`;
-  return temp.rotulo ?? temp.chave;
+  return nomeBonito(temp.rotulo ?? temp.chave);
 }
 
 /**

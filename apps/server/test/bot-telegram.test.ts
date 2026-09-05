@@ -112,7 +112,7 @@ describe('/status de uma impressora', () => {
     expect(enviados[0].tipo).toBe('foto');
     expect(enviados[0].conteudo).toContain('Voron 0.2');
     expect(enviados[0].conteudo).toContain('48% · camada 96/204 · falta 1h 14m');
-    expect(enviados[0].conteudo).toContain('bico 210,4 °C / 210 °C');
+    expect(enviados[0].conteudo).toContain('Bico 210,4 °C / 210 °C');
     // a câmara é aquecedor e entra pelo nome do printer.cfg
     expect(enviados[0].conteudo).toContain('Chamber 44,2 °C / 45 °C');
     // o MCU só mede: a linha do /status é uma linha só, e ele fica no painel

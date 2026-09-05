@@ -1,5 +1,5 @@
 import type { Printer } from '@3dfarm/shared';
-import { alvo, duracao, semExtensao, temperatura } from '@3dfarm/shared';
+import { alvo, duracao, nomeBonito, semExtensao, temperatura } from '@3dfarm/shared';
 import type { Temperatura } from '@3dfarm/shared';
 
 import { logger } from '../lib/logger.js';
@@ -111,12 +111,13 @@ export function detalheDaImpressora(p: Printer): string {
 
 /**
  * Nome do sensor no chat. O bot fala português; bico e mesa são os dois que
- * toda máquina tem, o resto sai com o nome do printer.cfg.
+ * toda máquina tem, o resto sai com o nome do printer.cfg — arrumado por
+ * `nomeBonito`, o mesmo do painel.
  */
 function rotuloDoSensor(t: Temperatura): string {
-  if (t.chave === 'extruder') return 'bico';
-  if (t.chave === 'heater_bed') return 'mesa';
-  return t.rotulo ?? t.chave;
+  if (t.chave === 'extruder') return 'Bico';
+  if (t.chave === 'heater_bed') return 'Mesa';
+  return nomeBonito(t.rotulo ?? t.chave);
 }
 
 const AJUDA = [
