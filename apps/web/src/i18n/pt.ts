@@ -124,6 +124,11 @@ export const pt = {
     temperaturas: 'TEMPERATURAS',
     bico: 'Bico',
     mesa: 'Mesa',
+    /* o alvo é editável: estes rótulos são do campo e do botão de desligar */
+    alvoDe: (nome: string) => `Alvo de ${nome} em graus Celsius`,
+    faixa: (min: number, max: number) => `entre ${min} e ${max} °C`,
+    desligarAquecedores: 'Desligar todos os aquecedores',
+    falhaAlvo: 'Não foi possível mudar o alvo.',
     cabeca: 'CABEÇA DE IMPRESSÃO',
     passo: 'PASSO (MM)',
     passoGrupo: 'Passo do jog em milímetros',

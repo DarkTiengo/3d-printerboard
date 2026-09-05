@@ -172,9 +172,13 @@ export function PrinterPanel({
         <PrinterQueue printer={printer} podeControlar={podeControlar} />
       </div>
 
-      {/* 6. temperaturas */}
+      {/* 6. temperaturas — e os aquecedores, que se comandam daqui */}
       <div style={secao}>
-        <TempList temperaturas={printer.temperaturas} />
+        <TempList
+          printerId={printer.id}
+          temperaturas={printer.temperaturas}
+          desabilitado={!podeControlar || printer.klippy !== 'ready'}
+        />
       </div>
 
       {/* 7. cabeça de impressão */}

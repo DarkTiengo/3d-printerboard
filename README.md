@@ -96,6 +96,15 @@ the multicast group.
 **Dashboard** — camera wall plus a control panel for the selected printer: job,
 **that printer's queue**, temperatures, jog and macros. With nothing selected,
 the column shows the farm-wide queue.
+The temperature section lists **every sensor the machine actually has**, not
+just nozzle and bed: a heated chamber, a temperature-controlled fan, the MCU and
+the Raspberry Pi. They are discovered from the printer at connect time
+(`heater_generic`, `temperature_fan`, `temperature_sensor` and any extra
+extruder), so a sensor you add to `printer.cfg` shows up after a restart without
+touching this app. Anything that heats gets an **editable target** next to the
+reading — bounded by the `min_temp`/`max_temp` of your own config — plus one
+button that turns every heater off. What only measures shows the reading and
+nothing else.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip.
 **Files** — G-code library **grouped by printer**, so it is obvious which machine
 already holds a file and which one will print it. Queueing from a group sends

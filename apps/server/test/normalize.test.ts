@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PrinterConfig } from '@3dfarm/shared';
 import { motivoDoKlipper, type EstadoBruto } from '../src/moonraker/client.js';
-import { camadaDe, normalizar, progressoDe, restanteSegundos, statusDe } from '../src/moonraker/normalize.js';
+import { camadaDe, normalizar, progressoDe, restanteSegundos, statusDe, temperaturasDe } from '../src/moonraker/normalize.js';
 
 const cfg: PrinterConfig = {
   id: 'P01',
@@ -18,6 +18,7 @@ function bruto(patch: Partial<EstadoBruto> = {}, objetos: Record<string, any> = 
     conectado: true,
     klippy: 'ready',
     macros: [],
+    limites: {},
     ultimoErro: null,
     mensagemKlippy: null,
     ...patch,
@@ -146,8 +147,8 @@ describe('normalizar', () => {
     });
     // números crus: o front é quem escolhe vírgula ou ponto
     expect(p.temperaturas).toEqual([
-      { chave: 'bico', atual: 210.42, alvo: 210 },
-      { chave: 'mesa', atual: 59.81, alvo: 60 }
+      { chave: 'extruder', rotulo: null, tipo: 'aquecedor', atual: 210.42, alvo: 210, min: null, max: null },
+      { chave: 'heater_bed', rotulo: null, tipo: 'aquecedor', atual: 59.81, alvo: 60, min: null, max: null }
     ]);
     expect(p.posicao).toEqual({ x: 110, y: 92.5, z: 16.8 });
   });
@@ -170,6 +171,80 @@ describe('normalizar', () => {
       { print_stats: { state: 'printing', print_duration: 3600 }, display_status: { progress: 0.5 } }
     );
     expect(normalizar(cfg, imprimindo).restanteSegundos).toBeCloseTo(3600, 0);
+  });
+});
+
+describe('temperaturasDe', () => {
+  const cheia = bruto(
+    {
+      limites: {
+        extruder: { min: 0, max: 300 },
+        heater_bed: { min: 0, max: 120 },
+        'heater_generic chamber': { min: 0, max: 60 }
+      }
+    },
+    {
+      extruder: { temperature: 210.4, target: 210 },
+      heater_bed: { temperature: 59.8, target: 60 },
+      'heater_generic Chamber': { temperature: 44.2, target: 45 },
+      'temperature_fan exhaust': { temperature: 41, target: 40 },
+      'temperature_sensor MCU': { temperature: 38.2 },
+      'temperature_sensor Raspberry Pi': { temperature: 46.5 }
+    }
+  );
+
+  it('acha os sensores extras da máquina, e não só bico e mesa', () => {
+    expect(temperaturasDe(cheia).map((t) => t.chave)).toEqual([
+      'extruder',
+      'heater_bed',
+      'heater_generic Chamber',
+      'temperature_fan exhaust',
+      'temperature_sensor MCU',
+      'temperature_sensor Raspberry Pi'
+    ]);
+  });
+
+  it('separa quem aquece de quem só mede', () => {
+    const por = new Map(temperaturasDe(cheia).map((t) => [t.chave, t]));
+    expect(por.get('heater_generic Chamber')).toMatchObject({ tipo: 'aquecedor', alvo: 45, rotulo: 'Chamber' });
+    expect(por.get('temperature_fan exhaust')).toMatchObject({ tipo: 'ventoinha', alvo: 40, rotulo: 'exhaust' });
+    // sensor de leitura não tem alvo nenhum: mostrar 0 sugeriria "desligado"
+    expect(por.get('temperature_sensor MCU')).toMatchObject({
+      tipo: 'sensor',
+      atual: 38.2,
+      alvo: null,
+      rotulo: 'MCU'
+    });
+  });
+
+  it('casa a faixa do printer.cfg mesmo com a seção em outra caixa', () => {
+    // o Klipper devolve as seções de configfile.settings em minúsculas, e o
+    // objeto com o nome como a pessoa escreveu
+    const camara = temperaturasDe(cheia).find((t) => t.chave === 'heater_generic Chamber');
+    expect(camara).toMatchObject({ min: 0, max: 60 });
+  });
+
+  it('deixa a faixa em null quando a impressora não informou', () => {
+    const semLimites = bruto({}, { extruder: { temperature: 24, target: 0 } });
+    expect(temperaturasDe(semLimites)[0]).toMatchObject({ chave: 'extruder', min: null, max: null });
+  });
+
+  it('põe as extrusoras em ordem, antes da mesa', () => {
+    const dupla = bruto(
+      {},
+      {
+        extruder: { temperature: 200, target: 200 },
+        extruder1: { temperature: 190, target: 190 },
+        heater_bed: { temperature: 60, target: 60 }
+      }
+    );
+    expect(temperaturasDe(dupla).map((t) => t.chave)).toEqual(['extruder', 'extruder1', 'heater_bed']);
+  });
+
+  it('ignora os objetos que não são sensores', () => {
+    const chaves = temperaturasDe(cheia).map((t) => t.chave);
+    expect(chaves).not.toContain('print_stats');
+    expect(chaves).not.toContain('display_status');
   });
 });
 

@@ -1,5 +1,6 @@
 import type { Printer } from '@3dfarm/shared';
 import { alvo, duracao, semExtensao, temperatura } from '@3dfarm/shared';
+import type { Temperatura } from '@3dfarm/shared';
 
 import { logger } from '../lib/logger.js';
 import { farm } from './farm.js';
@@ -94,12 +95,28 @@ export function detalheDaImpressora(p: Printer): string {
     linhas.push(`Máquina ${p.status}.`);
   }
 
+  /*
+   * Só o que aquece: a linha do /status é uma linha, e a fazenda toda cabendo
+   * numa mensagem vale mais que o termistor do Raspberry. Quem quer os
+   * sensores de leitura abre o painel.
+   */
   const temps = p.temperaturas
-    .map((t) => `${t.chave} ${temperatura(t.atual)} / ${alvo(t.alvo)}`)
+    .filter((t) => t.tipo !== 'sensor')
+    .map((t) => `${rotuloDoSensor(t)} ${temperatura(t.atual)} / ${alvo(t.alvo)}`)
     .join(' · ');
   if (temps) linhas.push(temps);
 
   return linhas.join('\n');
+}
+
+/**
+ * Nome do sensor no chat. O bot fala português; bico e mesa são os dois que
+ * toda máquina tem, o resto sai com o nome do printer.cfg.
+ */
+function rotuloDoSensor(t: Temperatura): string {
+  if (t.chave === 'extruder') return 'bico';
+  if (t.chave === 'heater_bed') return 'mesa';
+  return t.rotulo ?? t.chave;
 }
 
 const AJUDA = [

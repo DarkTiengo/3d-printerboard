@@ -42,8 +42,11 @@ function impressora(patch: Partial<Printer> = {}): Printer {
     mensagemKlippy: null,
     temTaCamera: true,
     temperaturas: [
-      { chave: 'bico', atual: 210.42, alvo: 210 },
-      { chave: 'mesa', atual: 59.81, alvo: 60 }
+      { chave: 'extruder', rotulo: null, tipo: 'aquecedor', atual: 210.42, alvo: 210, min: 0, max: 300 },
+      { chave: 'heater_bed', rotulo: null, tipo: 'aquecedor', atual: 59.81, alvo: 60, min: 0, max: 120 },
+      // a câmara aquece e entra na linha; o MCU só mede e fica de fora
+      { chave: 'heater_generic Chamber', rotulo: 'Chamber', tipo: 'aquecedor', atual: 44.2, alvo: 45, min: 0, max: 60 },
+      { chave: 'temperature_sensor MCU', rotulo: 'MCU', tipo: 'sensor', atual: 38.2, alvo: null, min: null, max: null }
     ],
     posicao: null,
     macros: [],
@@ -110,6 +113,10 @@ describe('/status de uma impressora', () => {
     expect(enviados[0].conteudo).toContain('Voron 0.2');
     expect(enviados[0].conteudo).toContain('48% · camada 96/204 · falta 1h 14m');
     expect(enviados[0].conteudo).toContain('bico 210,4 °C / 210 °C');
+    // a câmara é aquecedor e entra pelo nome do printer.cfg
+    expect(enviados[0].conteudo).toContain('Chamber 44,2 °C / 45 °C');
+    // o MCU só mede: a linha do /status é uma linha só, e ele fica no painel
+    expect(enviados[0].conteudo).not.toContain('MCU');
   });
 
   it('cai para texto quando não há câmera ou ela não responde', async () => {

@@ -4,7 +4,6 @@ import { localeDe, useIdioma, type Idioma } from './index';
 const NUNCA: Record<Idioma, string> = { en: 'never', pt: 'nunca', es: 'nunca', fr: 'jamais', it: 'mai' };
 const AGORA: Record<Idioma, string> = { en: 'just now', pt: 'agora', es: 'ahora', fr: 'à l’instant', it: 'adesso' };
 const HOJE: Record<Idioma, string> = { en: 'today', pt: 'hoje', es: 'hoy', fr: 'aujourd’hui', it: 'oggi' };
-const DESLIGADO: Record<Idioma, string> = { en: 'off', pt: 'desligado', es: 'apagado', fr: 'éteint', it: 'spento' };
 
 /**
  * Formatação sensível ao idioma.
@@ -94,13 +93,6 @@ function criarFormatador(idioma: Idioma) {
     return `${numero(v, 1)} °C`;
   }
 
-  /** Alvo zerado é aquecedor desligado, não 0 °C. */
-  function alvo(v: number | null | undefined): string {
-    if (v == null || !Number.isFinite(v)) return '—';
-    if (v <= 0) return DESLIGADO[idioma];
-    return `${Math.round(v)} °C`;
-  }
-
   /** '0 3 * * *' → '03:00'. Devolve null quando não é o padrão diário. */
   function horaDoCron(cron: string): string | null {
     const m = /^(\d+)\s+(\d+)\s+\*\s+\*\s+\*$/.exec(cron.trim());
@@ -108,5 +100,5 @@ function criarFormatador(idioma: Idioma) {
     return `${m[2].padStart(2, '0')}:${m[1].padStart(2, '0')}`;
   }
 
-  return { duracao, quando, quandoCurto, bytes, numero, temperatura, alvo, horaDoCron, locale };
+  return { duracao, quando, quandoCurto, bytes, numero, temperatura, horaDoCron, locale };
 }

@@ -48,12 +48,41 @@ export type Printer = {
   macros: string[];
 };
 
+/**
+ * O que a tela pode fazer com o sensor.
+ *
+ * 'aquecedor' é extruder, heater_bed e heater_generic (a câmara aquecida):
+ * aceitam alvo por `SET_HEATER_TEMPERATURE`. 'ventoinha' é temperature_fan,
+ * que também tem alvo mas atende por outro comando. 'sensor' é só leitura —
+ * o MCU, o Raspberry, o termistor solto dentro da caixa.
+ */
+export type TipoSensor = 'aquecedor' | 'ventoinha' | 'sensor';
+
 export type Temperatura = {
-  /** identifica o sensor sem depender de idioma */
-  chave: 'bico' | 'mesa';
+  /**
+   * O objeto do Klipper: 'extruder', 'heater_bed', 'temperature_sensor MCU'.
+   * Identifica o sensor sem depender de idioma, é único dentro da impressora e
+   * é por ele que a rota de alvo acha o que comandar.
+   */
+  chave: string;
+  /**
+   * O nome como está no printer.cfg, para os sensores que a tela não tem como
+   * traduzir. null em extruder e heater_bed, que têm rótulo próprio em cada
+   * idioma — quem escreve "Bico" e "Mesa" é o dicionário.
+   */
+  rotulo: string | null;
+  tipo: TipoSensor;
   atual: number | null;
-  /** 0 significa desligado */
+  /** 0 significa desligado; null quando o sensor não aquece */
   alvo: number | null;
+  /**
+   * Faixa aceita, lida do printer.cfg no handshake. É o que limita o campo de
+   * alvo na tela e o que a rota valida antes de mandar o G-code — pedir 400 °C
+   * a um bico de 300 é um erro do Klipper que dá para evitar aqui. null quando
+   * a impressora não informou.
+   */
+  min: number | null;
+  max: number | null;
 };
 
 export type Posicao = { x: number; y: number; z: number };
@@ -349,6 +378,8 @@ export type StreamEvent =
 // ── Payloads de comando ─────────────────────────────────────────────────────
 
 export type JogPayload = { eixo: 'X' | 'Y' | 'Z'; passo: number };
+/** `chave` é a do `Temperatura` correspondente; `alvo` em °C, 0 desliga. */
+export type HeaterPayload = { chave: string; alvo: number };
 export type GcodePayload = { script: string };
 export type LoginPayload = { usuario: string; senha: string; lembrar: boolean };
 export type EnqueuePayload = { arquivo: string; destino: string | null };

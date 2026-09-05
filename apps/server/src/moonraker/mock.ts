@@ -22,14 +22,21 @@ type Semente = {
   camadaAtual: number;
   camadaTotal: number;
   estado: 'printing' | 'paused' | 'standby' | 'error' | 'complete' | 'cancelled';
+  /**
+   * Máquina fechada: ganha câmara aquecida, e a Voron ainda uma ventoinha de
+   * exaustão por temperatura. Não é enfeite — é o que faz o painel exercitar
+   * os três tipos de sensor (aquecedor, ventoinha e leitura) sem hardware.
+   */
+  fechada?: boolean;
+  exaustao?: boolean;
 };
 
 export const SEMENTES: Semente[] = [
   { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, camadaAtual: 84, camadaTotal: 210, estado: 'printing' },
   { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, camadaAtual: 61, camadaTotal: 196, estado: 'printing' },
-  { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, camadaAtual: 188, camadaTotal: 200, estado: 'printing' },
+  { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, camadaAtual: 188, camadaTotal: 200, estado: 'printing', fechada: true },
   { id: 'P04', nome: 'Prusa MK4', job: '', pct: 0, camadaAtual: 0, camadaTotal: 142, estado: 'standby' },
-  { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, camadaAtual: 96, camadaTotal: 204, estado: 'printing' },
+  { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, camadaAtual: 96, camadaTotal: 204, estado: 'printing', fechada: true, exaustao: true },
   { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, camadaAtual: 18, camadaTotal: 150, estado: 'error' },
   { id: 'P07', nome: 'Sovol SV06', job: 'pé_antivibração.gcode', pct: 66, camadaAtual: 58, camadaTotal: 88, estado: 'printing' },
   { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, camadaAtual: 24, camadaTotal: 120, estado: 'paused' }
@@ -54,6 +61,11 @@ class MockClient extends MoonrakerClient {
   private decorrido: number;
   private bico = { atual: 24, alvo: 0 };
   private mesa = { atual: 23, alvo: 0 };
+  private camara = { atual: 24, alvo: 0 };
+  private exaustao = { atual: 26, alvo: 0 };
+  /** Eletrônica: só leitura, e é onde o MCU aparece no painel. */
+  private mcu = 38.2;
+  private host = 46.5;
   private pos = { x: 110, y: 110, z: 8.4 };
   private klippy: EstadoKlippy = 'ready';
   private mensagem: string | null = null;
@@ -69,6 +81,8 @@ class MockClient extends MoonrakerClient {
     if (semente.estado === 'printing' || semente.estado === 'paused' || semente.estado === 'error') {
       this.bico = { atual: 210.4, alvo: 210 };
       this.mesa = { atual: 59.8, alvo: 60 };
+      if (semente.fechada) this.camara = { atual: 44.2, alvo: 45 };
+      if (semente.exaustao) this.exaustao = { atual: 41.0, alvo: 40 };
     }
   }
 
@@ -90,6 +104,13 @@ class MockClient extends MoonrakerClient {
       macros: MACROS,
       ultimoErro: null,
       mensagemKlippy: this.mensagem,
+      // as seções vêm em minúsculas, como o Klipper devolve em configfile.settings
+      limites: {
+        extruder: { min: 0, max: 300 },
+        heater_bed: { min: 0, max: 120 },
+        'heater_generic chamber': { min: 0, max: 60 },
+        'temperature_fan exhaust': { min: 0, max: 80 }
+      },
       objetos: {
         print_stats: {
           state: this.semente.estado,
@@ -102,12 +123,43 @@ class MockClient extends MoonrakerClient {
         extruder: { temperature: this.bico.atual, target: this.bico.alvo },
         heater_bed: { temperature: this.mesa.atual, target: this.mesa.alvo },
         toolhead: { position: [this.pos.x, this.pos.y, this.pos.z, 0] },
-        gcode_move: { gcode_position: [this.pos.x, this.pos.y, this.pos.z, 0] }
+        gcode_move: { gcode_position: [this.pos.x, this.pos.y, this.pos.z, 0] },
+        ...(this.semente.fechada
+          ? { 'heater_generic chamber': { temperature: this.camara.atual, target: this.camara.alvo } }
+          : {}),
+        ...(this.semente.exaustao
+          ? { 'temperature_fan exhaust': { temperature: this.exaustao.atual, target: this.exaustao.alvo } }
+          : {}),
+        // toda máquina tem os dois: é o que o Klipper expõe com
+        // sensor_type temperature_mcu e temperature_host
+        'temperature_sensor MCU': { temperature: this.mcu },
+        'temperature_sensor Raspberry Pi': { temperature: this.host }
       }
     };
   }
 
+  /** Aproxima o valor lido do alvo, como um aquecedor de verdade faria. */
+  private aquecer(sensor: { atual: number; alvo: number }, ambiente: number, passo: number): void {
+    const destino = sensor.alvo > 0 ? sensor.alvo : ambiente;
+    const erro = destino - sensor.atual;
+    if (Math.abs(erro) < 0.3) {
+      // já chegou: só a oscilação em torno do alvo, que é o que a tela mostra
+      sensor.atual = destino + Math.sin(Date.now() / 3000) * 0.4;
+      return;
+    }
+    sensor.atual = Number((sensor.atual + Math.sign(erro) * Math.min(passo, Math.abs(erro))).toFixed(1));
+  }
+
   private tick(): void {
+    if (this.ligada && this.klippy === 'ready') {
+      // a eletrônica esquenta e a câmara persegue o alvo mesmo com a máquina
+      // parada — é onde se vê o alvo escrito pelo painel virar temperatura
+      this.mcu = Number((38 + Math.sin(Date.now() / 17000) * 1.6).toFixed(1));
+      this.host = Number((46 + Math.sin(Date.now() / 23000) * 2.4).toFixed(1));
+      if (this.semente.fechada) this.aquecer(this.camara, 24, 0.4);
+      if (this.semente.exaustao) this.aquecer(this.exaustao, 26, 0.5);
+    }
+
     if (this.ligada && this.klippy === 'ready' && this.semente.estado === 'printing') {
       // 4 h de impressão em tempo real seria inútil para testar; 40× é o suficiente
       this.decorrido += 40;
@@ -119,8 +171,8 @@ class MockClient extends MoonrakerClient {
       this.pos.x = 110 + Math.sin(Date.now() / 900) * 60;
       this.pos.y = 110 + Math.cos(Date.now() / 1100) * 60;
       this.pos.z = Number((this.semente.camadaAtual * 0.2).toFixed(2));
-      this.bico.atual = 210 + Math.sin(Date.now() / 3000) * 0.6;
-      this.mesa.atual = 60 + Math.sin(Date.now() / 5000) * 0.4;
+      this.aquecer(this.bico, 24, 2.5);
+      this.aquecer(this.mesa, 23, 0.8);
 
       if (this.progresso >= 1) {
         // 'complete', não 'standby': é o que o Klipper faz, e é a diferença
@@ -176,6 +228,17 @@ class MockClient extends MoonrakerClient {
       this.pos[eixo] = Number((this.pos[eixo] + Number(jog[2])).toFixed(2));
     }
     if (script.includes('G28')) this.pos = { x: 0, y: 0, z: 0 };
+
+    const aquecedor = /SET_HEATER_TEMPERATURE HEATER=(\S+) TARGET=(-?[\d.]+)/.exec(script);
+    if (aquecedor) this.definirAlvoMock(aquecedor[1], Number(aquecedor[2]));
+    const ventoinha = /SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=(\S+) TARGET=(-?[\d.]+)/.exec(script);
+    if (ventoinha) this.definirAlvoMock(ventoinha[1], Number(ventoinha[2]));
+    if (script.includes('TURN_OFF_HEATERS')) {
+      this.bico.alvo = 0;
+      this.mesa.alvo = 0;
+      this.camara.alvo = 0;
+    }
+
     if (script.includes('FIRMWARE_RESTART')) {
       this.klippy = 'ready';
       this.mensagem = null;
@@ -183,6 +246,18 @@ class MockClient extends MoonrakerClient {
     }
     this.emitir();
   }
+  /** O nome vem do G-code, que é o que o painel manda pela rota de aquecedor. */
+  private definirAlvoMock(nome: string, alvo: number): void {
+    const destino: Record<string, { atual: number; alvo: number }> = {
+      extruder: this.bico,
+      heater_bed: this.mesa,
+      chamber: this.camara,
+      exhaust: this.exaustao
+    };
+    const sensor = destino[nome];
+    if (sensor) sensor.alvo = Math.max(0, alvo);
+  }
+
   override async iniciarImpressao(filename: string): Promise<void> {
     this.semente.job = filename;
     this.semente.estado = 'printing';

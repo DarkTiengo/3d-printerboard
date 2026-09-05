@@ -111,6 +111,10 @@ export const api = {
   cancelar: (id: string) => post<{ ok: true }>(`/api/printers/${id}/cancel`),
   jog: (id: string, eixo: 'X' | 'Y' | 'Z', passo: number) => post<{ ok: true }>(`/api/printers/${id}/jog`, { eixo, passo }),
   home: (id: string) => post<{ ok: true }>(`/api/printers/${id}/home`),
+  // `chave` é a do Temperatura que veio no snapshot; alvo em °C, 0 desliga
+  definirAlvo: (id: string, chave: string, alvo: number) =>
+    post<{ ok: true }>(`/api/printers/${id}/heater`, { chave, alvo }),
+  desligarAquecedores: (id: string) => post<{ ok: true }>(`/api/printers/${id}/heaters/off`),
   gcode: (id: string, script: string) => post<{ ok: true }>(`/api/printers/${id}/gcode`, { script }),
   paradaEmergencia: () => post<{ ok: boolean; total: number; falhas: string[] }>('/api/emergency-stop'),
   // energia do host: falam com o Moonraker, então valem com o Klipper caído

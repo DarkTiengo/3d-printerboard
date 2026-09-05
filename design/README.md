@@ -164,7 +164,11 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
     2. Feed 16:10 com o nome da câmera.
     3. Trabalho: nome do arquivo em mono, barra 5px, linha "72% · CAMADA 84/210" e tempo restante,
        e os três controles em pílula (pausar / continuar / cancelar).
-    4. Temperaturas: bico e mesa, "atual / alvo" com ícone `thermometer`.
+    4. Temperaturas: uma linha por sensor com ícone `thermometer` (`fan` nas ventoinhas
+       por temperatura), na ordem bico → mesa → câmara → ventoinhas → sensores de leitura.
+       Quem aquece mostra "atual / campo de alvo em °C" e o alvo é editável ali mesmo;
+       quem só mede mostra a leitura, com o nome um tom abaixo (`--color-neutral-300`).
+       No cabeçalho da seção, à direita, um botão `power` desliga todos os aquecedores.
     5. Cabeça de impressão: jog pad 3×3 (38×32px, raio 8px, borda 1px) com X±, Y±, Z± e home,
        seletor de passo (0.1 / 1 / 10 / 100 — ativo em pílula vermelha) e posição atual em mono.
     6. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.

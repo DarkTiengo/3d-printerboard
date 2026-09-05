@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { GcodePayload, JogPayload, PrinterConfigInput } from '@3dfarm/shared';
+import type { GcodePayload, HeaterPayload, JogPayload, PrinterConfigInput } from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
 import type { MoonrakerClient } from '../moonraker/client.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
@@ -95,6 +95,73 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
         return { ok: true };
       } catch (err) {
         return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha no jog' });
+      }
+    }
+  );
+
+  /**
+   * Alvo de um aquecedor.
+   *
+   * `chave` é a do `Temperatura` que o snapshot publicou, e a busca é por
+   * igualdade exata: é isso que garante que o nome que entra no G-code veio da
+   * config da impressora, e não do corpo do pedido. Um sensor de leitura — o
+   * MCU, o Raspberry — recusa, porque não há o que ligar nele.
+   */
+  app.post<{ Params: { id: string }; Body: HeaterPayload }>(
+    '/api/printers/:id/heater',
+    {
+      preHandler: exigirPermissao('controlarImpressao'),
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } }
+    },
+    async (req, reply) => {
+      const printer = farm.printer(req.params.id);
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!printer || !cliente) return reply.code(503).send({ erro: 'impressora offline' });
+
+      const { chave, alvo } = req.body ?? {};
+      const sensor = printer.temperaturas.find((t) => t.chave === chave);
+      if (!sensor) return reply.code(404).send({ erro: 'sensor não encontrado' });
+      if (sensor.tipo === 'sensor') return reply.code(400).send({ erro: 'este sensor não aquece' });
+      if (!Number.isFinite(alvo) || alvo < 0) return reply.code(400).send({ erro: 'alvo inválido' });
+
+      /*
+       * O zero é o desligamento e escapa da faixa de propósito — é o que o
+       * próprio Klipper faz, e recusá-lo tiraria o botão de desligar de um
+       * aquecedor cujo min_temp é 40.
+       */
+      const fora =
+        alvo > 0 &&
+        ((sensor.min != null && alvo < sensor.min) || (sensor.max != null && alvo > sensor.max));
+      if (fora) {
+        return reply.code(400).send({ erro: `alvo fora da faixa (${sensor.min ?? '—'}–${sensor.max ?? '—'} °C)` });
+      }
+
+      try {
+        await cliente.definirAlvo(sensor.chave, sensor.tipo, Math.round(alvo));
+        logger.info({ printer: req.params.id, por: req.sessao!.usuario, sensor: chave, alvo }, 'alvo de temperatura');
+        return { ok: true };
+      } catch (err) {
+        return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao definir o alvo' });
+      }
+    }
+  );
+
+  /** Zera todos os alvos de uma vez. A saída rápida quando algo vai mal. */
+  app.post<{ Params: { id: string } }>(
+    '/api/printers/:id/heaters/off',
+    {
+      preHandler: exigirPermissao('controlarImpressao'),
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } }
+    },
+    async (req, reply) => {
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
+      try {
+        await cliente.desligarAquecedores();
+        logger.info({ printer: req.params.id, por: req.sessao!.usuario }, 'aquecedores desligados');
+        return { ok: true };
+      } catch (err) {
+        return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao desligar' });
       }
     }
   );

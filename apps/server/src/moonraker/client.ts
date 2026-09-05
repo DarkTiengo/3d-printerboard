@@ -1,12 +1,16 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { lookupComMdns } from '../lib/mdns.js';
-import type { EstadoKlippy, PrinterConfig } from '@3dfarm/shared';
+import type { EstadoKlippy, PrinterConfig, TipoSensor } from '@3dfarm/shared';
 
 export type { EstadoKlippy };
 
-/** Objetos que assinamos no Klipper. É daqui que sai tudo que a UI mostra. */
-export const OBJETOS_ASSINADOS: Record<string, null> = {
+/**
+ * Objetos que toda impressora tem, e que assinamos sempre. Os sensores extras
+ * — câmara, MCU, Raspberry, ventoinha por temperatura — variam de máquina para
+ * máquina e entram por descoberta, em `sensoresDaLista`.
+ */
+export const OBJETOS_BASE: Record<string, null> = {
   /*
    * `webhooks` é o único objeto que carrega o diagnóstico: `state` e o
    * `state_message` onde o Klipper escreve por que parou. Sem ele, um shutdown
@@ -22,12 +26,55 @@ export const OBJETOS_ASSINADOS: Record<string, null> = {
   gcode_move: null
 };
 
+/**
+ * Prefixo de objeto do Klipper → o que a tela pode fazer com ele.
+ *
+ * `heater_generic` é a câmara aquecida e afins: aquece de verdade e aceita
+ * alvo. `temperature_fan` também tem alvo, mas por outro comando.
+ * `temperature_sensor` é só leitura — é onde moram o MCU e o Raspberry, que
+ * é o que se quer vigiar sem poder mexer.
+ */
+export const PREFIXOS_DE_SENSOR: [prefixo: string, tipo: TipoSensor][] = [
+  ['heater_generic ', 'aquecedor'],
+  ['temperature_fan ', 'ventoinha'],
+  ['temperature_sensor ', 'sensor']
+];
+
+/** Extrusoras além da primeira: 'extruder1', 'extruder2'. */
+const EXTRUSORA_EXTRA = /^extruder\d+$/;
+
+/**
+ * O que, de `printer.objects.list`, carrega temperatura e ainda não está na
+ * base. Ordenado para a assinatura sair determinística.
+ */
+export function sensoresDaLista(objetos: string[]): string[] {
+  return objetos
+    .filter((o) => EXTRUSORA_EXTRA.test(o) || PREFIXOS_DE_SENSOR.some(([p]) => o.startsWith(p)))
+    .sort();
+}
+
+/**
+ * Nome do sensor para o G-code: o que vem depois do prefixo.
+ * 'heater_generic chamber' → 'chamber'; 'extruder' continua 'extruder'.
+ */
+export function nomeDoSensor(objeto: string): string {
+  const espaco = objeto.indexOf(' ');
+  return espaco < 0 ? objeto : objeto.slice(espaco + 1);
+}
+
 /** Snapshot cru do Klipper, antes de normalizar. */
 export type EstadoBruto = {
   conectado: boolean;
   klippy: EstadoKlippy;
   objetos: Record<string, any>;
   macros: string[];
+  /**
+   * min_temp/max_temp por objeto de aquecedor, lidos do printer.cfg uma vez no
+   * handshake. A chave vem em minúsculas porque é assim que o Klipper devolve
+   * as seções em `configfile.settings` — o objeto em si preserva o que a
+   * pessoa escreveu.
+   */
+  limites: Record<string, { min: number | null; max: number | null }>;
   /** Falha de transporte: socket, DNS, timeout. Nada a ver com o Klipper. */
   ultimoErro: string | null;
   /** Motivo do Klipper para não estar 'ready'. Null quando está tudo bem. */
@@ -96,6 +143,7 @@ export class MoonrakerClient extends EventEmitter {
     klippy: 'disconnected',
     objetos: {},
     macros: [],
+    limites: {},
     ultimoErro: null,
     mensagemKlippy: null
   };
@@ -212,19 +260,38 @@ export class MoonrakerClient extends EventEmitter {
         return;
       }
 
-      const sub = await this.chamar<{ status: Record<string, any> }>('printer.objects.subscribe', {
-        objects: OBJETOS_ASSINADOS
-      });
-      this.mesclarObjetos(sub.status ?? {});
-
+      /*
+       * A lista vem antes da assinatura porque é ela que diz quais sensores
+       * esta máquina tem. Uma câmara aquecida e o termistor do MCU são objetos
+       * com nome livre no printer.cfg: sem perguntar, não há como assiná-los.
+       */
       const lista = await this.chamar<{ objects: string[] }>('printer.objects.list');
-      const macros = (lista.objects ?? [])
+      const objetos = lista.objects ?? [];
+      const macros = objetos
         .filter((o) => o.startsWith('gcode_macro '))
         .map((o) => o.slice('gcode_macro '.length))
         // macros internas do Klipper começam com _ por convenção
         .filter((m) => !m.startsWith('_'))
         .sort();
+      const sensores = sensoresDaLista(objetos);
       this.definirEstado({ macros });
+
+      const sub = await this.chamar<{ status: Record<string, any> }>('printer.objects.subscribe', {
+        objects: { ...OBJETOS_BASE, ...Object.fromEntries(sensores.map((n) => [n, null])) }
+      });
+      /*
+       * O subscribe devolve o estado inteiro do que foi assinado, então aqui
+       * trocamos o mapa em vez de mesclar: agora que o conjunto é descoberto,
+       * um sensor tirado do printer.cfg ficaria para sempre no painel com o
+       * último valor lido. As duas linhas são síncronas — ninguém chega a ver
+       * o mapa vazio.
+       */
+      this.definirEstado({ objetos: {} });
+      this.mesclarObjetos(sub.status ?? {});
+
+      // depois do subscribe: a faixa de cada aquecedor só muda com a config,
+      // e falhar aqui não pode custar as temperaturas em si
+      await this.buscarLimites();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.definirEstado({ klippy: 'error', ultimoErro: msg });
@@ -324,6 +391,38 @@ export class MoonrakerClient extends EventEmitter {
     this.definirEstado(patch);
   }
 
+  /**
+   * min_temp/max_temp de cada aquecedor, do printer.cfg.
+   *
+   * É o que permite recusar "400 °C" antes de mandar, em vez de deixar o
+   * Klipper responder com um erro de G-code. Uma leitura só, no handshake: a
+   * config não muda sem um restart, que traz outro handshake junto. Silencioso
+   * quando falha — sem faixa, o campo de alvo fica sem limite e quem valida
+   * volta a ser o Klipper.
+   */
+  private async buscarLimites(): Promise<void> {
+    try {
+      const r = await this.chamar<{ status?: { configfile?: { settings?: Record<string, any> } } }>(
+        'printer.objects.query',
+        { objects: { configfile: ['settings'] } }
+      );
+      const settings = r.status?.configfile?.settings ?? {};
+      const limites: EstadoBruto['limites'] = {};
+      for (const [secao, valores] of Object.entries(settings)) {
+        const min = (valores as any)?.min_temp;
+        const max = (valores as any)?.max_temp;
+        if (!Number.isFinite(min) && !Number.isFinite(max)) continue;
+        limites[secao] = {
+          min: Number.isFinite(min) ? min : null,
+          max: Number.isFinite(max) ? max : null
+        };
+      }
+      this.definirEstado({ limites });
+    } catch (err) {
+      this.emit('log', 'warn', `[${this.id}] sem faixa de temperatura: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+
   /** Pergunta ao Moonraker por que o Klipper parou. Silencioso se falhar. */
   private async buscarMotivo(): Promise<void> {
     try {
@@ -367,6 +466,28 @@ export class MoonrakerClient extends EventEmitter {
   }
   iniciarImpressao(filename: string) {
     return this.chamar('printer.print.start', { filename });
+  }
+
+  /**
+   * Alvo de um aquecedor, em °C. 0 desliga.
+   *
+   * O comando quer o nome dado no printer.cfg, não o objeto inteiro: a câmara
+   * é `heater_generic chamber` como objeto e `chamber` como HEATER. Sem aspas
+   * de propósito — o Klipper não as remove dos parâmetros, e `HEATER="chamber"`
+   * viraria a busca por um aquecedor chamado `"chamber"`.
+   */
+  definirAlvo(objeto: string, tipo: TipoSensor, alvo: number) {
+    const nome = nomeDoSensor(objeto);
+    const comando =
+      tipo === 'ventoinha'
+        ? `SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=${nome} TARGET=${alvo}`
+        : `SET_HEATER_TEMPERATURE HEATER=${nome} TARGET=${alvo}`;
+    return this.gcode(comando);
+  }
+
+  /** Zera todos os alvos de uma vez — a saída rápida quando algo vai mal. */
+  desligarAquecedores() {
+    return this.gcode('TURN_OFF_HEATERS');
   }
 
   /**

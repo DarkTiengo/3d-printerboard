@@ -1,5 +1,5 @@
-import type { Printer, Status, Temperatura, Posicao, PrinterConfig } from '@3dfarm/shared';
-import type { EstadoBruto } from './client.js';
+import type { Printer, Status, Temperatura, TipoSensor, Posicao, PrinterConfig } from '@3dfarm/shared';
+import { PREFIXOS_DE_SENSOR, type EstadoBruto } from './client.js';
 
 /**
  * print_stats.state que significam "havia um trabalho em curso". 'error' entra
@@ -97,15 +97,50 @@ export function camadaDe(bruto: EstadoBruto): string {
   return '—';
 }
 
-/** Números crus: quem formata (e escolhe a vírgula ou o ponto) é o front. */
+/** Ordem das extrusoras: 'extruder' primeiro, depois extruder1, extruder2… */
+const EXTRUSORA = /^extruder\d*$/;
+
+/**
+ * Todos os sensores da máquina, em ordem de utilidade: as extrusoras, a mesa,
+ * os aquecedores extras (a câmara), as ventoinhas por temperatura e, por
+ * último, os sensores de leitura — MCU, Raspberry, o termistor da caixa.
+ *
+ * Números crus: quem formata (e escolhe a vírgula ou o ponto) é o front.
+ */
 export function temperaturasDe(bruto: EstadoBruto): Temperatura[] {
-  const temps: Temperatura[] = [];
   const numero = (v: unknown) => (Number.isFinite(v) ? (v as number) : null);
-  const bico = bruto.objetos.extruder;
-  const mesa = bruto.objetos.heater_bed;
-  if (bico) temps.push({ chave: 'bico', atual: numero(bico.temperature), alvo: numero(bico.target) });
-  if (mesa) temps.push({ chave: 'mesa', atual: numero(mesa.temperature), alvo: numero(mesa.target) });
-  return temps;
+  const nomes = Object.keys(bruto.objetos);
+
+  const montar = (objeto: string, tipo: TipoSensor, rotulo: string | null): Temperatura | null => {
+    const o = bruto.objetos[objeto];
+    if (!o) return null;
+    // o Klipper devolve as seções da config em minúsculas; o objeto preserva
+    // o que a pessoa escreveu, então a busca pela faixa normaliza
+    const faixa = tipo === 'sensor' ? null : (bruto.limites[objeto.toLowerCase()] ?? null);
+    return {
+      chave: objeto,
+      rotulo,
+      tipo,
+      atual: numero(o.temperature),
+      // sensor de leitura não tem alvo; nos outros, 0 é "desligado"
+      alvo: tipo === 'sensor' ? null : numero(o.target),
+      min: faixa?.min ?? null,
+      max: faixa?.max ?? null
+    };
+  };
+
+  const temps: (Temperatura | null)[] = [
+    ...nomes.filter((n) => EXTRUSORA.test(n)).sort().map((n) => montar(n, 'aquecedor', null)),
+    montar('heater_bed', 'aquecedor', null),
+    ...PREFIXOS_DE_SENSOR.flatMap(([prefixo, tipo]) =>
+      nomes
+        .filter((n) => n.startsWith(prefixo))
+        .sort()
+        .map((n) => montar(n, tipo, n.slice(prefixo.length)))
+    )
+  ];
+
+  return temps.filter((t): t is Temperatura => t !== null);
 }
 
 export function posicaoDe(bruto: EstadoBruto): Posicao | null {
