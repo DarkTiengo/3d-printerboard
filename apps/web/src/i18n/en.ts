@@ -128,6 +128,10 @@ export const en: Dicionario = {
     alvoDe: (nome: string) => `${nome} target in degrees Celsius`,
     faixa: (min: number, max: number) => `between ${min} and ${max} °C`,
     desligarAquecedores: 'Turn all heaters off',
+    confirmaDesligarAquecedores: (nome: string, imprimindo: boolean) =>
+      `Zeroes the target of every heater on ${nome} at once — nozzle, bed and anything else that heats.${
+        imprimindo ? ' The print in progress keeps running with a cold nozzle and will be lost.' : ''
+      }`,
     falhaAlvo: 'Could not change the target.',
     cabeca: 'PRINT HEAD',
     passo: 'STEP (MM)',

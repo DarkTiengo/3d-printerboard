@@ -128,6 +128,10 @@ export const it: Dicionario = {
     alvoDe: (nome: string) => `Target di ${nome} in gradi Celsius`,
     faixa: (min: number, max: number) => `tra ${min} e ${max} °C`,
     desligarAquecedores: 'Spegni tutti i riscaldatori',
+    confirmaDesligarAquecedores: (nome: string, imprimindo: boolean) =>
+      `Azzera il target di tutti i riscaldatori di ${nome} in una volta: ugello, piano e tutto ciò che riscalda.${
+        imprimindo ? ' La stampa in corso prosegue con l’ugello freddo e andrà persa.' : ''
+      }`,
     falhaAlvo: 'Impossibile cambiare il target.',
     cabeca: 'TESTA DI STAMPA',
     passo: 'PASSO (MM)',

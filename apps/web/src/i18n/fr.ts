@@ -128,6 +128,10 @@ export const fr: Dicionario = {
     alvoDe: (nome: string) => `Consigne de ${nome} en degrés Celsius`,
     faixa: (min: number, max: number) => `entre ${min} et ${max} °C`,
     desligarAquecedores: 'Éteindre tous les chauffages',
+    confirmaDesligarAquecedores: (nome: string, imprimindo: boolean) =>
+      `Met à zéro la consigne de tous les chauffages de ${nome} d’un coup — buse, plateau et tout ce qui chauffe.${
+        imprimindo ? ' L’impression en cours continue avec une buse froide et sera perdue.' : ''
+      }`,
     falhaAlvo: 'Impossible de changer la consigne.',
     cabeca: 'TÊTE D’IMPRESSION',
     passo: 'PAS (MM)',

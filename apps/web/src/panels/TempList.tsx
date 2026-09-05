@@ -3,6 +3,7 @@ import { Fan, Power, Thermometer } from 'lucide-react';
 import type { Temperatura } from '@3dfarm/shared';
 import { nomeBonito } from '@3dfarm/shared';
 import type { Dicionario } from '../i18n/pt';
+import { Confirm } from '../components/Confirm';
 import { IconButton } from '../components/IconButton';
 import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
@@ -147,94 +148,117 @@ function CampoAlvo({
  */
 export function TempList({
   printerId,
+  nomeDaImpressora,
+  imprimindo,
   temperaturas,
   desabilitado
 }: {
   printerId: string;
+  nomeDaImpressora: string;
+  imprimindo: boolean;
   temperaturas: Temperatura[];
   desabilitado: boolean;
 }) {
   const t = useT();
   const f = useFormato();
   const [erro, setErro] = useState<string | null>(null);
+  /*
+   * Zerar tudo é um clique só, ao lado de campos que se mexem o dia inteiro, e
+   * não tem desfazer: com uma impressão em curso ele a mata. Daí a pergunta.
+   */
+  const [confirmando, setConfirmando] = useState(false);
   if (temperaturas.length === 0) return null;
+
+  const desligarTudo = () => {
+    setConfirmando(false);
+    setErro(null);
+    void api.desligarAquecedores(printerId).catch((err) => {
+      setErro(err instanceof Error ? err.message : t.impressora.falhaAlvo);
+    });
+  };
 
   const temAquecedor = temperaturas.some((temp) => temp.tipo === 'aquecedor');
 
   return (
-    <section style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div className="mono">{t.impressora.temperaturas}</div>
-        {temAquecedor && (
-          <IconButton
-            rotulo={t.impressora.desligarAquecedores}
-            variante="secundaria"
-            pequeno
-            disabled={desabilitado}
-            style={{ marginLeft: 'auto' }}
-            onClick={() => {
-              setErro(null);
-              void api.desligarAquecedores(printerId).catch((err) => {
-                setErro(err instanceof Error ? err.message : t.impressora.falhaAlvo);
-              });
-            }}
-            icone={<Power size={14} strokeWidth={2} aria-hidden />}
-          />
-        )}
-      </div>
-
-      {temperaturas.map((temp) => {
-        const soLeitura = temp.tipo === 'sensor';
-        const Icone = temp.tipo === 'ventoinha' ? Fan : Thermometer;
-        const nome = rotuloDoSensor(temp, t);
-        return (
-          <div key={temp.chave} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Icone size={14} strokeWidth={2} aria-hidden style={{ color: 'var(--color-neutral-400)', flex: 'none' }} />
-            <span
-              title={nome}
-              style={{
-                fontSize: 13,
-                fontWeight: 800,
-                fontFamily: 'var(--font-heading)',
-                /* o que só mede fica um tom abaixo do que se pode comandar */
-                color: soLeitura ? 'var(--color-neutral-300)' : 'var(--color-bg)',
-                flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {nome}
-            </span>
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                flex: 'none',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 12
-              }}
-            >
-              {f.temperatura(temp.atual)}
-              {!soLeitura && (
-                <>
-                  <span style={{ color: 'var(--color-neutral-500)' }}>/</span>
-                  <CampoAlvo printerId={printerId} temp={temp} desabilitado={desabilitado} aoFalhar={setErro} />
-                  <span style={{ color: 'var(--color-neutral-500)' }}>°C</span>
-                </>
-              )}
-            </span>
-          </div>
-        );
-      })}
-
-      {erro && (
-        <div role="alert" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-accent-400)' }}>
-          {erro}
+    <>
+      <section style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="mono">{t.impressora.temperaturas}</div>
+          {temAquecedor && (
+            <IconButton
+              rotulo={t.impressora.desligarAquecedores}
+              variante="secundaria"
+              pequeno
+              disabled={desabilitado}
+              style={{ marginLeft: 'auto' }}
+              onClick={() => setConfirmando(true)}
+              icone={<Power size={14} strokeWidth={2} aria-hidden />}
+            />
+          )}
         </div>
-      )}
-    </section>
+
+        {temperaturas.map((temp) => {
+          const soLeitura = temp.tipo === 'sensor';
+          const Icone = temp.tipo === 'ventoinha' ? Fan : Thermometer;
+          const nome = rotuloDoSensor(temp, t);
+          return (
+            <div key={temp.chave} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Icone size={14} strokeWidth={2} aria-hidden style={{ color: 'var(--color-neutral-400)', flex: 'none' }} />
+              <span
+                title={nome}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-heading)',
+                  /* o que só mede fica um tom abaixo do que se pode comandar */
+                  color: soLeitura ? 'var(--color-neutral-300)' : 'var(--color-bg)',
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {nome}
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  flex: 'none',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12
+                }}
+              >
+                {f.temperatura(temp.atual)}
+                {!soLeitura && (
+                  <>
+                    <span style={{ color: 'var(--color-neutral-500)' }}>/</span>
+                    <CampoAlvo printerId={printerId} temp={temp} desabilitado={desabilitado} aoFalhar={setErro} />
+                    <span style={{ color: 'var(--color-neutral-500)' }}>°C</span>
+                  </>
+                )}
+              </span>
+            </div>
+          );
+        })}
+
+        {erro && (
+          <div role="alert" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-accent-400)' }}>
+            {erro}
+          </div>
+        )}
+      </section>
+
+      <Confirm
+        aberto={confirmando}
+        titulo={t.impressora.desligarAquecedores}
+        descricao={t.impressora.confirmaDesligarAquecedores(nomeDaImpressora, imprimindo)}
+        rotuloConfirmar={t.impressora.desligarCurto}
+        onConfirmar={desligarTudo}
+        onCancelar={() => setConfirmando(false)}
+      />
+    </>
   );
 }

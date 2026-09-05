@@ -176,6 +176,8 @@ export function PrinterPanel({
       <div style={secao}>
         <TempList
           printerId={printer.id}
+          nomeDaImpressora={printer.nome}
+          imprimindo={printer.status === 'imprimindo' || printer.status === 'pausada'}
           temperaturas={printer.temperaturas}
           desabilitado={!podeControlar || printer.klippy !== 'ready'}
         />

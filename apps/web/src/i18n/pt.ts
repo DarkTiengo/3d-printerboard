@@ -128,6 +128,10 @@ export const pt = {
     alvoDe: (nome: string) => `Alvo de ${nome} em graus Celsius`,
     faixa: (min: number, max: number) => `entre ${min} e ${max} °C`,
     desligarAquecedores: 'Desligar todos os aquecedores',
+    confirmaDesligarAquecedores: (nome: string, imprimindo: boolean) =>
+      `Zera o alvo de todos os aquecedores de ${nome} de uma vez — bico, mesa e o que mais aquecer.${
+        imprimindo ? ' A impressão em andamento continua andando com o bico frio e será perdida.' : ''
+      }`,
     falhaAlvo: 'Não foi possível mudar o alvo.',
     cabeca: 'CABEÇA DE IMPRESSÃO',
     passo: 'PASSO (MM)',

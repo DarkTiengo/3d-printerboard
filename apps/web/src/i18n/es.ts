@@ -128,6 +128,10 @@ export const es: Dicionario = {
     alvoDe: (nome: string) => `Objetivo de ${nome} en grados Celsius`,
     faixa: (min: number, max: number) => `entre ${min} y ${max} °C`,
     desligarAquecedores: 'Apagar todos los calentadores',
+    confirmaDesligarAquecedores: (nome: string, imprimindo: boolean) =>
+      `Pone a cero el objetivo de todos los calentadores de ${nome} a la vez: boquilla, cama y lo demás que caliente.${
+        imprimindo ? ' La impresión en curso sigue avanzando con la boquilla fría y se perderá.' : ''
+      }`,
     falhaAlvo: 'No se pudo cambiar el objetivo.',
     cabeca: 'CABEZAL DE IMPRESIÓN',
     passo: 'PASO (MM)',
