@@ -68,6 +68,34 @@ export function nomeDoSensor(objeto: string): string {
   return espaco < 0 ? objeto : objeto.slice(espaco + 1);
 }
 
+/**
+ * Caracteres que encerram uma linha de G-code antes da hora: `;` e `#` abrem
+ * comentário, `*` abre checksum, e uma quebra de linha vira outro comando. Um
+ * nome de peça com qualquer um deles não tem como virar parâmetro — e como o
+ * nome vem do fatiador, é melhor recusar do que mandar a linha cortada.
+ */
+const NOME_IMPOSSIVEL = /[;#*\r\n]/;
+
+/** O nome cabe numa linha de G-code? */
+export function nomeDePecaValido(nome: string): boolean {
+  return nome.trim() !== '' && !NOME_IMPOSSIVEL.test(nome);
+}
+
+/**
+ * Nome de peça → valor de parâmetro do `EXCLUDE_OBJECT NAME=`.
+ *
+ * Sem espaço nem aspas, vai cru: é o mesmo caminho do `HEATER=` e do
+ * `TEMPERATURE_FAN=`, que funcionam há tempo. Com espaço não há escolha — o
+ * fatiador escreve "Shape-Box id:0 copy 1" e sem aspas o parâmetro terminaria
+ * no primeiro espaço, excluindo a peça errada ou nenhuma. Aí vale que o Klipper
+ * lê os parâmetros de comando estendido com shlex, que entende as aspas e as
+ * remove; a barra invertida escapa aspa dentro de aspa pela mesma regra.
+ */
+export function paraParametro(nome: string): string {
+  if (!/[\s'"]/.test(nome)) return nome;
+  return `"${nome.replace(/([\\"])/g, '\\$1')}"`;
+}
+
 /** Snapshot cru do Klipper, antes de normalizar. */
 export type EstadoBruto = {
   conectado: boolean;
@@ -508,6 +536,18 @@ export class MoonrakerClient extends EventEmitter {
    */
   excluirPecaAtual() {
     return this.gcode('EXCLUDE_OBJECT CURRENT=1');
+  }
+
+  /**
+   * Tira da impressão uma peça escolhida no mapa da mesa, que pode não ser a
+   * que está sendo feita agora.
+   *
+   * O nome precisa vir da própria impressora — a rota casa o que o navegador
+   * pediu com a lista que o Klipper reportou e passa a string reportada, nunca
+   * a digitada. Aqui é o último trecho: transformar esse nome em parâmetro.
+   */
+  excluirPeca(nome: string) {
+    return this.gcode(`EXCLUDE_OBJECT NAME=${paraParametro(nome)}`);
   }
 
   /**

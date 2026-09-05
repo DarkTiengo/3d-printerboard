@@ -129,6 +129,13 @@ export const en: Dicionario = {
     excluirPecaCurto: 'Exclude object',
     confirmaExcluirPeca: (peca: string) =>
       `Drops ${peca} from this print. The nozzle stops going over it and the other objects on the bed carry on. There is no bringing it back — and if it was the last one left, the print ends.`,
+    pecasDaMesa: 'Objects on the plate',
+    verPecas: 'See the objects on the plate',
+    mesaVazia: 'This print has no objects labelled by the slicer.',
+    mesaFalhou: 'Could not read the objects on the plate.',
+    pecaEmCurso: 'printing now',
+    pecaExcluida: 'excluded',
+    pecasContagem: (vivas: number, total: number) => `${vivas} of ${total} objects still printing`,
     temperaturas: 'TEMPERATURES',
     bico: 'Nozzle',
     mesa: 'Bed',

@@ -70,6 +70,7 @@ function printer(id: string, patch: Partial<Printer> = {}): Printer {
     online: true,
     temTaCamera: false,
     pecaAtual: null,
+    temPecas: false,
     temperaturas: [],
     posicao: null,
     macros: [],

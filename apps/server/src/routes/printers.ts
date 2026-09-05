@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { GcodePayload, HeaterPayload, JogPayload, PrinterConfigInput } from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
-import type { MoonrakerClient } from '../moonraker/client.js';
+import { nomeDePecaValido, type MoonrakerClient } from '../moonraker/client.js';
+import { mesaDePecas } from '../moonraker/normalize.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
 import {
   acharPrinter,
@@ -167,14 +168,33 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
   );
 
   /**
-   * Tira da impressão a peça que está sendo feita agora — as outras da mesa
-   * continuam.
+   * O mapa da mesa: as peças rotuladas nesta impressão, com contorno, quem já
+   * saiu e qual está em curso.
    *
-   * Quem diz qual peça é a impressora, não o pedido: o corpo vem vazio e nada
-   * dele chega ao G-code. Recusa quando não há peça em curso porque aí o
-   * `EXCLUDE_OBJECT CURRENT=1` erraria no Klipper, e um 409 explica melhor.
+   * Sob demanda, e não no snapshot do SSE: os contornos pesam mais que todo o
+   * resto do `Printer` somado e não mudam durante a impressão. Sai do estado
+   * que a conexão já mantém, então não custa uma volta ao Moonraker.
    */
-  app.post<{ Params: { id: string } }>(
+  app.get<{ Params: { id: string } }>(
+    '/api/printers/:id/objects',
+    { preHandler: exigirLogin },
+    async (req, reply) => {
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
+      return mesaDePecas(cliente.getEstado());
+    }
+  );
+
+  /**
+   * Tira uma peça da impressão — as outras da mesa continuam.
+   *
+   * Sem `nome`, é a peça em curso, pelo `EXCLUDE_OBJECT CURRENT=1`: quem diz
+   * qual é ela é a impressora, e nada do pedido chega ao G-code. Com `nome`, é
+   * uma escolhida no mapa; aí o nome pedido é casado com a lista que o Klipper
+   * reportou e o que segue para o G-code é a string *reportada*, nunca a que
+   * veio no corpo. Um nome que não está na mesa é 404, e não um comando torto.
+   */
+  app.post<{ Params: { id: string }; Body: { nome?: string } }>(
     '/api/printers/:id/exclude-object',
     {
       preHandler: exigirPermissao('controlarImpressao'),
@@ -184,12 +204,30 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       const printer = farm.printer(req.params.id);
       const cliente = farm.clienteVivo(req.params.id);
       if (!printer || !cliente) return reply.code(503).send({ erro: 'impressora offline' });
-      if (!printer.pecaAtual) return reply.code(409).send({ erro: 'nenhuma peça em impressão' });
+
+      const pedido = req.body?.nome;
+      const alvo = pedido ? mesaDePecas(cliente.getEstado()).pecas.find((p) => p.nome === pedido) : null;
+
+      if (pedido) {
+        if (!alvo) return reply.code(404).send({ erro: 'esta peça não está na mesa' });
+        if (alvo.excluida) return reply.code(409).send({ erro: 'peça já excluída' });
+        if (!nomeDePecaValido(alvo.nome)) {
+          // nome que não cabe numa linha de G-code: melhor recusar do que
+          // mandar o comando cortado no meio e excluir outra coisa
+          return reply.code(422).send({ erro: 'nome de peça que o G-code não aceita' });
+        }
+      } else if (!printer.pecaAtual) {
+        return reply.code(409).send({ erro: 'nenhuma peça em impressão' });
+      }
 
       try {
-        await cliente.excluirPecaAtual();
+        // a peça em curso sai pelo CURRENT=1 mesmo quando foi escolhida no
+        // mapa: é o caminho que não depende de escapar o nome
+        if (!alvo || alvo.atual) await cliente.excluirPecaAtual();
+        else await cliente.excluirPeca(alvo.nome);
+
         logger.info(
-          { printer: req.params.id, por: req.sessao!.usuario, peca: printer.pecaAtual },
+          { printer: req.params.id, por: req.sessao!.usuario, peca: alvo?.nome ?? printer.pecaAtual },
           'peça excluída da impressão'
         );
         return { ok: true };

@@ -129,6 +129,13 @@ export const fr: Dicionario = {
     excluirPecaCurto: 'Exclure la pièce',
     confirmaExcluirPeca: (peca: string) =>
       `Retire ${peca} de cette impression. La buse cesse d’y passer et les autres pièces du plateau continuent normalement. Impossible de revenir en arrière — et si c’était la dernière, l’impression se termine.`,
+    pecasDaMesa: 'Pièces du plateau',
+    verPecas: 'Voir les pièces du plateau',
+    mesaVazia: 'Cette impression n’a aucune pièce étiquetée par le trancheur.',
+    mesaFalhou: 'Impossible de lire les pièces du plateau.',
+    pecaEmCurso: 'en cours',
+    pecaExcluida: 'exclue',
+    pecasContagem: (vivas: number, total: number) => `${vivas} pièces sur ${total} sont encore imprimées`,
     temperaturas: 'TEMPÉRATURES',
     bico: 'Buse',
     mesa: 'Plateau',

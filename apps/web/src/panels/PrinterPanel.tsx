@@ -6,7 +6,6 @@ import { IconButton } from '../components/IconButton';
 import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';
 import { CameraFeed } from '../components/CameraFeed';
-import { Confirm } from '../components/Confirm';
 import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
 import { controlesHabilitados, coresStatus, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
 import { useT } from '../i18n';
@@ -16,6 +15,7 @@ import { api } from '../lib/api';
 import { JogPad } from './JogPad';
 import { TempList } from './TempList';
 import { MacroGrid } from './MacroGrid';
+import { MesaDePecas } from './MesaDePecas';
 import { PowerControls } from './PowerControls';
 import { OfertaDeReimpressao, PrinterQueue } from './PrinterQueue';
 
@@ -54,11 +54,13 @@ export function PrinterPanel({
   const cancelamento = useConfirmarCancelamento(printer, comandar('cancelada', () => api.cancelar(printer.id)));
 
   /*
-   * Excluir a peça em curso só existe em máquina com [exclude_object] e em
-   * arquivo que o fatiador rotulou — `pecaAtual` é null em todo o resto, e o
-   * botão simplesmente não aparece.
+   * O mapa da mesa só existe em máquina com [exclude_object] e em arquivo que o
+   * fatiador rotulou — `temPecas` é false em todo o resto, e o botão
+   * simplesmente não aparece. Note que é `temPecas`, e não `pecaAtual`: entre
+   * uma peça e outra o Klipper não tem peça em curso, e sumir com o botão
+   * justamente aí seria pior numa pausa, que é quando alguém olha e resolve.
    */
-  const [excluindoPeca, setExcluindoPeca] = useState(false);
+  const [mesaAberta, setMesaAberta] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflow: 'auto', height: '100%' }}>
@@ -171,12 +173,11 @@ export function PrinterPanel({
             onClick={cancelamento.pedir}
             icone={<X size={15} strokeWidth={2} aria-hidden />}
           />
-          {printer.pecaAtual && (
+          {printer.temPecas && (
             <IconButton
-              rotulo={t.impressora.excluirPeca}
+              rotulo={t.impressora.verPecas}
               variante="controle"
-              disabled={!habilitado.cancelar || !podeControlar}
-              onClick={() => setExcluindoPeca(true)}
+              onClick={() => setMesaAberta(true)}
               icone={<PackageX size={15} strokeWidth={2} aria-hidden />}
             />
           )}
@@ -221,17 +222,11 @@ export function PrinterPanel({
 
       {cancelamento.dialogo}
 
-      <Confirm
-        aberto={excluindoPeca}
-        titulo={t.impressora.excluirPecaCurto}
-        descricao={t.impressora.confirmaExcluirPeca(printer.pecaAtual ?? '')}
-        rotuloConfirmar={t.impressora.excluirPecaCurto}
-        rotuloCancelar={t.comum.voltar}
-        onConfirmar={() => {
-          setExcluindoPeca(false);
-          void api.excluirPecaAtual(printer.id).catch(() => {});
-        }}
-        onCancelar={() => setExcluindoPeca(false)}
+      <MesaDePecas
+        printerId={printer.id}
+        aberto={mesaAberta}
+        podeControlar={podeControlar && habilitado.cancelar}
+        aoFechar={() => setMesaAberta(false)}
       />
     </div>
   );

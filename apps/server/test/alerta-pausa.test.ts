@@ -95,6 +95,7 @@ function impressora(patch: Partial<Printer> = {}): Printer {
     mensagemKlippy: null,
     temTaCamera: false,
     pecaAtual: null,
+    temPecas: false,
     temperaturas: [],
     posicao: null,
     macros: [],

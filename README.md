@@ -113,10 +113,15 @@ reading — bounded by the `min_temp`/`max_temp` of your own config — plus one
 button that turns every heater off. What only measures shows the reading and
 nothing else.
 On a machine running `[exclude_object]`, and only while the slicer labelled the
-objects, the job controls gain a fourth button: it drops **the object being
-printed right now** from the print and lets the rest of the plate carry on —
-which beats losing a full plate to one part that lifted. Only the current
-object's name travels in the live snapshot; the plate geometry does not.
+objects, the job controls gain a fourth button: it opens **a map of the plate**.
+Every object is drawn where it actually sits, the one being printed right now is
+marked, the ones already dropped are struck out, and clicking any of them takes
+it out of the print while the rest of the plate carries on — which beats losing
+a full plate to one part that lifted. The map is fetched only when you open it:
+the live snapshot carries the current object's name and nothing else, because
+the plate geometry is heavier than the whole snapshot and never changes mid-print.
+The name that goes back into the G-code is always the one the printer reported,
+matched against its own list — never a string from the browser.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip.
 **Files** — G-code library **grouped by printer**, so it is obvious which machine
 already holds a file and which one will print it. Queueing from a group sends

@@ -129,6 +129,13 @@ export const it: Dicionario = {
     excluirPecaCurto: 'Escludi pezzo',
     confirmaExcluirPeca: (peca: string) =>
       `Toglie ${peca} da questa stampa. L’ugello smette di passarci sopra e gli altri pezzi sul piano proseguono normalmente. Non si può recuperare e, se era l’ultimo rimasto, la stampa finisce.`,
+    pecasDaMesa: 'Pezzi del piano',
+    verPecas: 'Vedi i pezzi del piano',
+    mesaVazia: 'Questa stampa non ha pezzi etichettati dallo slicer.',
+    mesaFalhou: 'Impossibile leggere i pezzi del piano.',
+    pecaEmCurso: 'in stampa',
+    pecaExcluida: 'escluso',
+    pecasContagem: (vivas: number, total: number) => `${vivas} di ${total} pezzi ancora in stampa`,
     temperaturas: 'TEMPERATURE',
     bico: 'Ugello',
     mesa: 'Piano',

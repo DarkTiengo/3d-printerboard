@@ -1,4 +1,13 @@
-import type { Printer, Status, Temperatura, TipoSensor, Posicao, PrinterConfig } from '@3dfarm/shared';
+import type {
+  MesaDePecas,
+  PecaDaMesa,
+  Printer,
+  Status,
+  Temperatura,
+  TipoSensor,
+  Posicao,
+  PrinterConfig
+} from '@3dfarm/shared';
 import { PREFIXOS_DE_SENSOR, type EstadoBruto } from './client.js';
 
 /**
@@ -184,8 +193,57 @@ export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
      * arquivo sem rótulo. O `||` trata os dois como o mesmo "não tem".
      */
     pecaAtual: bruto.objetos.exclude_object?.current_object || null,
+    temPecas: (bruto.objetos.exclude_object?.objects?.length ?? 0) > 0,
     temperaturas: temperaturasDe(bruto),
     posicao: posicaoDe(bruto),
     macros: bruto.macros
   };
+}
+
+
+// ── A mesa, fora do snapshot ────────────────────────────────────────────────
+
+/** Ponto do Klipper → par de números, descartando o que não for número. */
+function ponto(v: unknown): [number, number] | null {
+  return Array.isArray(v) && typeof v[0] === 'number' && typeof v[1] === 'number' ? [v[0], v[1]] : null;
+}
+
+/**
+ * As peças da mesa com contorno e tudo, para o mapa.
+ *
+ * Não vai junto do `Printer` de propósito: aquele objeto é republicado inteiro
+ * a cada mudança de campo, e os polígonos de uma mesa cheia pesam mais que todo
+ * o resto do snapshot somado — para uma coisa que não muda durante a impressão
+ * e que quase ninguém abre. Aqui é sob demanda, e sai do estado que a conexão
+ * já mantém: nenhuma volta extra ao Moonraker.
+ */
+export function mesaDePecas(bruto: EstadoBruto): MesaDePecas {
+  const eo = bruto.objetos.exclude_object;
+  const excluidas = new Set<string>(Array.isArray(eo?.excluded_objects) ? eo.excluded_objects : []);
+  const atual: string = eo?.current_object || '';
+
+  const pecas: PecaDaMesa[] = (Array.isArray(eo?.objects) ? eo.objects : [])
+    .filter((o: any) => typeof o?.name === 'string' && o.name !== '')
+    .map(
+      (o: any): PecaDaMesa => ({
+        nome: o.name,
+        centro: ponto(o.center),
+        contorno: (Array.isArray(o.polygon) ? o.polygon : []).map(ponto).filter(Boolean) as [number, number][],
+        excluida: excluidas.has(o.name),
+        atual: o.name === atual
+      })
+    );
+
+  /*
+   * Os limites vêm do toolhead, que já está assinado desde o handshake. Podem
+   * faltar numa máquina que não os publica; aí o mapa se acerta pelo contorno
+   * das peças, que é pior mas não impede nada.
+   */
+  const min = ponto(bruto.objetos.toolhead?.axis_minimum);
+  const max = ponto(bruto.objetos.toolhead?.axis_maximum);
+  const limites = min && max && max[0] > min[0] && max[1] > min[1]
+    ? { minX: min[0], minY: min[1], maxX: max[0], maxY: max[1] }
+    : null;
+
+  return { limites, pecas };
 }

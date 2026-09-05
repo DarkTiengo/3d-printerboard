@@ -129,6 +129,13 @@ export const es: Dicionario = {
     excluirPecaCurto: 'Excluir pieza',
     confirmaExcluirPeca: (peca: string) =>
       `Saca ${peca} de esta impresión. La boquilla deja de pasar por ella y las demás piezas de la cama siguen normalmente. No se puede recuperar y, si era la última que quedaba, la impresión termina.`,
+    pecasDaMesa: 'Piezas de la cama',
+    verPecas: 'Ver las piezas de la cama',
+    mesaVazia: 'Esta impresión no tiene piezas etiquetadas por el laminador.',
+    mesaFalhou: 'No se pudieron leer las piezas de la cama.',
+    pecaEmCurso: 'imprimiendo',
+    pecaExcluida: 'excluida',
+    pecasContagem: (vivas: number, total: number) => `${vivas} de ${total} piezas siguen en la impresión`,
     temperaturas: 'TEMPERATURAS',
     bico: 'Boquilla',
     mesa: 'Cama',

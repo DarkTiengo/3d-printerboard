@@ -128,6 +128,13 @@ export const pt = {
     excluirPecaCurto: 'Excluir peça',
     confirmaExcluirPeca: (peca: string) =>
       `Tira ${peca} desta impressão. O bico deixa de passar por ela e as outras peças da mesa continuam normalmente. Não dá para trazer de volta — e, se for a última que restava, a impressão termina.`,
+    pecasDaMesa: 'Peças da mesa',
+    verPecas: 'Ver as peças da mesa',
+    mesaVazia: 'Esta impressão não tem peças rotuladas pelo fatiador.',
+    mesaFalhou: 'Não foi possível ler as peças da mesa.',
+    pecaEmCurso: 'em impressão',
+    pecaExcluida: 'excluída',
+    pecasContagem: (vivas: number, total: number) => `${vivas} de ${total} peças ainda na impressão`,
     temperaturas: 'TEMPERATURAS',
     bico: 'Bico',
     mesa: 'Mesa',

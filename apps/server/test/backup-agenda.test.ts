@@ -57,6 +57,7 @@ function cadastrar(id: string, status: Status, opcoes: { online?: boolean; backu
     online: opcoes.online ?? true,
     temTaCamera: false,
     pecaAtual: null,
+    temPecas: false,
     temperaturas: [],
     posicao: null,
     macros: []

@@ -53,9 +53,53 @@ export type Printer = {
    * aqui cabe em 36 bytes.
    */
   pecaAtual: string | null;
+  /**
+   * A máquina tem peças rotuladas nesta impressão — mesmo que agora, entre uma
+   * e outra, nenhuma esteja em curso. É o que decide se o botão da mesa existe:
+   * `pecaAtual` some no vão entre duas peças, e sumir o botão junto seria pior
+   * justamente numa pausa, que é quando alguém olha e resolve tirar uma.
+   */
+  temPecas: boolean;
   temperaturas: Temperatura[];
   posicao: Posicao | null;
   macros: string[];
+};
+
+// ── Peças da mesa (`[exclude_object]`) ──────────────────────────────────────
+
+/**
+ * Uma peça da mesa, como o `[exclude_object]` do Klipper a conhece.
+ *
+ * `centro` e `contorno` vêm do fatiador, em milímetros da mesa, e podem faltar:
+ * um `EXCLUDE_OBJECT_DEFINE` sem geometria ainda define a peça e ainda dá para
+ * excluí-la — só não dá para desenhá-la no mapa.
+ */
+export type PecaDaMesa = {
+  /**
+   * O nome exato que a impressora reporta. É ele, e só ele, que volta para o
+   * G-code: nada do que o navegador digitar chega a `EXCLUDE_OBJECT NAME=`.
+   */
+  nome: string;
+  centro: [number, number] | null;
+  contorno: [number, number][];
+  excluida: boolean;
+  /** A peça que o bico está fazendo agora. No máximo uma, às vezes nenhuma. */
+  atual: boolean;
+};
+
+/**
+ * A mesa inteira. Buscada sob demanda, quando alguém abre o mapa — nunca no
+ * snapshot do SSE, que é republicado inteiro a 4 Hz por impressora: os
+ * contornos de vinte peças pesam uns 8 KB e não mudam durante a impressão.
+ */
+export type MesaDePecas = {
+  /**
+   * Os limites úteis da mesa em mm, para o mapa sair na proporção certa e com
+   * a peça no lugar onde ela de fato está. Null quando a máquina não disse — aí
+   * o mapa se vira com o retângulo que envolve as peças.
+   */
+  limites: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  pecas: PecaDaMesa[];
 };
 
 /**

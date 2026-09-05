@@ -8,6 +8,7 @@ import type {
   BackupResumo,
   BackupSnapshot,
   GcodeFile,
+  MesaDePecas,
   NotificacaoConfig,
   NotificacaoPrefs,
   Printer,
@@ -116,8 +117,14 @@ export const api = {
     post<{ ok: true }>(`/api/printers/${id}/heater`, { chave, alvo }),
   desligarAquecedores: (id: string) => post<{ ok: true }>(`/api/printers/${id}/heaters/off`),
 
-  /** Exclui a peça em curso; qual é ela quem decide é o servidor. */
-  excluirPecaAtual: (id: string) => post<{ ok: true }>(`/api/printers/${id}/exclude-object`),
+  /** O mapa da mesa. Sob demanda: não vem no snapshot, é pesado e não muda. */
+  mesaDePecas: (id: string) => get<MesaDePecas>(`/api/printers/${id}/objects`),
+  /**
+   * Exclui uma peça. Sem `nome`, é a que está em curso — e aí quem decide qual
+   * é ela é o servidor, não esta chamada.
+   */
+  excluirPeca: (id: string, nome?: string) =>
+    post<{ ok: true }>(`/api/printers/${id}/exclude-object`, nome ? { nome } : undefined),
   gcode: (id: string, script: string) => post<{ ok: true }>(`/api/printers/${id}/gcode`, { script }),
   paradaEmergencia: () => post<{ ok: boolean; total: number; falhas: string[] }>('/api/emergency-stop'),
   // energia do host: falam com o Moonraker, então valem com o Klipper caído

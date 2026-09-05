@@ -34,12 +34,53 @@ type Semente = {
    * `[exclude_object]`. Só duas sementes têm, porque numa fazenda de verdade
    * também é a minoria: a maioria dos arquivos sai sem rótulo nenhum.
    */
-  pecas?: string[];
+  pecas?: PecaMock[];
 };
 
-/** Nomes como o fatiador escreve: base, `id:` e o índice da cópia. */
-const pecasDe = (base: string, n: number): string[] =>
-  Array.from({ length: n }, (_, i) => `${base} id:${i}`);
+/** Uma peça na mesa falsa, com a geometria que o fatiador teria mandado. */
+type PecaMock = { nome: string; centro: [number, number]; contorno: [number, number][] };
+
+/** Mesa quadrada de 220 mm, que é o tamanho da maioria das máquinas daqui. */
+const MESA_MM = 220;
+
+/**
+ * Um lote de peças iguais espalhado pela mesa, como o fatiador arrumaria:
+ * nome com `id:` e o índice da cópia, e um quadrado no lugar de cada uma. A
+ * geometria é o que faz o mapa da mesa ter o que desenhar sem hardware.
+ */
+function pecasDe(base: string, n: number): PecaMock[] {
+  const colunas = Math.ceil(Math.sqrt(n));
+  const linhas = Math.ceil(n / colunas);
+  const passo = MESA_MM / (colunas + 1);
+  const lado = passo * 0.55;
+
+  return Array.from({ length: n }, (_, i) => {
+    const cx = passo * ((i % colunas) + 1);
+    const cy = MESA_MM - passo * (Math.floor(i / colunas) + 1) - (MESA_MM - passo * (linhas + 1)) / 2;
+    const r = lado / 2;
+    return {
+      nome: `${base} id:${i}`,
+      centro: [Number(cx.toFixed(2)), Number(cy.toFixed(2))] as [number, number],
+      contorno: [
+        [cx - r, cy - r],
+        [cx + r, cy - r],
+        [cx + r, cy + r],
+        [cx - r, cy + r]
+      ].map(([x, y]) => [Number(x.toFixed(2)), Number(y.toFixed(2))] as [number, number])
+    };
+  });
+}
+
+/**
+ * O outro lado do `paraParametro` do cliente: desfaz as aspas como o shlex do
+ * Klipper faria. Sem isto o mock excluiria uma peça chamada `"chaveiro id:3"`,
+ * com aspas no nome, e o teste passaria mentindo.
+ */
+function semAspas(valor: string): string {
+  const v = valor.trim();
+  if (!v.startsWith('"') || !v.endsWith('"') || v.length < 2) return v;
+  return v.slice(1, -1).replace(/\\(.)/g, '$1');
+}
 
 export const SEMENTES: Semente[] = [
   { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, camadaAtual: 84, camadaTotal: 210, estado: 'printing' },
@@ -134,7 +175,12 @@ class MockClient extends MoonrakerClient {
         virtual_sdcard: { progress: this.progresso },
         extruder: { temperature: this.bico.atual, target: this.bico.alvo },
         heater_bed: { temperature: this.mesa.atual, target: this.mesa.alvo },
-        toolhead: { position: [this.pos.x, this.pos.y, this.pos.z, 0] },
+        // os limites são o que o mapa da mesa usa para desenhar na escala certa
+        toolhead: {
+          position: [this.pos.x, this.pos.y, this.pos.z, 0],
+          axis_minimum: [0, 0, 0, 0],
+          axis_maximum: [MESA_MM, MESA_MM, 250, 0]
+        },
         gcode_move: { gcode_position: [this.pos.x, this.pos.y, this.pos.z, 0] },
         ...(this.semente.fechada
           ? { 'heater_generic chamber': { temperature: this.camara.atual, target: this.camara.alvo } }
@@ -149,7 +195,11 @@ class MockClient extends MoonrakerClient {
         ...(this.semente.pecas
           ? {
               exclude_object: {
-                objects: this.semente.pecas.map((nome) => ({ name: nome })),
+                objects: this.semente.pecas.map((p) => ({
+                  name: p.nome,
+                  center: p.centro,
+                  polygon: p.contorno
+                })),
                 excluded_objects: [...this.excluidas],
                 // o Klipper manda '' entre uma peça e outra, não null
                 current_object: this.pecaAtual() ?? ''
@@ -167,9 +217,9 @@ class MockClient extends MoonrakerClient {
   private pecaAtual(): string | null {
     const pecas = this.semente.pecas;
     if (!pecas || (this.semente.estado !== 'printing' && this.semente.estado !== 'paused')) return null;
-    const vivas = pecas.filter((nome) => !this.excluidas.has(nome));
+    const vivas = pecas.filter((p) => !this.excluidas.has(p.nome));
     if (vivas.length === 0) return null;
-    return vivas[Math.min(vivas.length - 1, Math.floor(this.progresso * vivas.length))];
+    return vivas[Math.min(vivas.length - 1, Math.floor(this.progresso * vivas.length))].nome;
   }
 
   /** Aproxima o valor lido do alvo, como um aquecedor de verdade faria. */
@@ -273,9 +323,10 @@ class MockClient extends MoonrakerClient {
       this.camara.alvo = 0;
     }
 
-    if (/EXCLUDE_OBJECT\s+CURRENT=1/i.test(script)) {
-      const atual = this.pecaAtual();
-      if (atual) this.excluidas.add(atual);
+    const excluir = /EXCLUDE_OBJECT\s+(CURRENT=1|NAME=(.+?))\s*$/i.exec(script);
+    if (excluir) {
+      const alvo = excluir[2] === undefined ? this.pecaAtual() : semAspas(excluir[2]);
+      if (alvo && this.semente.pecas?.some((p) => p.nome === alvo)) this.excluidas.add(alvo);
       // excluir a última encerra a impressão, como no Klipper
       if (this.pecaAtual() === null && this.semente.pecas) this.semente.estado = 'complete';
     }
