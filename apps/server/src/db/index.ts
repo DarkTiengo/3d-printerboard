@@ -39,6 +39,7 @@ export function abrirBanco(): DB {
   const schema = fs.readFileSync(path.join(aqui, 'schema.sql'), 'utf8');
   db.exec(schema);
   migrarSeveridadeCritica(db);
+  migrarRotacaoDaCamera(db);
 
   return db;
 }
@@ -89,6 +90,20 @@ function migrarSeveridadeCritica(db: DB): void {
     COMMIT;
     PRAGMA foreign_keys = ON;
   `);
+}
+
+/**
+ * Migração 003 — a rotação da câmera entrou depois do esquema inicial.
+ *
+ * `CREATE TABLE IF NOT EXISTS` não mexe numa tabela que já existe, então quem
+ * atualizou o app teria a coluna faltando e todo SELECT quebraria. Aqui não
+ * precisa do rebuild da 002: acrescentar coluna com DEFAULT é barato no SQLite
+ * e as linhas antigas já saem com 0 — que é "não gira", o que sempre valeu.
+ */
+function migrarRotacaoDaCamera(db: DB): void {
+  const colunas = db.prepare('PRAGMA table_info(printers)').all() as { name: string }[];
+  if (colunas.some((c) => c.name === 'camera_rotation')) return;
+  db.exec('ALTER TABLE printers ADD COLUMN camera_rotation INTEGER NOT NULL DEFAULT 0');
 }
 
 export function getDb(): DB {

@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Plug, Plus, Trash2, X } from 'lucide-react';
-import type { PrinterConfig } from '@3dfarm/shared';
+import { Check, Plug, Plus, RotateCw, Trash2, X } from 'lucide-react';
+import type { PrinterConfig, RotacaoCamera } from '@3dfarm/shared';
+import { ROTACOES } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Confirm } from '../components/Confirm';
 import { NotificacoesCard } from '../panels/NotificacoesCard';
+import { estiloDaImagem, estiloDoQuadro } from '../lib/rotacao';
 import { useT } from '../i18n';
 import type { Dicionario } from '../i18n/pt';
 
@@ -15,6 +17,7 @@ type Rascunho = {
   moonrakerUrl: string;
   apiKey: string;
   cameraUrl: string;
+  cameraRotacao: RotacaoCamera;
   backupEnabled: boolean;
 };
 
@@ -23,6 +26,7 @@ const VAZIO: Rascunho = {
   moonrakerUrl: 'http://',
   apiKey: '',
   cameraUrl: '',
+  cameraRotacao: 0,
   backupEnabled: true
 };
 
@@ -62,6 +66,7 @@ export function Settings() {
         moonrakerUrl: r.moonrakerUrl.trim(),
         apiKey: r.apiKey.trim() || null,
         cameraUrl: r.cameraUrl.trim() || null,
+        cameraRotacao: r.cameraRotacao,
         backupEnabled: r.backupEnabled
       };
       return r.id ? api.atualizarPrinter(r.id, corpo) : api.criarPrinter(corpo);
@@ -90,6 +95,7 @@ export function Settings() {
         moonrakerUrl: r.moonrakerUrl,
         apiKey: r.apiKey || null,
         cameraUrl: r.cameraUrl || null,
+        cameraRotacao: r.cameraRotacao,
         backupEnabled: r.backupEnabled
       }),
     onSuccess: (res, enviado) => {
@@ -186,6 +192,7 @@ export function Settings() {
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-500)', overflowWrap: 'anywhere' }}>
                 {t.gestao.camera} {p.cameraUrl ?? t.gestao.semCamera}
+                {p.cameraRotacao > 0 && ` · ${t.gestao.graus(p.cameraRotacao)}`}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-500)' }}>
                 {t.gestao.backup} {p.backupEnabled ? t.gestao.backupLigado : t.gestao.backupDesligado} ·{' '}
@@ -202,6 +209,7 @@ export function Settings() {
                       moonrakerUrl: p.moonrakerUrl,
                       apiKey: p.apiKey ?? '',
                       cameraUrl: p.cameraUrl ?? '',
+                      cameraRotacao: p.cameraRotacao,
                       backupEnabled: p.backupEnabled
                     });
                     setTeste(null);
@@ -425,17 +433,18 @@ function Formulario({
             o foco e se é a máquina certa, antes de salvar. */}
         {teste?.preview && (
           <figure style={{ margin: 0 }}>
-            <img
-              src={teste.preview}
-              alt={t.gestao.previaCamera}
+            <div
               style={{
+                position: 'relative',
                 width: 220,
                 aspectRatio: '4 / 3',
-                objectFit: 'cover',
+                overflow: 'hidden',
                 border: '2px solid var(--color-neutral-700)',
-                display: 'block'
+                ...estiloDoQuadro(rascunho.cameraRotacao)
               }}
-            />
+            >
+              <img src={teste.preview} alt={t.gestao.previaCamera} style={estiloDaImagem(rascunho.cameraRotacao)} />
+            </div>
             <figcaption className="mono" style={{ marginTop: 6 }}>
               {t.gestao.previaCamera}
             </figcaption>
@@ -448,6 +457,44 @@ function Formulario({
           type: 'password'
         })}
         {campo(t.gestao.cameraUrl, 'cameraUrl', { placeholder: t.gestao.cameraPlaceholder, mono: true })}
+
+        {/* Câmera parafusada de lado: o giro é da tela, não da impressora — o
+            quadro guardado com um alerta continua como a câmera mandou. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="mono">{t.gestao.rotacao}</span>
+          <div role="group" aria-label={t.gestao.rotacao} style={{ display: 'flex', gap: 6 }}>
+            {ROTACOES.map((g) => {
+              const ativo = rascunho.cameraRotacao === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => aoMudar({ ...rascunho, cameraRotacao: g })}
+                  aria-pressed={ativo}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: 0,
+                    borderRadius: 999,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 12,
+                    padding: '9px 14px',
+                    cursor: 'pointer',
+                    background: ativo ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+                    color: ativo ? 'var(--color-bg)' : 'var(--color-neutral-300)'
+                  }}
+                >
+                  {g > 0 && (
+                    <RotateCw size={12} strokeWidth={2} aria-hidden style={{ transform: `rotate(${g}deg)` }} />
+                  )}
+                  {t.gestao.graus(g)}
+                </button>
+              );
+            })}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--color-neutral-500)' }}>{t.gestao.rotacaoDica}</span>
+        </div>
 
         <button
           type="button"

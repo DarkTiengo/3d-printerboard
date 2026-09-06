@@ -18,6 +18,7 @@ const cfg: PrinterConfig = {
   moonrakerUrl: 'http://p02.local:7125',
   apiKey: null,
   cameraUrl: null,
+  cameraRotacao: 0,
   backupEnabled: true,
   ordem: 0
 };
@@ -28,6 +29,7 @@ function bruto(excludeObject: unknown) {
     klippy: 'ready' as const,
     macros: [],
     limites: {},
+    minExtrusao: null,
     ultimoErro: null,
     mensagemKlippy: null,
     objetos: {

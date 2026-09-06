@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Check, TriangleAlert, Video } from 'lucide-react';
-import type { Alert, User } from '@3dfarm/shared';
+import type { Alert, RotacaoCamera, User } from '@3dfarm/shared';
 import { pode, porGravidade } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { usePrinters } from '../store/printers';
@@ -9,6 +9,7 @@ import { useUi } from '../store/ui';
 import { IconButton } from '../components/IconButton';
 import { Ponto, Tag } from '../components/Tag';
 import { CORES_SEVERIDADE } from '../lib/status';
+import { estiloDaImagem, estiloDoQuadro } from '../lib/rotacao';
 import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
 import type { Dicionario } from '../i18n/pt';
@@ -26,6 +27,7 @@ export function Alerts({ usuario }: { usuario: User }) {
   const t = useT();
   const f = useFormato();
   const alertas = usePrinters((s) => s.alertas);
+  const printers = usePrinters((s) => s.printers);
   const definirAlertas = usePrinters((s) => s.definirAlertas);
   const alertaSel = useUi((s) => s.alertaSel);
   const abrirAlerta = useUi((s) => s.abrirAlerta);
@@ -161,6 +163,9 @@ export function Alerts({ usuario }: { usuario: User }) {
             resolvendo={resolver.isPending}
             aoResolver={() => resolver.mutate(selecionado.id)}
             aoAbrirImpressora={() => selecionado.printerId && abrirImpressora(selecionado.printerId)}
+            /* o quadro foi guardado como a câmera mandou; girar aqui é o que
+               deixa o alerta com a mesma orientação do feed ao vivo */
+            rotacao={printers.find((p) => p.id === selecionado.printerId)?.cameraRotacao ?? 0}
           />
         ) : (
           <span className="mono">{t.alertas.selecione}</span>
@@ -177,7 +182,8 @@ function Detalhe({
   podeResolver,
   resolvendo,
   aoResolver,
-  aoAbrirImpressora
+  aoAbrirImpressora,
+  rotacao
 }: {
   t: Dicionario;
   f: ReturnType<typeof useFormato>;
@@ -186,6 +192,7 @@ function Detalhe({
   resolvendo: boolean;
   aoResolver: () => void;
   aoAbrirImpressora: () => void;
+  rotacao: RotacaoCamera;
 }) {
   return (
     <article style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 760 }}>
@@ -226,14 +233,16 @@ function Detalhe({
           position: 'relative',
           aspectRatio: '16 / 9',
           maxWidth: 640,
-          background: 'var(--color-neutral-900)'
+          overflow: 'hidden',
+          background: 'var(--color-neutral-900)',
+          ...estiloDoQuadro(rotacao)
         }}
       >
         {alerta.frameUrl && (
           <img
             src={alerta.frameUrl}
             alt={t.alertas.frameDe(alerta.impressora)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={estiloDaImagem(rotacao)}
           />
         )}
         <figcaption

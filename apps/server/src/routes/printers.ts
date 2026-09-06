@@ -1,5 +1,14 @@
 import type { FastifyInstance } from 'fastify';
-import type { GcodePayload, HeaterPayload, JogPayload, PrinterConfigInput } from '@3dfarm/shared';
+import {
+  EXTRUSAO_MAX_MM,
+  EXTRUSAO_MM_S,
+  rotacaoValida,
+  type ExtrusaoPayload,
+  type GcodePayload,
+  type HeaterPayload,
+  type JogPayload,
+  type PrinterConfigInput
+} from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
 import { nomeDePecaValido, type MoonrakerClient } from '../moonraker/client.js';
 import { mesaDePecas } from '../moonraker/normalize.js';
@@ -35,6 +44,10 @@ function validarEntrada(body: Partial<PrinterConfigInput>): string | null {
     } catch {
       return 'URL da câmera inválida.';
     }
+  }
+  // o seletor da tela só oferece as quatro; um valor fora disso é pedido torto
+  if (body.cameraRotacao !== undefined && rotacaoValida(body.cameraRotacao) !== body.cameraRotacao) {
+    return 'A rotação da câmera deve ser 0, 90, 180 ou 270 graus.';
   }
   return null;
 }
@@ -96,6 +109,52 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
         return { ok: true };
       } catch (err) {
         return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha no jog' });
+      }
+    }
+  );
+
+  /**
+   * Extrusão manual: empurra ou recolhe filamento.
+   *
+   * Três recusas antes de chegar ao G-code, todas por um motivo concreto:
+   *
+   *  - com a impressão andando, um `G1 E` do painel entra no meio do arquivo e
+   *    estraga a peça. Pausada pode — é justamente aí que se troca filamento.
+   *  - com o bico frio, o Klipper recusaria de qualquer jeito, mas com um erro
+   *    de G-code no lugar de uma frase que explique.
+   *  - com o Klipper fora de 'ready' não há motor para girar.
+   */
+  app.post<{ Params: { id: string }; Body: ExtrusaoPayload }>(
+    '/api/printers/:id/extrude',
+    {
+      preHandler: exigirPermissao('controlarImpressao'),
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } }
+    },
+    async (req, reply) => {
+      const printer = farm.printer(req.params.id);
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!printer || !cliente) return reply.code(503).send({ erro: 'impressora offline' });
+
+      const mm = req.body?.mm;
+      if (!Number.isFinite(mm) || mm === 0 || Math.abs(mm) > EXTRUSAO_MAX_MM) {
+        return reply.code(400).send({ erro: `quantidade inválida (até ${EXTRUSAO_MAX_MM} mm por vez)` });
+      }
+      if (printer.klippy !== 'ready') return reply.code(409).send({ erro: 'o Klipper não está pronto' });
+      if (printer.status === 'imprimindo') {
+        return reply.code(409).send({ erro: 'pause a impressão antes de extrudar' });
+      }
+
+      const bico = printer.temperaturas.find((t) => t.chave === 'extruder');
+      if (printer.minExtrusao != null && (bico?.atual ?? 0) < printer.minExtrusao) {
+        return reply.code(409).send({ erro: `o bico precisa estar acima de ${printer.minExtrusao} °C` });
+      }
+
+      try {
+        await cliente.extrudar(mm, EXTRUSAO_MM_S);
+        logger.info({ printer: req.params.id, por: req.sessao!.usuario, mm }, 'extrusão manual');
+        return { ok: true };
+      } catch (err) {
+        return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao extrudar' });
       }
     }
   );
@@ -413,6 +472,7 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
         moonrakerUrl: req.body.moonrakerUrl,
         apiKey,
         cameraUrl: req.body.cameraUrl ?? null,
+        cameraRotacao: rotacaoValida(req.body.cameraRotacao),
         backupEnabled: false,
         ordem: 0
       });

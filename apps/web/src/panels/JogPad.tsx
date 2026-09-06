@@ -6,7 +6,8 @@ import { useT } from '../i18n';
 
 const PASSOS = ['0.1', '1', '10', '100'];
 
-const celula: React.CSSProperties = {
+/** A tecla quadrada dos controles de máquina — o jog e a extrusora usam a mesma. */
+export const celulaDeControle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -20,6 +21,21 @@ const celula: React.CSSProperties = {
   cursor: 'pointer',
   padding: 0
 };
+
+/** A pílula de passo: mesma forma no jog e na extrusora, só o valor muda. */
+export function estiloDePasso(ativo: boolean): React.CSSProperties {
+  return {
+    textAlign: 'center',
+    border: 0,
+    borderRadius: 999,
+    fontFamily: 'var(--font-mono)',
+    fontSize: 11,
+    padding: '7px 12px',
+    cursor: 'pointer',
+    background: ativo ? 'var(--color-accent)' : 'var(--color-neutral-800)',
+    color: ativo ? 'var(--color-bg)' : 'var(--color-neutral-300)'
+  };
+}
 
 /**
  * Cabeça de impressão — design/README.md § 2.5.
@@ -50,7 +66,7 @@ export function JogPad({
         onClick={onClick}
         disabled={desabilitado}
         style={{
-          ...celula,
+          ...celulaDeControle,
           ...(desabilitado
             ? { borderColor: 'var(--color-neutral-800)', color: 'var(--color-neutral-700)', cursor: 'not-allowed' }
             : {})
@@ -106,17 +122,7 @@ export function JogPad({
                 type="button"
                 onClick={() => definirPasso(v)}
                 aria-pressed={ativo}
-                style={{
-                  textAlign: 'center',
-                  border: 0,
-                  borderRadius: 999,
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  padding: '7px 12px',
-                  cursor: 'pointer',
-                  background: ativo ? 'var(--color-accent)' : 'var(--color-neutral-800)',
-                  color: ativo ? 'var(--color-bg)' : 'var(--color-neutral-300)'
-                }}
+                style={estiloDePasso(ativo)}
               >
                 {v}
               </button>

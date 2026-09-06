@@ -9,6 +9,7 @@ const cfg: PrinterConfig = {
   moonrakerUrl: 'http://p01.local:7125',
   apiKey: null,
   cameraUrl: 'http://p01.local:8080/stream',
+  cameraRotacao: 0,
   backupEnabled: true,
   ordem: 0
 };
@@ -19,6 +20,7 @@ function bruto(patch: Partial<EstadoBruto> = {}, objetos: Record<string, any> = 
     klippy: 'ready',
     macros: [],
     limites: {},
+    minExtrusao: null,
     ultimoErro: null,
     mensagemKlippy: null,
     ...patch,

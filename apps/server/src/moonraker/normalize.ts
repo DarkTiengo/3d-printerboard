@@ -188,12 +188,14 @@ export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
     klippy: bruto.klippy,
     mensagemKlippy: bruto.mensagemKlippy,
     temTaCamera: !!cfg.cameraUrl,
+    cameraRotacao: cfg.cameraRotacao,
     /*
      * O Klipper devolve '' quando não há peça em curso — entre objetos, ou num
      * arquivo sem rótulo. O `||` trata os dois como o mesmo "não tem".
      */
     pecaAtual: bruto.objetos.exclude_object?.current_object || null,
     temPecas: (bruto.objetos.exclude_object?.objects?.length ?? 0) > 0,
+    minExtrusao: bruto.minExtrusao,
     temperaturas: temperaturasDe(bruto),
     posicao: posicaoDe(bruto),
     macros: bruto.macros

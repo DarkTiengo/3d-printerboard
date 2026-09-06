@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { VideoOff } from 'lucide-react';
+import type { RotacaoCamera } from '@3dfarm/shared';
 import { urlCamera, urlSnapshot } from '../lib/api';
+import { estiloDaImagem, estiloDoQuadro } from '../lib/rotacao';
 import { useT } from '../i18n';
 
 type Modo = 'stream' | 'snapshot';
@@ -21,6 +23,8 @@ type Props = {
   modo?: Modo;
   /** Só carrega quando o elemento entra na viewport. */
   observarVisibilidade?: boolean;
+  /** Quarto de volta da câmera, da config da impressora. */
+  rotacao?: RotacaoCamera;
   alt: string;
 };
 
@@ -57,6 +61,7 @@ export function CameraFeed({
   fps,
   modo = 'snapshot',
   observarVisibilidade = true,
+  rotacao = 0,
   alt
 }: Props) {
   const t = useT();
@@ -97,7 +102,11 @@ export function CameraFeed({
   const semImagem = !temCamera || erro;
 
   return (
-    <div ref={ref} className={semImagem ? 'listrado' : undefined} style={{ position: 'absolute', inset: 0 }}>
+    <div
+      ref={ref}
+      className={semImagem ? 'listrado' : undefined}
+      style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...estiloDoQuadro(rotacao) }}
+    >
       {ativo && modo === 'stream' && abaVisivel && (
         <img
           // a chave força uma conexão nova quando o fps muda
@@ -105,7 +114,7 @@ export function CameraFeed({
           src={urlCamera(printerId, fps)}
           alt={alt}
           onError={() => setErro(true)}
-          style={estiloImagem}
+          style={estiloDaImagem(rotacao)}
         />
       )}
       {ativo && modo === 'snapshot' && (
@@ -115,6 +124,7 @@ export function CameraFeed({
           printerId={printerId}
           fps={fps}
           alt={alt}
+          rotacao={rotacao}
           pausado={!abaVisivel}
           aoFalhar={aoFalhar}
         />
@@ -143,13 +153,6 @@ export function CameraFeed({
   );
 }
 
-const estiloImagem: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-  display: 'block'
-};
-
 /**
  * Busca um JPEG de cada vez, encadeando: o próximo pedido só sai depois que o
  * anterior terminou. Uma câmera lenta atrasa a si mesma em vez de empilhar
@@ -159,12 +162,14 @@ function SnapshotLoop({
   printerId,
   fps,
   alt,
+  rotacao,
   pausado,
   aoFalhar
 }: {
   printerId: string;
   fps: number;
   alt: string;
+  rotacao: RotacaoCamera;
   pausado: boolean;
   aoFalhar: () => void;
 }) {
@@ -215,5 +220,5 @@ function SnapshotLoop({
   }, [printerId, fps, pausado]);
 
   if (!src) return null;
-  return <img src={src} alt={alt} style={estiloImagem} />;
+  return <img src={src} alt={alt} style={estiloDaImagem(rotacao)} />;
 }

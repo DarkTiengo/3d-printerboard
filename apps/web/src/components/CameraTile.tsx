@@ -42,6 +42,7 @@ export function CameraTile({
           printerId={printer.id}
           temCamera={printer.temTaCamera}
           fps={fps}
+          rotacao={printer.cameraRotacao}
           alt={`${t.painel.cameraDe(printer.nome)} — ${rotulo.toLowerCase()}`}
         />
       </div>

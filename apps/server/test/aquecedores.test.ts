@@ -8,6 +8,7 @@ const cfg: PrinterConfig = {
   moonrakerUrl: 'http://p05.local:7125',
   apiKey: null,
   cameraUrl: null,
+  cameraRotacao: 0,
   backupEnabled: true,
   ordem: 0
 };

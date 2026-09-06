@@ -93,6 +93,8 @@ Em React usar `lucide-react`. Mapa dos ícones usados:
 | Temperatura | `thermometer` |
 | Jog X/Y/Z | `arrow-up`, `arrow-down`, `arrow-left`, `arrow-right`, `move-vertical` |
 | Home | `house` |
+| Extrudar / retrair | `arrow-down-to-line` / `arrow-up-from-line` |
+| Rotação da câmera | `rotate-cw` |
 | Macro | `zap` |
 | Backup agora / restaurar | `download` / `upload` |
 | Resolver alerta | `check` |
@@ -177,7 +179,11 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
        No cabeçalho da seção, à direita, um botão `power` desliga todos os aquecedores.
     5. Cabeça de impressão: jog pad 3×3 (38×32px, raio 8px, borda 1px) com X±, Y±, Z± e home,
        seletor de passo (0.1 / 1 / 10 / 100 — ativo em pílula vermelha) e posição atual em mono.
-    6. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.
+    6. Extrusora: as mesmas teclas do jog (38×32px) para retrair e extrudar, a velocidade fixa
+       em mono ao lado, e o seletor de quantidade (1 / 5 / 10 / 50 mm) na mesma pílula do passo.
+       Bloqueada com a impressão andando, com o bico abaixo do `min_extrude_temp` ou com o
+       Klipper fora de 'ready' — sempre com o motivo escrito embaixo, em `--color-neutral-500`.
+    7. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.
 
 **Regras dos controles:** *Pausar* habilitado quando imprimindo ou em atenção; *Continuar* apenas
 quando pausada (é a única ação em vermelho); *Cancelar* quando imprimindo, em atenção ou pausada.
@@ -190,6 +196,11 @@ Quadrante 2×2 ocupando a altura disponível, `gap: 2px`. Sobre cada feed: nome 
 status no topo; no rodapé, nome 17px/800 e "pct · restante" em mono, com os três controles redondos
 à direita. Abaixo, tira horizontal rolável de miniaturas 150px (16:10), clicáveis, com a mesma
 moldura vermelha de seleção.
+
+A imagem sai girada quando a impressora tem `cameraRotacao` — a webcam parafusada de lado. O giro é
+do navegador na hora de desenhar, e vale em todo lugar onde o app desenha o feed: parede, quadrante,
+tira, painel e o quadro do alerta. O JPEG guardado e o que vai para o Telegram continuam como a
+câmera mandou.
 
 ### 4. Arquivos
 

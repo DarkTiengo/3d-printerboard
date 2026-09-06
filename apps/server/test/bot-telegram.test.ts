@@ -42,7 +42,9 @@ function impressora(patch: Partial<Printer> = {}): Printer {
     mensagemKlippy: null,
     temTaCamera: true,
     pecaAtual: null,
+    minExtrusao: null,
     temPecas: false,
+    cameraRotacao: 0,
     temperaturas: [
       { chave: 'extruder', rotulo: null, tipo: 'aquecedor', atual: 210.42, alvo: 210, min: 0, max: 300 },
       { chave: 'heater_bed', rotulo: null, tipo: 'aquecedor', atual: 59.81, alvo: 60, min: 0, max: 120 },

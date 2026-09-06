@@ -1,4 +1,4 @@
-import type { EstadoKlippy, PrinterConfig } from '@3dfarm/shared';
+import type { EstadoKlippy, PrinterConfig, RotacaoCamera } from '@3dfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from './client.js';
 import { MoonrakerHttp, type ArquivoMoonraker, type MetadadosGcode } from './http.js';
 import { criarPrinter, listarPrinters } from '../services/printers.repo.js';
@@ -35,6 +35,11 @@ type Semente = {
    * também é a minoria: a maioria dos arquivos sai sem rótulo nenhum.
    */
   pecas?: PecaMock[];
+  /**
+   * Webcam parafusada torta, que é o caso que a rotação existe para resolver.
+   * Duas das oito, para a parede mostrar os dois estados lado a lado.
+   */
+  rotacao?: RotacaoCamera;
 };
 
 /** Uma peça na mesa falsa, com a geometria que o fatiador teria mandado. */
@@ -85,10 +90,10 @@ function semAspas(valor: string): string {
 export const SEMENTES: Semente[] = [
   { id: 'P01', nome: 'Ender 3 V2 — A', job: 'suporte_camera_v3.gcode', pct: 72, camadaAtual: 84, camadaTotal: 210, estado: 'printing' },
   { id: 'P02', nome: 'Ender 3 V2 — B', job: 'clipe_cabo_x12.gcode', pct: 31, camadaAtual: 61, camadaTotal: 196, estado: 'printing', pecas: pecasDe('clipe_cabo', 12) },
-  { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, camadaAtual: 188, camadaTotal: 200, estado: 'printing', fechada: true },
+  { id: 'P03', nome: 'Bambu P1S', job: 'engrenagem_z_final.gcode', pct: 94, camadaAtual: 188, camadaTotal: 200, estado: 'printing', fechada: true, rotacao: 90 },
   { id: 'P04', nome: 'Prusa MK4', job: '', pct: 0, camadaAtual: 0, camadaTotal: 142, estado: 'standby' },
   { id: 'P05', nome: 'Voron 0.2', job: 'ventoinha_duto.gcode', pct: 48, camadaAtual: 96, camadaTotal: 204, estado: 'printing', fechada: true, exaustao: true },
-  { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, camadaAtual: 18, camadaTotal: 150, estado: 'error' },
+  { id: 'P06', nome: 'Ender 5 Plus', job: 'bandeja_organizador.gcode', pct: 12, camadaAtual: 18, camadaTotal: 150, estado: 'error', rotacao: 180 },
   { id: 'P07', nome: 'Sovol SV06', job: 'pé_antivibração.gcode', pct: 66, camadaAtual: 58, camadaTotal: 88, estado: 'printing' },
   { id: 'P08', nome: 'Bambu A1 mini', job: 'chaveiro_lote_24.gcode', pct: 0, camadaAtual: 24, camadaTotal: 120, estado: 'paused', pecas: pecasDe('chaveiro', 24) }
 ];
@@ -158,6 +163,8 @@ class MockClient extends MoonrakerClient {
       ultimoErro: null,
       mensagemKlippy: this.mensagem,
       // as seções vêm em minúsculas, como o Klipper devolve em configfile.settings
+      // o piso da extrusora: no mock, o padrão do Klipper
+      minExtrusao: 170,
       limites: {
         extruder: { min: 0, max: 300 },
         heater_bed: { min: 0, max: 120 },
@@ -313,6 +320,7 @@ class MockClient extends MoonrakerClient {
     }
     if (script.includes('G28')) this.pos = { x: 0, y: 0, z: 0 };
 
+
     const aquecedor = /SET_HEATER_TEMPERATURE HEATER=(\S+) TARGET=(-?[\d.]+)/.exec(script);
     if (aquecedor) this.definirAlvoMock(aquecedor[1], Number(aquecedor[2]));
     const ventoinha = /SET_TEMPERATURE_FAN_TARGET TEMPERATURE_FAN=(\S+) TARGET=(-?[\d.]+)/.exec(script);
@@ -410,6 +418,7 @@ export function semearImpressoras(): void {
       // a câmera falsa é servida por este mesmo processo, então o proxy MJPEG
       // roda pelo caminho real; `fase` desencontra a animação entre os tiles
       cameraUrl: `http://127.0.0.1:${config.port}/api/mock-camera?fase=${i}`,
+      cameraRotacao: s.rotacao ?? 0,
       backupEnabled: true
     });
   }

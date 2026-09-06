@@ -109,6 +109,12 @@ export type EstadoBruto = {
    * pessoa escreveu.
    */
   limites: Record<string, { min: number | null; max: number | null }>;
+  /**
+   * `min_extrude_temp` do printer.cfg — abaixo dela o Klipper recusa qualquer
+   * movimento de extrusora. Lido no mesmo handshake dos limites; null quando a
+   * máquina não informou.
+   */
+  minExtrusao: number | null;
   /** Falha de transporte: socket, DNS, timeout. Nada a ver com o Klipper. */
   ultimoErro: string | null;
   /** Motivo do Klipper para não estar 'ready'. Null quando está tudo bem. */
@@ -178,6 +184,7 @@ export class MoonrakerClient extends EventEmitter {
     objetos: {},
     macros: [],
     limites: {},
+    minExtrusao: null,
     ultimoErro: null,
     mensagemKlippy: null
   };
@@ -454,7 +461,13 @@ export class MoonrakerClient extends EventEmitter {
           max: Number.isFinite(max) ? max : null
         };
       }
-      this.definirEstado({ limites });
+      /*
+       * A mesma leitura traz o piso da extrusora. Vem daqui, e não de um
+       * `printer.objects` qualquer, porque é config: só muda com um restart,
+       * que traz outro handshake junto.
+       */
+      const min = (settings.extruder as any)?.min_extrude_temp;
+      this.definirEstado({ limites, minExtrusao: Number.isFinite(min) ? min : null });
     } catch (err) {
       this.emit('log', 'warn', `[${this.id}] sem faixa de temperatura: ${err instanceof Error ? err.message : err}`);
     }
@@ -525,6 +538,27 @@ export class MoonrakerClient extends EventEmitter {
   /** Zera todos os alvos de uma vez — a saída rápida quando algo vai mal. */
   desligarAquecedores() {
     return this.gcode('TURN_OFF_HEATERS');
+  }
+
+  /**
+   * Empurra ou recolhe filamento na extrusora ativa. Positivo extruda,
+   * negativo retrai.
+   *
+   * `M83` põe a extrusora em relativo, e o par SAVE/RESTORE devolve o modo que
+   * estava valendo — sem isso, um `G1 E10` de purga durante uma pausa deixaria
+   * a impressão em relativo e o resto do arquivo sairia torto.
+   *
+   * A velocidade vem em mm/s porque é assim que se pensa no filamento; o
+   * G-code quer mm/min.
+   */
+  extrudar(mm: number, mmPorSegundo: number) {
+    const script = [
+      'SAVE_GCODE_STATE NAME=extrusao_painel',
+      'M83',
+      `G1 E${mm.toFixed(1)} F${Math.round(mmPorSegundo * 60)}`,
+      'RESTORE_GCODE_STATE NAME=extrusao_painel'
+    ].join('\n');
+    return this.gcode(script);
   }
 
   /**

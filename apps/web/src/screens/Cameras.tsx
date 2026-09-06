@@ -87,7 +87,7 @@ export function Cameras({ usuario }: { usuario: User }) {
               }}
             >
               {/* a tira toda por snapshot, bem devagar */}
-              <CameraFeed printerId={p.id} temCamera={p.temTaCamera} fps={0.5} alt="" />
+              <CameraFeed printerId={p.id} temCamera={p.temTaCamera} fps={0.5} rotacao={p.cameraRotacao} alt="" />
               <span
                 style={{
                   position: 'absolute',
@@ -131,6 +131,7 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
         fps={aoVivo ? 15 : 4}
         modo={aoVivo ? 'stream' : 'snapshot'}
         observarVisibilidade={false}
+        rotacao={printer.cameraRotacao}
         alt={t.painel.cameraDe(printer.nome)}
       />
 

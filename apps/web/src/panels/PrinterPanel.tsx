@@ -12,6 +12,7 @@ import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
 import { usePrinters } from '../store/printers';
 import { api } from '../lib/api';
+import { Extrusora } from './Extrusora';
 import { JogPad } from './JogPad';
 import { TempList } from './TempList';
 import { MacroGrid } from './MacroGrid';
@@ -100,6 +101,7 @@ export function PrinterPanel({
           fps={10}
           modo="stream"
           observarVisibilidade={false}
+          rotacao={printer.cameraRotacao}
           alt={t.painel.cameraDe(printer.nome)}
         />
         <span
@@ -210,12 +212,23 @@ export function PrinterPanel({
         <JogPad printerId={printer.id} posicao={printer.posicao} desabilitado={!podeControlar} />
       </div>
 
-      {/* 8. macros */}
+      {/* 8. extrusora — o mesmo gesto do jog, e o único que exige bico quente */}
+      <div style={secao}>
+        <Extrusora
+          printerId={printer.id}
+          temperaturas={printer.temperaturas}
+          minExtrusao={printer.minExtrusao}
+          imprimindo={printer.status === 'imprimindo'}
+          desabilitado={!podeControlar || printer.klippy !== 'ready'}
+        />
+      </div>
+
+      {/* 9. macros */}
       <div style={secao}>
         <MacroGrid printerId={printer.id} macros={printer.macros} desabilitado={!podeControlar} />
       </div>
 
-      {/* 9. energia do host — por último: tira a máquina do ar */}
+      {/* 10. energia do host — por último: tira a máquina do ar */}
       <div style={secao}>
         <PowerControls printer={printer} usuario={usuario} />
       </div>

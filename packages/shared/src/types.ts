@@ -44,6 +44,17 @@ export type Printer = {
   mensagemKlippy: string | null;
   temTaCamera: boolean;
   /**
+   * Quarto de volta a aplicar na imagem desta câmera, em graus. Vem da config
+   * — a máquina não sabe de que jeito a webcam foi parafusada — e por isso não
+   * muda durante uma impressão.
+   *
+   * Está no snapshot, e não numa busca à parte, porque quem precisa dela é o
+   * próprio feed: a parede desenha oito câmeras de uma vez e não pode pedir a
+   * config de cada uma (que, aliás, só o admin pode ler). São ~20 bytes num
+   * snapshot de ~880 — o mesmo preço do `temPecas`.
+   */
+  cameraRotacao: RotacaoCamera;
+  /**
    * Peça da mesa sendo impressa agora, quando a máquina tem `[exclude_object]`
    * e o fatiador rotulou os objetos. Null em todo o resto — que é a maioria —
    * e é ela que decide se o botão de excluir peça existe.
@@ -60,6 +71,14 @@ export type Printer = {
    * justamente numa pausa, que é quando alguém olha e resolve tirar uma.
    */
   temPecas: boolean;
+  /**
+   * Abaixo desta temperatura o Klipper recusa extrudar — o `min_extrude_temp`
+   * do printer.cfg, 170 °C por padrão. Está aqui para a tela poder desabilitar
+   * o controle de extrusão com o motivo escrito, em vez de deixar a pessoa
+   * clicar e receber um erro de G-code. null quando a máquina não informou; aí
+   * quem recusa volta a ser o Klipper.
+   */
+  minExtrusao: number | null;
   temperaturas: Temperatura[];
   posicao: Posicao | null;
   macros: string[];
@@ -148,14 +167,38 @@ export type PrinterConfig = {
   moonrakerUrl: string;
   apiKey: string | null;
   cameraUrl: string | null;
+  cameraRotacao: RotacaoCamera;
   backupEnabled: boolean;
   ordem: number;
 };
 
-export type PrinterConfigInput = Omit<PrinterConfig, 'id' | 'ordem'> & {
+/* `cameraRotacao` é opcional na entrada: quem não sabe da rotação — o teste de
+   conexão, o semeador do mock — manda sem, e o repositório grava 0. */
+export type PrinterConfigInput = Omit<PrinterConfig, 'id' | 'ordem' | 'cameraRotacao'> & {
   id?: string;
   ordem?: number;
+  cameraRotacao?: RotacaoCamera;
 };
+
+// ── Câmera ──────────────────────────────────────────────────────────────────
+
+/**
+ * Quarto de volta da imagem, em graus no sentido horário.
+ *
+ * Só múltiplos de 90: é o que resolve o caso real — a webcam presa de lado ou
+ * de cabeça para baixo no gabinete — e é o que dá para fazer sem custo, porque
+ * o navegador gira a imagem na hora de desenhar. Um ângulo qualquer exigiria
+ * reprocessar cada quadro no servidor, para todas as câmeras, o tempo todo.
+ */
+export type RotacaoCamera = 0 | 90 | 180 | 270;
+
+export const ROTACOES: RotacaoCamera[] = [0, 90, 180, 270];
+
+/** Qualquer coisa → uma rotação válida. O que não for uma das quatro vira 0. */
+export function rotacaoValida(v: unknown): RotacaoCamera {
+  const n = Number(v);
+  return (ROTACOES as number[]).includes(n) ? (n as RotacaoCamera) : 0;
+}
 
 // ── Usuários ────────────────────────────────────────────────────────────────
 
@@ -437,6 +480,21 @@ export type JogPayload = { eixo: 'X' | 'Y' | 'Z'; passo: number };
 /** `chave` é a do `Temperatura` correspondente; `alvo` em °C, 0 desliga. */
 export type HeaterPayload = { chave: string; alvo: number };
 export type GcodePayload = { script: string };
+/** Milímetros de filamento: positivo empurra para o bico, negativo recolhe. */
+export type ExtrusaoPayload = { mm: number };
+
+/**
+ * Velocidade da extrusão manual, em mm de filamento por segundo.
+ *
+ * Fixa, e conservadora: 5 mm/s é o que passa por qualquer bico de 0,4 sem
+ * forçar a engrenagem, inclusive com filamento mole. Quem quer purgar rápido
+ * tem a macro. É o servidor que a aplica — a tela só a mostra, para a pessoa
+ * saber quanto tempo os 50 mm vão levar.
+ */
+export const EXTRUSAO_MM_S = 5;
+
+/** Teto de um clique. 100 mm é mais que o caminho do acoplador até o bico. */
+export const EXTRUSAO_MAX_MM = 100;
 export type LoginPayload = { usuario: string; senha: string; lembrar: boolean };
 export type EnqueuePayload = { arquivo: string; destino: string | null };
 export type RestorePayload = { snapshotId: number; destinoPrinterId: string };

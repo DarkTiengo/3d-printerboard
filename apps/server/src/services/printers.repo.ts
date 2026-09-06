@@ -1,4 +1,4 @@
-import type { PrinterConfig, PrinterConfigInput } from '@3dfarm/shared';
+import { rotacaoValida, type PrinterConfig, type PrinterConfigInput } from '@3dfarm/shared';
 import { getDb } from '../db/index.js';
 
 type Row = {
@@ -7,6 +7,7 @@ type Row = {
   moonraker_url: string;
   api_key: string | null;
   camera_url: string | null;
+  camera_rotation: number;
   backup_enabled: number;
   order_index: number;
 };
@@ -18,6 +19,8 @@ function paraConfig(r: Row): PrinterConfig {
     moonrakerUrl: r.moonraker_url,
     apiKey: r.api_key,
     cameraUrl: r.camera_url,
+    // grava-se só 0/90/180/270, mas o banco é de quem editar o arquivo à mão
+    cameraRotacao: rotacaoValida(r.camera_rotation),
     backupEnabled: !!r.backup_enabled,
     ordem: r.order_index
   };
@@ -52,8 +55,9 @@ export function criarPrinter(entrada: PrinterConfigInput): PrinterConfig {
   const ordem = entrada.ordem ?? maxOrdem + 1;
   getDb()
     .prepare(
-      `INSERT INTO printers (id, name, moonraker_url, api_key, camera_url, backup_enabled, order_index)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO printers (id, name, moonraker_url, api_key, camera_url, camera_rotation,
+                              backup_enabled, order_index)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -61,6 +65,7 @@ export function criarPrinter(entrada: PrinterConfigInput): PrinterConfig {
       entrada.moonrakerUrl,
       entrada.apiKey || null,
       entrada.cameraUrl || null,
+      rotacaoValida(entrada.cameraRotacao),
       entrada.backupEnabled ? 1 : 0,
       ordem
     );
@@ -73,7 +78,8 @@ export function atualizarPrinter(id: string, entrada: PrinterConfigInput): Print
   getDb()
     .prepare(
       `UPDATE printers
-          SET name = ?, moonraker_url = ?, api_key = ?, camera_url = ?, backup_enabled = ?, order_index = ?
+          SET name = ?, moonraker_url = ?, api_key = ?, camera_url = ?, camera_rotation = ?,
+              backup_enabled = ?, order_index = ?
         WHERE id = ?`
     )
     .run(
@@ -81,6 +87,7 @@ export function atualizarPrinter(id: string, entrada: PrinterConfigInput): Print
       entrada.moonrakerUrl,
       entrada.apiKey || null,
       entrada.cameraUrl || null,
+      rotacaoValida(entrada.cameraRotacao),
       entrada.backupEnabled ? 1 : 0,
       entrada.ordem ?? atual.ordem,
       id

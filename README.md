@@ -122,7 +122,19 @@ the live snapshot carries the current object's name and nothing else, because
 the plate geometry is heavier than the whole snapshot and never changes mid-print.
 The name that goes back into the G-code is always the one the printer reported,
 matched against its own list — never a string from the browser.
-**Cameras** — 2×2 quadrant with controls and a thumbnail strip.
+Below the jog pad there is an **extruder control**: push or pull 1, 5, 10 or
+50 mm of filament at a fixed 5 mm/s. It refuses in the three cases where it
+would do damage instead of work — mid-print (a `G1 E` from the panel lands in
+the middle of the file and ruins the part; pause first, which is when you change
+filament anyway), below the `min_extrude_temp` read from your own config, and
+with Klipper not ready. Each of those is a greyed-out button with the reason
+written under it, not an error after the click.
+**Cameras** — 2×2 quadrant with controls and a thumbnail strip. A camera bolted
+on sideways can be **rotated per printer** — 90°, 180° or 270°, set in Settings
+and shown in the preview before you save. The turn happens in the browser as it
+draws, so it costs nothing and no frame is re-encoded; the flip side is that it
+applies where this app draws — the JPEG stored with an alert, and the one sent
+to Telegram, stay as the camera sent them.
 **Files** — G-code library **grouped by printer**, so it is obvious which machine
 already holds a file and which one will print it. Queueing from a group sends
 the job to that group's printer; the selector at the top can override this to
