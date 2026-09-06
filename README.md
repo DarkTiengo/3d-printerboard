@@ -123,12 +123,20 @@ the plate geometry is heavier than the whole snapshot and never changes mid-prin
 The name that goes back into the G-code is always the one the printer reported,
 matched against its own list — never a string from the browser.
 Below the jog pad there is an **extruder control**: push or pull 1, 5, 10 or
-50 mm of filament at a fixed 5 mm/s. It refuses in the three cases where it
+50 mm of filament, at 1, 2, 5 or 10 mm/s. It refuses in the three cases where it
 would do damage instead of work — mid-print (a `G1 E` from the panel lands in
 the middle of the file and ruins the part; pause first, which is when you change
 filament anyway), below the `min_extrude_temp` read from your own config, and
 with Klipper not ready. Each of those is a greyed-out button with the reason
 written under it, not an error after the click.
+Next to it, **load and unload filament** call your machine's own
+`LOAD_FILAMENT` / `UNLOAD_FILAMENT` macro (`FILAMENT_LOAD` / `FILAMENT_UNLOAD`
+also recognised), because bowden length, pre-heating and tip forming live in
+your `printer.cfg` and cannot be guessed from here — 80 mm that loads a direct
+drive does nothing on a 450 mm bowden. A machine without the macro shows the
+button greyed out saying which one is missing, rather than inventing a length.
+Those two are dropped from the macro grid below, so they don't take two of its
+eight slots twice over.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip. A camera bolted
 on sideways can be **rotated per printer** — 90°, 180° or 270°, set in Settings
 and shown in the preview before you save. The turn happens in the browser as it

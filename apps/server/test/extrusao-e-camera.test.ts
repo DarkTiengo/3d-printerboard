@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { PrinterConfig } from '@3dfarm/shared';
-import { EXTRUSAO_MAX_MM, EXTRUSAO_MM_S, rotacaoValida, ROTACOES } from '@3dfarm/shared';
+import {
+  acharMacro,
+  EXTRUSAO_MAX_MM,
+  EXTRUSAO_MAX_MM_S,
+  EXTRUSAO_MM_S_PADRAO,
+  EXTRUSAO_VELOCIDADES,
+  MACROS_CARREGAR,
+  MACROS_DESCARREGAR,
+  rotacaoValida,
+  ROTACOES
+} from '@3dfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from '../src/moonraker/client.js';
 import { normalizar } from '../src/moonraker/normalize.js';
 import { criarClienteMock } from '../src/moonraker/mock.js';
@@ -42,7 +52,7 @@ describe('comando de extrusão', () => {
     const enviados: string[] = [];
     cliente.gcode = async (script: string) => void enviados.push(script);
 
-    await cliente.extrudar(10, EXTRUSAO_MM_S);
+    await cliente.extrudar(10, EXTRUSAO_MM_S_PADRAO);
 
     expect(enviados[0].split('\n')).toEqual([
       'SAVE_GCODE_STATE NAME=extrusao_painel',
@@ -64,6 +74,40 @@ describe('comando de extrusão', () => {
 
   it('o teto de um clique cabe no caminho do acoplador até o bico', () => {
     expect(EXTRUSAO_MAX_MM).toBeGreaterThanOrEqual(100);
+  });
+
+  it('toda velocidade oferecida na tela passa pelo teto do servidor', () => {
+    expect(EXTRUSAO_VELOCIDADES).toContain(EXTRUSAO_MM_S_PADRAO);
+    for (const v of EXTRUSAO_VELOCIDADES) {
+      expect(v).toBeGreaterThan(0);
+      expect(v).toBeLessThanOrEqual(EXTRUSAO_MAX_MM_S);
+    }
+  });
+});
+
+describe('macros de troca de filamento', () => {
+  it('acha a macro da máquina e devolve o nome que ela reportou', () => {
+    expect(acharMacro(['HOME_ALL', 'LOAD_FILAMENT'], MACROS_CARREGAR)).toBe('LOAD_FILAMENT');
+    expect(acharMacro(['Unload_Filament'], MACROS_DESCARREGAR)).toBe('Unload_Filament');
+  });
+
+  it('aceita o outro nome que as configs por aí usam', () => {
+    expect(acharMacro(['FILAMENT_LOAD'], MACROS_CARREGAR)).toBe('FILAMENT_LOAD');
+  });
+
+  it('respeita a ordem: o nome mais comum ganha quando a máquina tem os dois', () => {
+    expect(acharMacro(['FILAMENT_LOAD', 'LOAD_FILAMENT'], MACROS_CARREGAR)).toBe('LOAD_FILAMENT');
+  });
+
+  it('é null onde a macro não existe — o botão diz qual falta, não inventa uma', () => {
+    expect(acharMacro(['HOME_ALL', 'PURGE_LINE'], MACROS_CARREGAR)).toBeNull();
+    expect(acharMacro([], MACROS_DESCARREGAR)).toBeNull();
+  });
+
+  it('o simulador tem as duas, senão os botões nunca seriam vistos funcionando', () => {
+    const macros = criarClienteMock(cfg).getEstado().macros;
+    expect(acharMacro(macros, MACROS_CARREGAR)).toBe('LOAD_FILAMENT');
+    expect(acharMacro(macros, MACROS_DESCARREGAR)).toBe('UNLOAD_FILAMENT');
   });
 });
 

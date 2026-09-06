@@ -112,8 +112,9 @@ export const api = {
   cancelar: (id: string) => post<{ ok: true }>(`/api/printers/${id}/cancel`),
   jog: (id: string, eixo: 'X' | 'Y' | 'Z', passo: number) => post<{ ok: true }>(`/api/printers/${id}/jog`, { eixo, passo }),
   home: (id: string) => post<{ ok: true }>(`/api/printers/${id}/home`),
-  /** Filamento à mão: mm positivo empurra, negativo retrai. A velocidade é do servidor. */
-  extrudar: (id: string, mm: number) => post<{ ok: true }>(`/api/printers/${id}/extrude`, { mm }),
+  /** Filamento à mão: mm positivo empurra, negativo retrai; mm/s tem teto no servidor. */
+  extrudar: (id: string, mm: number, mmPorSegundo: number) =>
+    post<{ ok: true }>(`/api/printers/${id}/extrude`, { mm, mmPorSegundo }),
   // `chave` é a do Temperatura que veio no snapshot; alvo em °C, 0 desliga
   definirAlvo: (id: string, chave: string, alvo: number) =>
     post<{ ok: true }>(`/api/printers/${id}/heater`, { chave, alvo }),

@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import {
   EXTRUSAO_MAX_MM,
-  EXTRUSAO_MM_S,
+  EXTRUSAO_MAX_MM_S,
+  EXTRUSAO_MM_S_PADRAO,
   rotacaoValida,
   type ExtrusaoPayload,
   type GcodePayload,
@@ -139,6 +140,17 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       if (!Number.isFinite(mm) || mm === 0 || Math.abs(mm) > EXTRUSAO_MAX_MM) {
         return reply.code(400).send({ erro: `quantidade inválida (até ${EXTRUSAO_MAX_MM} mm por vez)` });
       }
+
+      /*
+       * A velocidade é escolhida na tela, então tem teto aqui: acima dele a
+       * engrenagem patina no filamento antes de o bico derreter, e o que sai é
+       * ranhura, não filamento. Sem pedido, o padrão.
+       */
+      const pedida = req.body?.mmPorSegundo;
+      const mmPorSegundo = pedida === undefined ? EXTRUSAO_MM_S_PADRAO : pedida;
+      if (!Number.isFinite(mmPorSegundo) || mmPorSegundo <= 0 || mmPorSegundo > EXTRUSAO_MAX_MM_S) {
+        return reply.code(400).send({ erro: `velocidade inválida (até ${EXTRUSAO_MAX_MM_S} mm/s)` });
+      }
       if (printer.klippy !== 'ready') return reply.code(409).send({ erro: 'o Klipper não está pronto' });
       if (printer.status === 'imprimindo') {
         return reply.code(409).send({ erro: 'pause a impressão antes de extrudar' });
@@ -150,8 +162,11 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        await cliente.extrudar(mm, EXTRUSAO_MM_S);
-        logger.info({ printer: req.params.id, por: req.sessao!.usuario, mm }, 'extrusão manual');
+        await cliente.extrudar(mm, mmPorSegundo);
+        logger.info(
+          { printer: req.params.id, por: req.sessao!.usuario, mm, mmPorSegundo },
+          'extrusão manual'
+        );
         return { ok: true };
       } catch (err) {
         return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao extrudar' });

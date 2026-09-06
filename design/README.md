@@ -94,6 +94,7 @@ Em React usar `lucide-react`. Mapa dos ícones usados:
 | Jog X/Y/Z | `arrow-up`, `arrow-down`, `arrow-left`, `arrow-right`, `move-vertical` |
 | Home | `house` |
 | Extrudar / retrair | `arrow-down-to-line` / `arrow-up-from-line` |
+| Carregar / descarregar filamento | `download` / `upload` |
 | Rotação da câmera | `rotate-cw` |
 | Macro | `zap` |
 | Backup agora / restaurar | `download` / `upload` |
@@ -179,10 +180,14 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
        No cabeçalho da seção, à direita, um botão `power` desliga todos os aquecedores.
     5. Cabeça de impressão: jog pad 3×3 (38×32px, raio 8px, borda 1px) com X±, Y±, Z± e home,
        seletor de passo (0.1 / 1 / 10 / 100 — ativo em pílula vermelha) e posição atual em mono.
-    6. Extrusora: as mesmas teclas do jog (38×32px) para retrair e extrudar, a velocidade fixa
-       em mono ao lado, e o seletor de quantidade (1 / 5 / 10 / 50 mm) na mesma pílula do passo.
+    6. Extrusora: as mesmas teclas do jog (38×32px) para retrair e extrudar, e dois seletores
+       lado a lado na mesma pílula do passo — quantidade (1 / 5 / 10 / 50 mm) e velocidade
+       (1 / 2 / 5 / 10 mm/s). Embaixo, duas pílulas largas de carregar e descarregar filamento,
+       com ícone `download` / `upload`, que chamam a macro da própria máquina — apagadas, com o
+       nome da macro que falta no tooltip, onde ela não existe.
        Bloqueada com a impressão andando, com o bico abaixo do `min_extrude_temp` ou com o
        Klipper fora de 'ready' — sempre com o motivo escrito embaixo, em `--color-neutral-500`.
+       A troca de filamento não trava com o bico frio: essas macros costumam começar aquecendo.
     7. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.
 
 **Regras dos controles:** *Pausar* habilitado quando imprimindo ou em atenção; *Continuar* apenas

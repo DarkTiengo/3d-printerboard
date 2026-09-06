@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { EXTRUSAO_MM_S_PADRAO } from '@3dfarm/shared';
 
 export type Tela = 'dash' | 'cams' | 'files' | 'backup' | 'alerts' | 'config';
 
@@ -14,6 +15,8 @@ type UiState = {
   passo: string;
   /** quanto filamento cada clique da extrusora move, em mm */
   passoExtrusao: number;
+  /** com que rapidez ele move, em mm/s */
+  velocidadeExtrusao: number;
 
   irPara: (tela: Tela) => void;
   selecionar: (id: string | null) => void;
@@ -21,6 +24,7 @@ type UiState = {
   abrirAlerta: (id: number | null) => void;
   definirPasso: (p: string) => void;
   definirPassoExtrusao: (mm: number) => void;
+  definirVelocidadeExtrusao: (mms: number) => void;
   /** vem da tela de Alertas: "abrir impressora" leva ao painel já selecionado */
   abrirImpressora: (id: string) => void;
 };
@@ -32,6 +36,7 @@ export const useUi = create<UiState>((set) => ({
   alertaSel: null,
   passo: '1',
   passoExtrusao: 10,
+  velocidadeExtrusao: EXTRUSAO_MM_S_PADRAO,
 
   irPara: (tela) => set({ tela }),
   selecionar: (sel) => set({ sel }),
@@ -39,5 +44,6 @@ export const useUi = create<UiState>((set) => ({
   abrirAlerta: (alertaSel) => set({ alertaSel }),
   definirPasso: (passo) => set({ passo }),
   definirPassoExtrusao: (passoExtrusao) => set({ passoExtrusao }),
+  definirVelocidadeExtrusao: (velocidadeExtrusao) => set({ velocidadeExtrusao }),
   abrirImpressora: (id) => set({ tela: 'dash', sel: id })
 }));

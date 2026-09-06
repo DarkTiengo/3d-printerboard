@@ -1,4 +1,5 @@
 import { Zap } from 'lucide-react';
+import { MACROS_CARREGAR, MACROS_DESCARREGAR } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { useT } from '../i18n';
 
@@ -13,13 +14,18 @@ export function MacroGrid({
   desabilitado: boolean;
 }) {
   const t = useT();
-  if (macros.length === 0) return null;
+
+  /* Carregar e descarregar filamento têm lugar próprio, na extrusora, com
+     rótulo e ícone. Repeti-las aqui gastaria duas das oito vagas da grade. */
+  const naTroca = new Set([...MACROS_CARREGAR, ...MACROS_DESCARREGAR]);
+  const lista = macros.filter((m) => !naTroca.has(m.toUpperCase()));
+  if (lista.length === 0) return null;
 
   return (
     <section style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div className="mono">{t.impressora.macros}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-        {macros.slice(0, 8).map((m) => (
+        {lista.slice(0, 8).map((m) => (
           <button
             key={m}
             type="button"

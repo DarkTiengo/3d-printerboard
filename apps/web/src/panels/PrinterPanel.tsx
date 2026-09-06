@@ -217,6 +217,7 @@ export function PrinterPanel({
         <Extrusora
           printerId={printer.id}
           temperaturas={printer.temperaturas}
+          macros={printer.macros}
           minExtrusao={printer.minExtrusao}
           imprimindo={printer.status === 'imprimindo'}
           desabilitado={!podeControlar || printer.klippy !== 'ready'}

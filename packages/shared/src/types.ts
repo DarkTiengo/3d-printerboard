@@ -480,21 +480,56 @@ export type JogPayload = { eixo: 'X' | 'Y' | 'Z'; passo: number };
 /** `chave` é a do `Temperatura` correspondente; `alvo` em °C, 0 desliga. */
 export type HeaterPayload = { chave: string; alvo: number };
 export type GcodePayload = { script: string };
-/** Milímetros de filamento: positivo empurra para o bico, negativo recolhe. */
-export type ExtrusaoPayload = { mm: number };
+/**
+ * Milímetros de filamento: positivo empurra para o bico, negativo recolhe.
+ * Sem `mmPorSegundo`, vale o padrão — é o servidor que decide, não o pedido.
+ */
+export type ExtrusaoPayload = { mm: number; mmPorSegundo?: number };
 
 /**
  * Velocidade da extrusão manual, em mm de filamento por segundo.
  *
- * Fixa, e conservadora: 5 mm/s é o que passa por qualquer bico de 0,4 sem
- * forçar a engrenagem, inclusive com filamento mole. Quem quer purgar rápido
- * tem a macro. É o servidor que a aplica — a tela só a mostra, para a pessoa
- * saber quanto tempo os 50 mm vão levar.
+ * 5 mm/s é o padrão porque passa por qualquer bico de 0,4 sem forçar a
+ * engrenagem, inclusive com filamento mole. 1 e 2 servem para acertar a
+ * primeira camada e para ver a cor virar sem desperdiçar; 10 é purga.
  */
-export const EXTRUSAO_MM_S = 5;
+export const EXTRUSAO_MM_S_PADRAO = 5;
+
+export const EXTRUSAO_VELOCIDADES = [1, 2, 5, 10];
+
+/**
+ * Teto de velocidade. Acima disso a engrenagem começa a patinar no filamento
+ * antes de o bico dar conta de derreter, e o que se ganha é ranhura no
+ * filamento — não velocidade.
+ */
+export const EXTRUSAO_MAX_MM_S = 25;
 
 /** Teto de um clique. 100 mm é mais que o caminho do acoplador até o bico. */
 export const EXTRUSAO_MAX_MM = 100;
+
+/**
+ * As macros de troca de filamento, pelos nomes que as configs por aí usam.
+ *
+ * Carregar filamento não é "extrudar bastante": depende do comprimento do
+ * bowden, de aquecer antes, de formar a ponta ao tirar. Quem sabe disso é o
+ * printer.cfg da máquina, não este app — então os botões chamam a macro da
+ * própria impressora e, onde ela não existe, dizem isso em vez de inventar um
+ * procedimento com um comprimento chutado.
+ */
+export const MACROS_CARREGAR = ['LOAD_FILAMENT', 'FILAMENT_LOAD'];
+export const MACROS_DESCARREGAR = ['UNLOAD_FILAMENT', 'FILAMENT_UNLOAD'];
+
+/**
+ * A primeira das `candidatas` que a impressora de fato reporta, com o nome
+ * exato que ela reportou — é ele que volta para o G-code.
+ */
+export function acharMacro(macros: string[], candidatas: string[]): string | null {
+  for (const nome of candidatas) {
+    const achada = macros.find((m) => m.toUpperCase() === nome);
+    if (achada) return achada;
+  }
+  return null;
+}
 export type LoginPayload = { usuario: string; senha: string; lembrar: boolean };
 export type EnqueuePayload = { arquivo: string; destino: string | null };
 export type RestorePayload = { snapshotId: number; destinoPrinterId: string };
