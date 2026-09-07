@@ -34,6 +34,22 @@ export function rotuloStatus(status: Status, t: Dicionario): string {
   }
 }
 
+/**
+ * O rótulo da máquina: o status quando ela está no ar, e o motivo de não estar
+ * quando não está.
+ *
+ * "OFFLINE" e "DESLIGADA" são estados diferentes para quem olha o painel: um
+ * pede que alguém vá ver o que houve, o outro é o resultado esperado de alguém
+ * ter desligado a máquina. Como a diferença aparece em quatro telas, o texto
+ * sai de um lugar só.
+ */
+export function rotuloDaMaquina(printer: Printer, t: Dicionario): string {
+  if (printer.online) return rotuloStatus(printer.status, t);
+  if (printer.desligamento === 'desligada') return t.status.desligada;
+  if (printer.desligamento === 'reiniciando') return t.status.reiniciando;
+  return t.status.offline;
+}
+
 /** Cor do ponto de status. Nunca é o único sinal — sempre acompanha o texto. */
 export function corDoPonto(status: Status, online = true): string {
   if (!online) return 'var(--color-neutral-700)';
@@ -56,7 +72,7 @@ export function controlesHabilitados(status: Status): { pausar: boolean; continu
  * honesto é repetir o estado da máquina.
  */
 export function rotuloRestante(printer: Printer, t: Dicionario, f: Formatador): string {
-  if (!printer.online) return t.status.offline.toLowerCase();
+  if (!printer.online) return rotuloDaMaquina(printer, t).toLowerCase();
   if (printer.status === 'imprimindo') return f.duracao(printer.restanteSegundos);
   return rotuloStatus(printer.status, t).toLowerCase();
 }

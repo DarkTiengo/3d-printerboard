@@ -23,6 +23,8 @@ export const it: Dicionario = {
     cancelada: 'ANNULLATA',
     ociosa: 'INATTIVA',
     atencao: 'ATTENZIONE',
+    desligada: 'SPENTA',
+    reiniciando: 'RIAVVIO',
     offline: 'NON IN LINEA'
   },
 
@@ -305,6 +307,7 @@ export const it: Dicionario = {
       klipper_parado: 'Klipper fermo',
       erro_impressao: 'Stampa interrotta da un errore',
       impressora_offline: 'Stampante irraggiungibile',
+      impressora_desligada: 'Stampante spenta',
       impressao_concluida: 'Stampa completata',
       impressao_pausada: 'Stampa in pausa',
       filamento_acabando: 'Filamento in esaurimento',

@@ -236,6 +236,11 @@ A severidade **crítica** divide o vermelho vivo com "alta" de propósito — o 
 estrutura, não matiz, para o sinal mais forte da tela não depender de distinguir dois vermelhos:
 barra de 4px `--color-accent` na borda esquerda da linha, fundo `--color-accent-900` quando não
 selecionada, tag `CRÍTICO` em mono 9px sobre `--color-accent`, e faixa cheia no topo do detalhe.
+Máquina desligada de propósito não é máquina fora do ar: o cartão e o painel trocam `OFFLINE` por
+`DESLIGADA` (ou `REINICIANDO`, enquanto o reinício está dentro do prazo), e o que entra na lista é um
+aviso de severidade baixa — ponto `--color-neutral-600`, sem barra e sem tag —, não o alerta em
+vermelho. Voltar a ligar fecha o aviso sozinho.
+
 A lista vem ordenada por gravidade e, dentro dela, pelo mais recente. Fora da tela de Alertas, a
 barra superior mostra um contador de críticos em vermelho cheio que leva direto à lista. Direita: metadados em mono, título 28px/800,
 descrição 14px `--color-neutral-300` (máx. 520px, `text-wrap: pretty`), frame 16:9 do momento do alerta

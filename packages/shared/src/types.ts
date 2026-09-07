@@ -14,6 +14,17 @@ export type Status = 'imprimindo' | 'pausada' | 'cancelada' | 'ociosa' | 'atenç
  */
 export type EstadoKlippy = 'ready' | 'startup' | 'shutdown' | 'error' | 'disconnected';
 
+/**
+ * Por que a máquina não está no ar — quando se sabe.
+ *
+ * Sumir e ser desligada são a mesma coisa do lado de fora: o socket cai e não
+ * volta. A diferença é se alguém quis. 'desligada' é o desligamento a pedido —
+ * pelo botão daqui ou por qualquer caminho em que o outro lado se despediu
+ * antes de cair. 'reiniciando' é a mesma coisa com volta esperada. null é o
+ * caso sem explicação, que é o que merece alarme.
+ */
+export type Desligamento = 'desligada' | 'reiniciando' | null;
+
 /** Impressora normalizada, do jeito que a UI consome. */
 export type Printer = {
   id: string; // 'P01'
@@ -34,6 +45,12 @@ export type Printer = {
   concluiuComSucesso: boolean;
   /** false quando o WebSocket do Moonraker está caído ou o Klipper não respondeu. */
   online: boolean;
+  /**
+   * A explicação para `online: false`, quando há uma. É o que separa "foi
+   * desligada" de "sumiu": a primeira vira um aviso discreto e um rótulo na
+   * tela, a segunda continua sendo alerta. Sempre null com a máquina no ar.
+   */
+  desligamento: Desligamento;
   /**
    * Estado do firmware. Fora de 'ready' a máquina não aceita comandos e os
    * outros campos são o último valor conhecido, não o valor de agora.
@@ -353,6 +370,9 @@ export type NotificacaoConfig = {
 export const CODIGOS_DE_ALERTA: { codigo: string; sev: Severidade }[] = [
   { codigo: 'klipper_parado', sev: 'critica' },
   { codigo: 'impressora_offline', sev: 'critica' },
+  /* Desligamento a pedido: fica de fora do padrão de propósito — quem desligou
+     a máquina não precisa ser avisado de que ela desligou. */
+  { codigo: 'impressora_desligada', sev: 'baixa' },
   { codigo: 'erro_impressao', sev: 'alta' },
   { codigo: 'backup_falhou', sev: 'alta' },
   { codigo: 'impressao_pausada', sev: 'media' },

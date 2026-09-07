@@ -21,6 +21,8 @@ export const pt = {
     cancelada: 'CANCELADA',
     ociosa: 'OCIOSA',
     atencao: 'ATENÇÃO',
+    desligada: 'DESLIGADA',
+    reiniciando: 'REINICIANDO',
     offline: 'OFFLINE'
   },
 
@@ -305,6 +307,7 @@ export const pt = {
       klipper_parado: 'Klipper parado',
       erro_impressao: 'Impressão interrompida por erro',
       impressora_offline: 'Impressora fora do ar',
+      impressora_desligada: 'Impressora desligada',
       impressao_concluida: 'Impressão concluída',
       impressao_pausada: 'Impressão pausada',
       filamento_acabando: 'Filamento acabando',

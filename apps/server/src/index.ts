@@ -7,7 +7,13 @@ import { farm } from './services/farm.js';
 import { cameras } from './services/cameras.js';
 import { criarApp } from './app.js';
 import { hub, ligarFarmAoHub } from './routes/stream.js';
-import { ligarGeradorDeAlertas, aoCriarAlerta, criarAlerta, podarFrames } from './services/alerts.js';
+import {
+  ligarGeradorDeAlertas,
+  aoCriarAlerta,
+  criarAlerta,
+  desligadaDeProposito,
+  podarFrames
+} from './services/alerts.js';
 import { ligarMotorDaFila, aoMudarFila, listarFila } from './services/queue.js';
 import { aoMudarBackup, cardsDeBackup, resumoDeBackup } from './services/backup.js';
 import { ligarAgendaDeBackup, rodarCicloCompleto } from './services/backup-agenda.js';
@@ -61,6 +67,8 @@ async function main(): Promise<void> {
   // câmera que parou de mandar quadro vira alerta de severidade média
   setInterval(() => {
     for (const id of cameras.verificarSilenciosas()) {
+      // máquina desligada de propósito leva a câmera junto — não é notícia
+      if (desligadaDeProposito(id)) continue;
       void criarAlerta({
         printerId: id,
         printerNome: farmPrinterNome(id),

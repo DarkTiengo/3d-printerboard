@@ -165,6 +165,9 @@ class MockClient extends MoonrakerClient {
       // as seções vêm em minúsculas, como o Klipper devolve em configfile.settings
       // o piso da extrusora: no mock, o padrão do Klipper
       minExtrusao: 170,
+      /* quem marca é a rota de energia, na classe base — aqui só se repassa,
+         porque este getEstado monta o objeto do zero em vez de herdá-lo */
+      desligamento: super.getEstado().desligamento,
       limites: {
         extruder: { min: 0, max: 300 },
         heater_bed: { min: 0, max: 120 },
@@ -381,6 +384,9 @@ class MockClient extends MoonrakerClient {
     const volta = setTimeout(() => {
       this.ligada = true;
       this.klippy = 'ready';
+      // voltou: a ausência deixa de ter o que explicar, e o prazo do reinício
+      // não precisa mais correr
+      this.limparDesligamento();
       this.emitir();
       logger.info(`[mock ${this.id}] host de volta`);
     }, 20_000);

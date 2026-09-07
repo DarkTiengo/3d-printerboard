@@ -3,7 +3,7 @@ import type { Printer } from '@3dfarm/shared';
 import { CameraFeed } from './CameraFeed';
 import { ProgressBar } from './ProgressBar';
 import { Ponto } from './Tag';
-import { corDoPonto, rotuloStatus } from '../lib/status';
+import { corDoPonto, rotuloDaMaquina, rotuloStatus } from '../lib/status';
 import { useT } from '../i18n';
 import { IconButton } from './IconButton';
 
@@ -121,7 +121,7 @@ export function CameraTile({
               color: 'var(--color-neutral-300)'
             }}
           >
-            {printer.online ? `${printer.pct}%` : t.status.offline}
+            {printer.online ? `${printer.pct}%` : rotuloDaMaquina(printer, t)}
           </span>
         </div>
         <div style={{ marginTop: 7 }}>

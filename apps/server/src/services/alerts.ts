@@ -225,6 +225,46 @@ const nomeCurto = (p: Printer) => p.nome;
  */
 const klipperCaido = (p: Printer) => p.online && p.klippy !== 'ready';
 
+/**
+ * Quanto se espera antes de gritar que o Klipper caiu, quando o motivo é o
+ * Moonraker ter perdido a conexão com ele.
+ *
+ * Esse estado é ambíguo. Ou o processo do Klipper morreu — e aí o alerta
+ * crítico está certo —, ou a máquina inteira está desligando e o Klipper foi só
+ * o primeiro serviço a parar. Os dois começam idênticos e se separam segundos
+ * depois, quando o host some junto. Esperar é o que evita o alarme crítico no
+ * meio de um desligamento normal, feito pelo Mainsail ou por um `poweroff` no
+ * terminal — caminhos que não passam por aqui e não têm como avisar antes.
+ *
+ * Um Klipper que caiu de verdade deixa o host no ar, e o alerta sai igual —
+ * dez segundos mais tarde, o que não muda nada para quem vai até a máquina.
+ */
+const ESPERA_KLIPPY_MS = 10_000;
+
+/** Um alerta de Klipper esperando confirmação por impressora. */
+const klippyPendente = new Map<string, NodeJS.Timeout>();
+
+/**
+ * A máquina foi desligada de propósito?
+ *
+ * Vale para o que está pendurado nela: a câmera do mesmo host cai junto, e um
+ * alerta de câmera aí não conta nada novo — a máquina foi desligada, o resto é
+ * consequência. Quem pergunta são os alertas de câmera, que nascem fora do
+ * gerador e não veem a transição da impressora.
+ */
+export function desligadaDeProposito(printerId: string): boolean {
+  return !!farm.printer(printerId)?.desligamento;
+}
+
+/**
+ * Fora do ar e sem explicação — o caso que merece alarme.
+ *
+ * Desligar uma máquina não é ela sumir: por fora as duas coisas são o mesmo
+ * socket que cai, mas uma foi decidida por alguém. `desligamento` carrega essa
+ * diferença, e é ela que separa o alerta do aviso.
+ */
+const sumiu = (p: Printer) => !p.online && !p.desligamento;
+
 /** O motivo do Klipper, ou a melhor explicação que temos sem ele. */
 function motivoDaParada(p: Printer): string {
   if (p.klippy === 'disconnected') {
@@ -233,6 +273,48 @@ function motivoDaParada(p: Printer): string {
   // é o texto cru do Klipper, em inglês; traduzi-lo esconderia o termo que a
   // pessoa vai jogar no buscador ou colar no fórum
   return p.mensagemKlippy ?? 'O Klipper parou sem informar o motivo.';
+}
+
+function alertaDeKlipperParado(p: Printer): Promise<Alert | null> {
+  return criarAlerta({
+    printerId: p.id,
+    printerNome: nomeCurto(p),
+    sev: 'critica',
+    codigo: 'klipper_parado',
+    titulo: 'Klipper parado',
+    detalhe: `${motivoDaParada(p)} ${
+      p.status === 'atenção'
+        ? `A impressão de ${p.job} foi interrompida na camada ${p.camada}.`
+        : 'Não havia impressão em andamento.'
+    } A máquina não aceita comandos até um FIRMWARE_RESTART.`,
+    frameLabel: `CAM ${p.id}`,
+    dedupeKey: `klippy:${p.id}`,
+    capturarFrame: true
+  });
+}
+
+/**
+ * Espera para ver se o Klipper caiu sozinho ou levou o host junto.
+ *
+ * Relê o estado no fim da espera em vez de guardar o de agora: o que decide é
+ * como a máquina está quando o alerta sairia. Sumiu, foi desligamento e quem
+ * fala é o outro alerta; continua no ar com o Klipper fora, era queda mesmo.
+ */
+function confirmarKlipperParado(printerId: string): void {
+  if (klippyPendente.has(printerId)) return;
+  const timer = setTimeout(() => {
+    klippyPendente.delete(printerId);
+    const agora = farm.printer(printerId);
+    if (agora && klipperCaido(agora) && !agora.desligamento) void alertaDeKlipperParado(agora);
+  }, ESPERA_KLIPPY_MS);
+  timer.unref();
+  klippyPendente.set(printerId, timer);
+}
+
+/** Só para os testes: nenhuma espera de Klipper atravessa um caso para o outro. */
+export function _limparEsperas(): void {
+  for (const t of klippyPendente.values()) clearTimeout(t);
+  klippyPendente.clear();
 }
 
 /**
@@ -278,22 +360,11 @@ export function ligarGeradorDeAlertas(): void {
      * app sobe com a impressora já em shutdown, o estado anterior é o inicial
      * (offline), e essa máquina precisa alertar do mesmo jeito.
      */
-    if (klipperCaido(atual) && !klipperCaido(anterior)) {
-      void criarAlerta({
-        printerId: atual.id,
-        printerNome: nomeCurto(atual),
-        sev: 'critica',
-        codigo: 'klipper_parado',
-        titulo: 'Klipper parado',
-        detalhe: `${motivoDaParada(atual)} ${
-          atual.status === 'atenção'
-            ? `A impressão de ${atual.job} foi interrompida na camada ${atual.camada}.`
-            : 'Não havia impressão em andamento.'
-        } A máquina não aceita comandos até um FIRMWARE_RESTART.`,
-        frameLabel: `CAM ${atual.id}`,
-        dedupeKey: `klippy:${atual.id}`,
-        capturarFrame: true
-      });
+    if (klipperCaido(atual) && !klipperCaido(anterior) && !atual.desligamento) {
+      // 'disconnected' pode ser o começo de um desligamento; os outros são
+      // falha de firmware e não esperam nada
+      if (atual.klippy === 'disconnected') confirmarKlipperParado(atual.id);
+      else void alertaDeKlipperParado(atual);
     }
 
     /*
@@ -341,7 +412,44 @@ export function ligarGeradorDeAlertas(): void {
       });
     }
 
-    if (anterior.online && !atual.online) {
+    /*
+     * Desligamento a pedido: aviso, não alarme.
+     *
+     * Fica no histórico e no painel — dá para olhar e ver que a máquina não
+     * está fora do ar, está desligada —, mas nasce em severidade baixa e fora
+     * do conjunto que notifica por padrão: quem desligou a impressora não
+     * precisa receber no celular a notícia de que ela desligou.
+     *
+     * Só o desligamento vira aviso. O reinício não deixa rastro: ele volta em
+     * um minuto, e uma linha no histórico a cada reinício seria ruído — o que
+     * ele faz é adiar o alerta, e se a máquina não voltar no prazo o alerta
+     * sai igual.
+     *
+     * Divide a chave de dedupe com o alerta de sumiço porque é a mesma
+     * pergunta: esta máquina não está aqui. Só há um motivo aberto por vez, e
+     * voltar fecha os dois pelo mesmo caminho.
+     */
+    if (atual.desligamento === 'desligada' && anterior.desligamento !== 'desligada') {
+      void criarAlerta({
+        printerId: atual.id,
+        printerNome: nomeCurto(atual),
+        sev: 'baixa',
+        codigo: 'impressora_desligada',
+        titulo: 'Impressora desligada',
+        detalhe:
+          'A máquina saiu do ar porque alguém a desligou, e não porque caiu. Ela volta ao painel sozinha quando for ligada de novo.',
+        dedupeKey: `offline:${atual.id}`
+      });
+    }
+
+    /*
+     * Sumiço sem explicação.
+     *
+     * A transição é para "fora do ar e sem motivo", e não "estava online e
+     * caiu": assim o reinício que passou da hora — a marca expira e a ausência
+     * fica sem explicação — também alerta, mesmo já estando offline antes.
+     */
+    if (sumiu(atual) && !sumiu(anterior)) {
       // Sumir com uma impressão em curso é crítico: ela segue rodando sem
       // ninguém olhando. Sumir ociosa é sério, mas não urgente.
       const imprimia = anterior.status === 'imprimindo';
@@ -397,6 +505,8 @@ export function ligarGeradorDeAlertas(): void {
   });
 
   cameras.on('offline', (printerId: string, motivo: string) => {
+    // a câmera do host desligado cai junto: é a mesma notícia, contada de novo
+    if (desligadaDeProposito(printerId)) return;
     const p = farm.printer(printerId);
     void criarAlerta({
       printerId,

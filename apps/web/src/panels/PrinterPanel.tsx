@@ -7,7 +7,13 @@ import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';
 import { CameraFeed } from '../components/CameraFeed';
 import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
-import { controlesHabilitados, coresStatus, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
+import {
+  controlesHabilitados,
+  coresStatus,
+  corDoPonto,
+  rotuloDaMaquina,
+  rotuloRestante
+} from '../lib/status';
 import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
 import { usePrinters } from '../store/printers';
@@ -81,7 +87,7 @@ export function PrinterPanel({
           {printer.nome}
         </span>
         <Tag bg={cores.bg} fg={cores.fg} style={{ marginLeft: 'auto' }}>
-          {printer.online ? rotuloStatus(printer.status, t) : t.status.offline}
+          {rotuloDaMaquina(printer, t)}
         </Tag>
         <IconButton
           rotulo={t.impressora.fechar}

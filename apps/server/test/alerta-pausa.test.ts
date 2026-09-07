@@ -91,6 +91,7 @@ function impressora(patch: Partial<Printer> = {}): Printer {
     camada: '84/210',
     status: 'imprimindo',
     online: true,
+    desligamento: null,
     klippy: 'ready',
     mensagemKlippy: null,
     temTaCamera: false,

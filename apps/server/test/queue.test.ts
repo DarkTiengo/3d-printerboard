@@ -68,6 +68,7 @@ function printer(id: string, patch: Partial<Printer> = {}): Printer {
     camada: '—',
     status: 'ociosa',
     online: true,
+    desligamento: null,
     temTaCamera: false,
     pecaAtual: null,
     minExtrusao: null,

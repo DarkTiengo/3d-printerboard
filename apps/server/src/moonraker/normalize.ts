@@ -185,6 +185,14 @@ export function normalizar(cfg: PrinterConfig, bruto: EstadoBruto): Printer {
     camada: camadaDe(bruto),
     status,
     online: bruto.conectado,
+    /*
+     * Vale já com a máquina de pé: entre o pedido de desligamento e o socket
+     * cair passam segundos, e é exatamente neles que o Klipper morre primeiro.
+     * Zerar aqui por estar `conectado` esconderia a explicação bem na hora em
+     * que ela é necessária. Quem apaga a marca é o cliente — ao reconectar, ou
+     * quando o prazo mostra que o desligamento não aconteceu.
+     */
+    desligamento: bruto.desligamento,
     klippy: bruto.klippy,
     mensagemKlippy: bruto.mensagemKlippy,
     temTaCamera: !!cfg.cameraUrl,

@@ -6,7 +6,7 @@ import { pode } from '@3dfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';
-import { corDoPonto } from '../lib/status';
+import { corDoPonto, rotuloDaMaquina } from '../lib/status';
 import { usePrintersVisiveis } from '../store/printers';
 import { useT } from '../i18n';
 
@@ -190,7 +190,7 @@ export function Files({ usuario }: { usuario: User }) {
                 <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15 }}>{printer.nome}</span>
                 <span className="mono">{printer.id}</span>
                 <span className="mono" style={{ marginLeft: 'auto' }}>
-                  {printer.online ? t.arquivos.contagem(doGrupo.length) : t.status.offline}
+                  {printer.online ? t.arquivos.contagem(doGrupo.length) : rotuloDaMaquina(printer, t)}
                 </span>
               </button>
 

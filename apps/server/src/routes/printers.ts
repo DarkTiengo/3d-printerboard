@@ -394,15 +394,17 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
   const energia = {
     reboot: {
       permissao: 'reiniciarMaquina',
+      marca: 'reiniciando',
       executar: (c: MoonrakerClient) => c.reiniciarMaquina()
     },
     shutdown: {
       permissao: 'desligarMaquina',
+      marca: 'desligada',
       executar: (c: MoonrakerClient) => c.desligarMaquina()
     }
   } as const;
 
-  for (const [rota, { permissao, executar }] of Object.entries(energia)) {
+  for (const [rota, { permissao, marca, executar }] of Object.entries(energia)) {
     app.post<{ Params: { id: string } }>(
       `/api/printers/:id/machine/${rota}`,
       {
@@ -412,10 +414,20 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       async (req, reply) => {
         const cliente = farm.clienteVivo(req.params.id);
         if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
+
+        /*
+         * A marca vem antes do comando porque o host cai no meio dele: o socket
+         * fecha na hora e a resposta demora. Marcando depois, o alerta de "fora
+         * do ar" sairia primeiro — que é justamente o que se quer evitar quando
+         * quem desligou a máquina foi alguém aqui.
+         */
+        cliente.marcarDesligamento(marca);
         try {
           await executar(cliente);
         } catch (err) {
-          // recusa do Moonraker: quase sempre container ou sudo faltando
+          // recusa do Moonraker: quase sempre container ou sudo faltando. A
+          // máquina continua de pé, então a ausência marcada não existe
+          cliente.limparDesligamento();
           const motivo = err instanceof Error ? err.message : 'falha no comando';
           logger.warn({ printer: req.params.id, motivo }, `${rota} recusado`);
           return reply.code(502).send({ erro: motivo });

@@ -7,7 +7,7 @@ import { CameraFeed } from '../components/CameraFeed';
 import { useConfirmarCancelamento } from '../components/ConfirmarCancelamento';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';
-import { controlesHabilitados, corDoPonto, rotuloStatus, rotuloRestante } from '../lib/status';
+import { controlesHabilitados, corDoPonto, rotuloDaMaquina, rotuloStatus, rotuloRestante } from '../lib/status';
 import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
 import { api } from '../lib/api';
@@ -179,7 +179,7 @@ function Quadrante({ printer, usuario, aoVivo }: { printer: Printer; usuario: Us
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-neutral-300)' }}>
             {printer.online
               ? `${printer.pct}% · ${rotuloRestante(printer, t, f)}`
-              : `${t.status.offline} · ${rotuloStatus(printer.status, t).toLowerCase()}`}
+              : `${rotuloDaMaquina(printer, t)} · ${rotuloStatus(printer.status, t).toLowerCase()}`}
           </div>
         </div>
 

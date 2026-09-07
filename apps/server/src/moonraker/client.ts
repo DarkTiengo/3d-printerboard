@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { lookupComMdns } from '../lib/mdns.js';
-import type { EstadoKlippy, PrinterConfig, TipoSensor } from '@3dfarm/shared';
+import type { Desligamento, EstadoKlippy, PrinterConfig, TipoSensor } from '@3dfarm/shared';
 
 export type { EstadoKlippy };
 
@@ -115,6 +115,11 @@ export type EstadoBruto = {
    * máquina não informou.
    */
   minExtrusao: number | null;
+  /**
+   * A máquina saiu do ar de propósito — e não sumiu. Vale só enquanto ela está
+   * fora; voltar limpa. Ver `marcarDesligamento`.
+   */
+  desligamento: Desligamento;
   /** Falha de transporte: socket, DNS, timeout. Nada a ver com o Klipper. */
   ultimoErro: string | null;
   /** Motivo do Klipper para não estar 'ready'. Null quando está tudo bem. */
@@ -152,6 +157,35 @@ const RPC_TIMEOUT_MS = 10_000;
  */
 const MAQUINA_TIMEOUT_MS = 3_000;
 
+/**
+ * Quanto tempo um reinício continua sendo um reinício.
+ *
+ * Um host volta em cerca de um minuto. Passado este prazo sem ele, a ausência
+ * deixou de ser a que alguém pediu e volta a ser o que era: uma máquina fora do
+ * ar, com o alerta que isso merece.
+ */
+const GRACA_REINICIO_MS = 5 * 60_000;
+
+/**
+ * Quanto tempo se espera a máquina de fato cair depois de mandar desligar.
+ *
+ * Se ela continua respondendo passado isso, o pedido não pegou — Moonraker sem
+ * permissão, comando engolido — e a marca precisa sair: uma máquina no ar
+ * marcada como desligada calaria os alertas dela para sempre.
+ */
+const GRACA_DESLIGAMENTO_MS = 2 * 60_000;
+
+/**
+ * Códigos de fechamento que valem por despedida.
+ *
+ * 1000 é o fecho normal, 1001 é "estou saindo" — o que um serviço manda ao ser
+ * parado — e 1005 é um frame de close sem código, que ainda é um frame. Fora
+ * daqui ficam o 1006, que o próprio `ws` inventa quando não houve frame nenhum
+ * (cabo arrancado, energia cortada), e os códigos de erro de protocolo e de
+ * política: recusa de autenticação não é desligamento.
+ */
+const FECHOU_DIREITO = new Set([1000, 1001, 1005]);
+
 /** Chamada que não voltou a tempo. Distinta de "voltou com erro". */
 export class TimeoutRpc extends Error {
   constructor(metodo: string) {
@@ -176,6 +210,9 @@ export class MoonrakerClient extends EventEmitter {
   private pendentes = new Map<number, Pendente>();
   private tentativas = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private desligamentoTimer: NodeJS.Timeout | null = null;
+  /** Fomos nós que fechamos, para reconectar noutro endereço. */
+  private trocandoEndereco = false;
   private parado = false;
 
   private estado: EstadoBruto = {
@@ -185,6 +222,7 @@ export class MoonrakerClient extends EventEmitter {
     macros: [],
     limites: {},
     minExtrusao: null,
+    desligamento: null,
     ultimoErro: null,
     mensagemKlippy: null
   };
@@ -208,8 +246,52 @@ export class MoonrakerClient extends EventEmitter {
     const precisaReconectar = cfg.moonrakerUrl !== this.cfg.moonrakerUrl || cfg.apiKey !== this.cfg.apiKey;
     this.cfg = cfg;
     if (precisaReconectar) {
+      // senão o fecho limpo que nós mesmos pedimos passaria por despedida da
+      // máquina, e editar a URL de uma impressora a marcaria como desligada
+      this.trocandoEndereco = true;
       this.ws?.close();
     }
+  }
+
+  /**
+   * Registra que esta ausência foi pedida — o botão de desligar ou o de
+   * reiniciar, aqui do painel.
+   *
+   * Marca-se *antes* de mandar o comando, não depois: o host cai no meio da
+   * chamada com frequência, e a resposta chega segundos depois do socket
+   * fechar. Marcando depois, o alerta de "fora do ar" já teria saído.
+   *
+   * O reinício tem prazo: quem não voltou em `GRACA_REINICIO_MS` deixa de ter
+   * explicação, e o alerta volta a valer.
+   */
+  marcarDesligamento(tipo: Exclude<Desligamento, null>): void {
+    this.limparTimerDeDesligamento();
+    this.definirEstado({ desligamento: tipo });
+
+    /*
+     * Os dois prazos existem pelo motivo oposto. O reinício se desmente quando
+     * a máquina *não* voltou: passou da hora, a ausência já não é a que alguém
+     * pediu. O desligamento se desmente quando ela *continua no ar*: o comando
+     * não pegou, e a marca não pode calar os alertas de uma máquina viva.
+     */
+    const prazo = tipo === 'reiniciando' ? GRACA_REINICIO_MS : GRACA_DESLIGAMENTO_MS;
+    this.desligamentoTimer = setTimeout(() => {
+      this.desligamentoTimer = null;
+      const desmentido = tipo === 'reiniciando' ? !this.estado.conectado : this.estado.conectado;
+      if (desmentido) this.definirEstado({ desligamento: null });
+    }, prazo);
+    this.desligamentoTimer.unref();
+  }
+
+  /** Desfaz a marca — o comando foi recusado, ou a máquina voltou. */
+  limparDesligamento(): void {
+    this.limparTimerDeDesligamento();
+    if (this.estado.desligamento) this.definirEstado({ desligamento: null });
+  }
+
+  private limparTimerDeDesligamento(): void {
+    if (this.desligamentoTimer) clearTimeout(this.desligamentoTimer);
+    this.desligamentoTimer = null;
   }
 
   iniciar(): void {
@@ -219,6 +301,7 @@ export class MoonrakerClient extends EventEmitter {
 
   parar(): void {
     this.parado = true;
+    this.limparTimerDeDesligamento();
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     this.ws?.close();
@@ -256,7 +339,9 @@ export class MoonrakerClient extends EventEmitter {
 
     ws.on('open', () => {
       this.tentativas = 0;
-      this.definirEstado({ conectado: true, ultimoErro: null });
+      // voltou: seja lá o que explicava a ausência, acabou
+      this.limparTimerDeDesligamento();
+      this.definirEstado({ conectado: true, ultimoErro: null, desligamento: null });
       this.emit('log', 'info', `[${this.id}] conectado a ${this.cfg.moonrakerUrl}`);
       void this.aposConectar();
     });
@@ -268,10 +353,28 @@ export class MoonrakerClient extends EventEmitter {
       this.emit('log', 'warn', `[${this.id}] erro no socket: ${err.message}`);
     });
 
-    ws.on('close', () => {
+    /*
+     * O código de fechamento é a única pista que separa "desligaram" de
+     * "sumiu" quando o desligamento não passou por aqui — pelo Mainsail, por um
+     * `sudo poweroff` no terminal, pelo botão da própria máquina. Quem desliga
+     * direito manda um frame de close antes de cair; quem cai não manda nada.
+     * Ver `FECHOU_DIREITO`.
+     *
+     * Não sobrescreve uma marca que já existe: o pedido feito daqui sabe mais
+     * do que o palpite do socket, inclusive a diferença entre desligar e
+     * reiniciar.
+     */
+    ws.on('close', (codigo: number) => {
       if (this.ws === ws) this.ws = null;
       this.rejeitarPendentes(new Error('conexão fechada'));
-      this.definirEstado({ conectado: false, klippy: 'disconnected' });
+      const nosso = this.trocandoEndereco;
+      this.trocandoEndereco = false;
+      const despediu = !this.parado && !nosso && FECHOU_DIREITO.has(codigo) && !this.estado.desligamento;
+      this.definirEstado({
+        conectado: false,
+        klippy: 'disconnected',
+        ...(despediu ? { desligamento: 'desligada' as const } : {})
+      });
       this.agendarReconexao();
     });
   }

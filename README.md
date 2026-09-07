@@ -156,6 +156,22 @@ itself stays in the history, just without the picture.
 Critical ones are pulled to the top and marked out by more than colour: a red
 bar down the side of the row, a `CRITICAL` tag, a banner on the detail pane, and
 a counter in the top bar that jumps straight to the list from any screen.
+**A printer that was switched off is not a printer that vanished.** From the
+outside both look the same — the socket drops and never comes back — so the
+difference is whether anyone asked for it. Shutting down or rebooting from this
+app marks the absence before the command is even sent (the host often dies
+mid-call, and the answer arrives after the socket is already gone); a shutdown
+done elsewhere — Mainsail, `sudo poweroff`, the switch on the machine — is read
+from the WebSocket close code, because a host on its way down says goodbye and a
+yanked cable does not. Either way the card reads `POWERED OFF` instead of
+`OFFLINE`, the alert is a low-severity note that stays out of the default
+Telegram set, and the camera going quiet on the same host stops being news of
+its own. What still alerts, exactly as before: a machine that disappears with no
+explanation, and a reboot that has not come back after five minutes.
+And because a `poweroff` stops Klipper a moment before it stops Moonraker, the
+"Klipper halted" alert waits ten seconds and re-reads the machine before firing:
+if the whole host went away in the meantime it was a shutdown, not a crash. A
+Klipper that really died leaves the host up, and the alert goes out as always.
 **Settings** — printer CRUD.
 
 ### Getting told about it
