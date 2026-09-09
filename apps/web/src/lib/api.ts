@@ -8,6 +8,8 @@ import type {
   BackupResumo,
   BackupSnapshot,
   GcodeFile,
+  HistoricoDeTemperatura,
+  LinhaConsole,
   MesaDePecas,
   NotificacaoConfig,
   NotificacaoPrefs,
@@ -119,6 +121,15 @@ export const api = {
   definirAlvo: (id: string, chave: string, alvo: number) =>
     post<{ ok: true }>(`/api/printers/${id}/heater`, { chave, alvo }),
   desligarAquecedores: (id: string) => post<{ ok: true }>(`/api/printers/${id}/heaters/off`),
+
+  /**
+   * O apanhado do console. Responde com a máquina fora do ar — é justamente aí
+   * que as últimas linhas dela explicam o que houve.
+   */
+  console: (id: string) => get<{ linhas: LinhaConsole[] }>(`/api/printers/${id}/console`),
+  /** O aquecimento dos últimos minutos, direto do histórico do Moonraker. */
+  historicoDeTemperatura: (id: string) =>
+    get<HistoricoDeTemperatura>(`/api/printers/${id}/temperaturas/historico`),
 
   /** O mapa da mesa. Sob demanda: não vem no snapshot, é pesado e não muda. */
   mesaDePecas: (id: string) => get<MesaDePecas>(`/api/printers/${id}/objects`),

@@ -137,6 +137,34 @@ drive does nothing on a 450 mm bowden. A machine without the macro shows the
 button greyed out saying which one is missing, rather than inventing a length.
 Those two are dropped from the macro grid below, so they don't take two of its
 eight slots twice over.
+The same heaters also get a **graph**: ten minutes of curves, the reading solid
+and the target dashed in the same colour. It answers what a column of numbers
+cannot — is it still climbing, did it settle, did it fall on its own. The past
+comes from Moonraker's own `server.temperature_store`, which already keeps a
+point per second per sensor, so nothing is recorded here for the graph to
+exist and restarting this app loses no history; it is fetched once when you
+open the section and from then on the curve advances with the values the live
+snapshot already carries. Only things that heat are drawn: the MCU sitting at
+40 °C on the same axis as a 250 °C nozzle would flatten the two curves you came
+to look at.
+Below the macros there is a **console**: what the machine says, and what you say
+to it. The lines are Klipper's own `gcode_response` — the same source Mainsail's
+console shows — coloured by what Klipper marked them as, with its `!!` errors
+pulled out in red, which is what you are looking for when you open a console at
+all. It reads back **with the printer offline**, on purpose: the last thing a
+machine said is usually the explanation for it going quiet, and needing it
+online to read that would hide the diagnosis exactly when you need it. Typing a
+command needs the same permission as any other control, and what you type — plus
+any macro you click — is echoed above the answer, so the console reads as a
+conversation. The jog pad, the extruder and the temperature targets deliberately
+stay out of it: they are gestures repeated dozens of times in a row, and the
+`SAVE_GCODE_STATE` behind every arrow click would drown what you opened it for.
+Neither the console nor the graph rides in the live snapshot — that object is
+republished whole on every field change, so a log inside it would be re-sent
+four times a second forever. The console is its own stream event, which costs
+nothing while a machine is quiet, and the graph is fetched on demand (~6 KB for
+a machine with four heaters). Both sections fold away from their own header, and
+folded they also stop fetching.
 **Cameras** — 2×2 quadrant with controls and a thumbnail strip. A camera bolted
 on sideways can be **rotated per printer** — 90°, 180° or 270°, set in Settings
 and shown in the preview before you save. The turn happens in the browser as it

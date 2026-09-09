@@ -1,5 +1,15 @@
 import { create } from 'zustand';
-import type { Alert, BackupCard, BackupResumo, Printer, QueueJob, Status, StreamEvent } from '@3dfarm/shared';
+import type {
+  Alert,
+  BackupCard,
+  BackupResumo,
+  LinhaConsole,
+  Printer,
+  QueueJob,
+  Status,
+  StreamEvent
+} from '@3dfarm/shared';
+import { CONSOLE_MAX_LINHAS } from '@3dfarm/shared';
 
 /**
  * Espelho local do estado da fazenda, alimentado pelo SSE.
@@ -24,12 +34,22 @@ type Estado = {
   alertas: Alert[];
   backupResumo: BackupResumo | null;
   backupCards: BackupCard[];
+  /**
+   * As últimas linhas do console de cada impressora, alimentadas pelo SSE.
+   *
+   * Ficam aqui, e não dentro do painel, porque o painel se desmonta a cada
+   * troca de impressora e o console não pode recomeçar do zero toda vez que
+   * alguém olha outra máquina e volta.
+   */
+  consoles: Record<string, LinhaConsole[]>;
   conectado: boolean;
 
   aplicarEvento: (e: StreamEvent) => void;
   definirPrinters: (p: Printer[]) => void;
   definirFila: (f: QueueJob[]) => void;
   definirAlertas: (a: Alert[]) => void;
+  /** O apanhado inicial, buscado quando o console abre. */
+  definirConsole: (id: string, linhas: LinhaConsole[]) => void;
   definirConectado: (c: boolean) => void;
   otimista: (id: string, status: Status) => void;
 };
@@ -41,6 +61,7 @@ export const usePrinters = create<Estado>((set) => ({
   alertas: [],
   backupResumo: null,
   backupCards: [],
+  consoles: {},
   conectado: false,
 
   aplicarEvento: (e) =>
@@ -63,6 +84,8 @@ export const usePrinters = create<Estado>((set) => ({
         }
         case 'backup':
           return { backupResumo: e.resumo, backupCards: e.cards };
+        case 'console':
+          return { consoles: { ...s.consoles, [e.printerId]: emendar(s.consoles[e.printerId], e.linhas) } };
         default:
           return {};
       }
@@ -71,6 +94,13 @@ export const usePrinters = create<Estado>((set) => ({
   definirPrinters: (printers) => set((s) => ({ printers, overrides: limpar(s.overrides, printers) })),
   definirFila: (fila) => set({ fila }),
   definirAlertas: (alertas) => set({ alertas }),
+  definirConsole: (id, linhas) =>
+    /*
+     * O apanhado do servidor manda, mas o que já chegou pelo SSE depois dele
+     * fica: entre o pedido e a resposta a máquina pode ter falado, e essas
+     * linhas — as mais recentes de todas — seriam justamente as perdidas.
+     */
+    set((s) => ({ consoles: { ...s.consoles, [id]: emendar(linhas, s.consoles[id] ?? []) } })),
   definirConectado: (conectado) => set({ conectado }),
 
   otimista: (id, status) =>
@@ -88,6 +118,28 @@ function limpar(overrides: Record<string, Override>, printers: Printer[]): Recor
     out[id] = o;
   }
   return out;
+}
+
+/**
+ * Junta duas listas de console sem repetir e sem passar do teto.
+ *
+ * A chave de igualdade é hora + texto: o Moonraker carimba cada linha, e a
+ * mesma linha pode chegar duas vezes quando o apanhado inicial cruza com o
+ * SSE. Duas mensagens iguais no mesmo milissegundo são a mesma mensagem.
+ */
+function emendar(antigas: LinhaConsole[] | undefined, novas: LinhaConsole[]): LinhaConsole[] {
+  const vistas = new Set((antigas ?? []).map((l) => `${l.em}|${l.texto}`));
+  const juntas = [...(antigas ?? []), ...novas.filter((l) => !vistas.has(`${l.em}|${l.texto}`))];
+  return juntas.length > CONSOLE_MAX_LINHAS ? juntas.slice(-CONSOLE_MAX_LINHAS) : juntas;
+}
+
+/* Referência estável: um `[]` novo a cada render faria o zustand achar que o
+   console mudou quatro vezes por segundo, e a lista se redesenharia à toa. */
+const SEM_LINHAS: LinhaConsole[] = [];
+
+/** As linhas de uma impressora — vazio enquanto ela não disse nada. */
+export function useConsole(id: string): LinhaConsole[] {
+  return usePrinters((s) => s.consoles[id]) ?? SEM_LINHAS;
 }
 
 /** Printers com o status otimista já aplicado — é o que as telas consomem. */

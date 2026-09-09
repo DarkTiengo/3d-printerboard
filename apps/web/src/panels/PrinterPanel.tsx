@@ -18,7 +18,9 @@ import { useT } from '../i18n';
 import { useFormato } from '../i18n/formato';
 import { usePrinters } from '../store/printers';
 import { api } from '../lib/api';
+import { Console } from './Console';
 import { Extrusora } from './Extrusora';
+import { GraficoTemperatura } from './GraficoTemperatura';
 import { JogPad } from './JogPad';
 import { TempList } from './TempList';
 import { MacroGrid } from './MacroGrid';
@@ -30,7 +32,7 @@ const secao: React.CSSProperties = { borderTop: '1px solid var(--color-neutral-8
 
 /**
  * Mini painel de controle da impressora selecionada — design/README.md § 2.
- * Seis seções separadas por 1px, de cima para baixo.
+ * Seções separadas por 1px, de cima para baixo.
  */
 export function PrinterPanel({
   printer,
@@ -213,12 +215,21 @@ export function PrinterPanel({
         />
       </div>
 
-      {/* 7. cabeça de impressão */}
+      {/* 7. o mesmo aquecimento, em curva: o que os números não mostram */}
+      <div style={secao}>
+        <GraficoTemperatura
+          printerId={printer.id}
+          temperaturas={printer.temperaturas}
+          online={printer.online}
+        />
+      </div>
+
+      {/* 8. cabeça de impressão */}
       <div style={secao}>
         <JogPad printerId={printer.id} posicao={printer.posicao} desabilitado={!podeControlar} />
       </div>
 
-      {/* 8. extrusora — o mesmo gesto do jog, e o único que exige bico quente */}
+      {/* 9. extrusora — o mesmo gesto do jog, e o único que exige bico quente */}
       <div style={secao}>
         <Extrusora
           printerId={printer.id}
@@ -230,12 +241,17 @@ export function PrinterPanel({
         />
       </div>
 
-      {/* 9. macros */}
+      {/* 10. macros */}
       <div style={secao}>
         <MacroGrid printerId={printer.id} macros={printer.macros} desabilitado={!podeControlar} />
       </div>
 
-      {/* 10. energia do host — por último: tira a máquina do ar */}
+      {/* 11. console — o que a máquina diz, e o que se diz a ela */}
+      <div style={secao}>
+        <Console printerId={printer.id} online={printer.online} podeControlar={podeControlar} />
+      </div>
+
+      {/* 12. energia do host — por último: tira a máquina do ar */}
       <div style={secao}>
         <PowerControls printer={printer} usuario={usuario} />
       </div>

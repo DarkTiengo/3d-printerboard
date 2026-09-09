@@ -492,7 +492,14 @@ export type StreamEvent =
   | { tipo: 'printer'; printer: Printer }
   | { tipo: 'alerta'; alerta: Alert }
   | { tipo: 'fila'; fila: QueueJob[] }
-  | { tipo: 'backup'; resumo: BackupResumo; cards: BackupCard[] };
+  | { tipo: 'backup'; resumo: BackupResumo; cards: BackupCard[] }
+  /*
+   * As linhas novas do console, por impressora. Evento próprio, e não um campo
+   * do `Printer`: aquele objeto é republicado inteiro a cada mudança, e um log
+   * dentro dele seria reenviado a 4 Hz para sempre. Aqui só trafega o que a
+   * máquina acabou de dizer, e o silêncio — que é o caso normal — não custa nada.
+   */
+  | { tipo: 'console'; printerId: string; linhas: LinhaConsole[] };
 
 // ── Payloads de comando ─────────────────────────────────────────────────────
 
@@ -553,3 +560,97 @@ export function acharMacro(macros: string[], candidatas: string[]): string | nul
 export type LoginPayload = { usuario: string; senha: string; lembrar: boolean };
 export type EnqueuePayload = { arquivo: string; destino: string | null };
 export type RestorePayload = { snapshotId: number; destinoPrinterId: string };
+
+// ── Console ─────────────────────────────────────────────────────────────────
+
+/**
+ * Uma linha do console da impressora.
+ *
+ * `comando` é o que saiu daqui — o que alguém digitou ou a macro que clicou.
+ * `resposta` é o que a máquina falou: o `notify_gcode_response` do Moonraker,
+ * que é a mesma fonte que o Mainsail mostra. Os dois juntos, em ordem, é o que
+ * transforma uma lista de mensagens soltas numa conversa que dá para ler.
+ *
+ * `em` é epoch em milissegundos, e não texto ISO, porque a linha é curta e o
+ * console é a única coisa deste app que chega a centenas de itens: são 13
+ * caracteres em vez de 24, e quem formata a hora é o front, no idioma da tela.
+ */
+export type LinhaConsole = {
+  em: number;
+  tipo: 'comando' | 'resposta';
+  texto: string;
+};
+
+/**
+ * Quantas linhas o servidor guarda por impressora, e quantas o navegador
+ * mantém. É memória de diagnóstico, não histórico: o que interessa é o que a
+ * máquina disse antes de parar, e isso cabe em duas centenas de linhas.
+ */
+export const CONSOLE_MAX_LINHAS = 200;
+
+/**
+ * Como pintar a linha.
+ *
+ * O Klipper marca as respostas: `!!` é erro — o que aparece em vermelho no
+ * Mainsail e o que se está procurando quando se abre o console —, `//` é
+ * informação de macro e echo. O resto é resposta comum.
+ */
+export type TomDaLinha = 'comando' | 'erro' | 'aviso' | 'normal';
+
+export function tomDaLinha(linha: LinhaConsole): TomDaLinha {
+  if (linha.tipo === 'comando') return 'comando';
+  const texto = linha.texto.trimStart();
+  if (texto.startsWith('!!')) return 'erro';
+  if (texto.startsWith('//')) return 'aviso';
+  return 'normal';
+}
+
+// ── Histórico de temperatura ────────────────────────────────────────────────
+
+/**
+ * Uma curva do gráfico: o que o sensor leu e, quando ele aquece, o que foi
+ * pedido a ele. Os dois vetores têm o mesmo comprimento e o mesmo eixo de
+ * tempo — o índice i de qualquer série é o mesmo instante.
+ *
+ * `null` num ponto quer dizer que este sensor não existia (ou não era lido)
+ * naquele instante; é o que acontece com um aquecedor que entrou depois.
+ */
+export type SerieDeTemperatura = {
+  /** A mesma `chave` do `Temperatura` do snapshot. */
+  chave: string;
+  rotulo: string | null;
+  tipo: TipoSensor;
+  atuais: (number | null)[];
+  /** null quando o sensor não aceita alvo. */
+  alvos: (number | null)[] | null;
+};
+
+/**
+ * O aquecimento dos últimos minutos, vindo do `server.temperature_store` do
+ * Moonraker — que já guarda 1 ponto por segundo por sensor. Ninguém grava nada
+ * aqui: a série é buscada quando alguém abre o gráfico e, dali em diante, a
+ * tela vai emendando os valores que o SSE já traz.
+ */
+export type HistoricoDeTemperatura = {
+  /** Segundos entre dois pontos vizinhos. */
+  intervalo: number;
+  /** Epoch em ms do último ponto — o "agora" do gráfico. */
+  fim: number;
+  series: SerieDeTemperatura[];
+};
+
+/**
+ * Quanto passado o gráfico mostra, em segundos.
+ *
+ * Dez minutos é o que cobre um aquecimento inteiro do bico e da mesa com folga,
+ * que é o que se quer ver: se a curva subiu, quando estabilizou, e se caiu
+ * sozinha. Mais que isso vira uma linha reta espremida no canto direito.
+ */
+export const HISTORICO_JANELA_S = 600;
+
+/**
+ * Quantos pontos por série viajam pela rede. 150 num gráfico de 320px de
+ * largura já é mais de um ponto por dois pixels — o resto seria detalhe que
+ * nenhuma tela desenha.
+ */
+export const HISTORICO_PONTOS = 150;

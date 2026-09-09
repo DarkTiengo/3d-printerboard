@@ -48,6 +48,23 @@ type PecaMock = { nome: string; centro: [number, number]; contorno: [number, num
 /** Mesa quadrada de 220 mm, que é o tamanho da maioria das máquinas daqui. */
 const MESA_MM = 220;
 
+/** Quantos segundos de passado o simulador inventa — o mesmo que o Moonraker guarda. */
+const HISTORICO_MOCK = 1_200;
+
+/**
+ * Uma curva de aquecimento plausível: sobe do ambiente até o alvo em `subida`
+ * segundos e depois oscila em torno dele, que é o que um PID de verdade faz.
+ * Com alvo zero é só o ambiente respirando.
+ */
+function curvaDeAquecimento(alvo: number, ambiente: number, n: number, subida: number): number[] {
+  return Array.from({ length: n }, (_, i) => {
+    if (alvo <= 0) return Number((ambiente + Math.sin(i / 40) * 0.3).toFixed(1));
+    const p = Math.min(1, i / subida);
+    const oscilacao = p >= 1 ? Math.sin(i / 11) * 0.7 : 0;
+    return Number((ambiente + (alvo - ambiente) * p + oscilacao).toFixed(1));
+  });
+}
+
 /**
  * Um lote de peças iguais espalhado pela mesa, como o fatiador arrumaria:
  * nome com `id:` e o índice da cópia, e um quadrado no lugar de cada uma. A
@@ -100,6 +117,28 @@ export const SEMENTES: Semente[] = [
 
 const MACROS = ['HOME_ALL', 'BED_MESH_CALIBRATE', 'PURGE_LINE', 'PARK_HEAD', 'LOAD_FILAMENT', 'UNLOAD_FILAMENT'];
 
+/** O que o Klipper falaria de volta, para o console do simulador ter conteúdo. */
+const RESPOSTAS_MOCK: Record<string, string> = {
+  M115: '// FIRMWARE_NAME:Klipper FIRMWARE_VERSION:v0.12.0-mock',
+  BED_MESH_CALIBRATE: '// Mesh Bed Leveling Complete',
+  LOAD_FILAMENT: '// Aquecendo o bico e carregando filamento',
+  UNLOAD_FILAMENT: '// Formando a ponta e recolhendo o filamento',
+  PURGE_LINE: '// Purge line done',
+  PARK_HEAD: '// Head parked'
+};
+
+/** Comandos que o simulador entende sem responder nada — como o Klipper. */
+const ACEITOS_MOCK = new Set([
+  'SAVE_GCODE_STATE',
+  'RESTORE_GCODE_STATE',
+  'SET_HEATER_TEMPERATURE',
+  'SET_TEMPERATURE_FAN_TARGET',
+  'TURN_OFF_HEATERS',
+  'EXCLUDE_OBJECT',
+  'FIRMWARE_RESTART',
+  'RESTART'
+]);
+
 const ARQUIVOS_FALSOS = [
   { nome: 'suporte_camera_v3.gcode', tempo: 15000, material: 'PLA', altura: 0.2, filamento: 28000 },
   { nome: 'clipe_cabo_x12.gcode', tempo: 15900, material: 'PETG', altura: 0.24, filamento: 17600 },
@@ -129,6 +168,13 @@ class MockClient extends MoonrakerClient {
   private ligada = true;
   /** Peças já tiradas da impressão por EXCLUDE_OBJECT. */
   private excluidas = new Set<string>();
+  /**
+   * O `temperature_store` falso: um ponto por segundo por aquecedor, do jeito
+   * que o Moonraker guarda. Nasce com passado inventado — um gráfico que só
+   * começa a existir dez minutos depois de subir o simulador não serviria para
+   * ver o gráfico.
+   */
+  private historico = new Map<string, { temperatures: number[]; targets: number[] }>();
 
   constructor(cfg: PrinterConfig, semente: Semente) {
     super(cfg);
@@ -142,9 +188,50 @@ class MockClient extends MoonrakerClient {
       if (semente.fechada) this.camara = { atual: 44.2, alvo: 45 };
       if (semente.exaustao) this.exaustao = { atual: 41.0, alvo: 40 };
     }
+    this.semearHistorico();
+  }
+
+  /** O passado inventado de cada aquecedor, para o gráfico ter o que desenhar. */
+  private semearHistorico(): void {
+    const por = (chave: string, sensor: { atual: number; alvo: number }, ambiente: number, subida: number) => {
+      this.historico.set(chave, {
+        temperatures: curvaDeAquecimento(sensor.alvo, ambiente, HISTORICO_MOCK, subida),
+        targets: Array(HISTORICO_MOCK).fill(sensor.alvo)
+      });
+    };
+    por('extruder', this.bico, 24, 120);
+    por('heater_bed', this.mesa, 23, 420);
+    if (this.semente.fechada) por('heater_generic chamber', this.camara, 24, 900);
+    if (this.semente.exaustao) por('temperature_fan exhaust', this.exaustao, 26, 600);
+  }
+
+  /** Empurra a leitura de agora para o fim de cada série, como o Moonraker faz. */
+  private anotarHistorico(): void {
+    const atuais: [string, { atual: number; alvo: number }][] = [
+      ['extruder', this.bico],
+      ['heater_bed', this.mesa],
+      ...(this.semente.fechada
+        ? [['heater_generic chamber', this.camara] as [string, { atual: number; alvo: number }]]
+        : []),
+      ...(this.semente.exaustao
+        ? [['temperature_fan exhaust', this.exaustao] as [string, { atual: number; alvo: number }]]
+        : [])
+    ];
+    for (const [chave, sensor] of atuais) {
+      const serie = this.historico.get(chave);
+      if (!serie) continue;
+      serie.temperatures.push(Number(sensor.atual.toFixed(1)));
+      serie.targets.push(sensor.alvo);
+      if (serie.temperatures.length > HISTORICO_MOCK) {
+        serie.temperatures.shift();
+        serie.targets.shift();
+      }
+    }
   }
 
   override iniciar(): void {
+    // o cliente de verdade semeia o console no handshake; aqui não há handshake
+    void this.semearConsole();
     this.emitir();
     this.timer = setInterval(() => this.tick(), 1_000);
     this.timer.unref();
@@ -278,6 +365,7 @@ class MockClient extends MoonrakerClient {
         this.mesa.alvo = 0;
       }
     }
+    if (this.ligada) this.anotarHistorico();
     this.emitir();
   }
 
@@ -347,6 +435,7 @@ class MockClient extends MoonrakerClient {
       this.mensagem = null;
       this.semente.estado = 'standby';
     }
+    this.responderNoConsole(script);
     this.emitir();
   }
   /** O nome vem do G-code, que é o que o painel manda pela rota de aquecedor. */
@@ -406,9 +495,49 @@ class MockClient extends MoonrakerClient {
     this.emitir();
   }
 
+  /**
+   * As duas chamadas que o simulador precisa responder de verdade: o histórico
+   * de temperatura, que alimenta o gráfico, e o console guardado, que é o que
+   * a primeira abertura mostra. O resto continua ignorado.
+   */
   override async chamar<T = any>(metodo: string): Promise<T> {
+    if (metodo === 'server.temperature_store') return Object.fromEntries(this.historico) as T;
+    if (metodo === 'server.gcode_store') return { gcode_store: this.consoleGuardado() } as T;
     logger.debug(`[mock ${this.id}] chamada ignorada: ${metodo}`);
     return {} as T;
+  }
+
+  /** O que a máquina teria dito antes de este app subir. */
+  private consoleGuardado(): { message: string; time: number; type: string }[] {
+    const agora = Date.now() / 1000;
+    const linhas: [number, string, string][] = [
+      [-900, 'response', '// Klipper state: Ready'],
+      [-870, 'command', 'BED_MESH_CALIBRATE'],
+      [-840, 'response', '// Mesh Bed Leveling Complete'],
+      ...(this.semente.estado === 'error'
+        ? ([[-120, 'response', '!! Move out of range: 231.400 0.000 5.000 [0.000]']] as [number, string, string][])
+        : [])
+    ];
+    return linhas.map(([dt, type, message]) => ({ message, time: agora + dt, type }));
+  }
+
+  /**
+   * O que o Klipper responderia. Só para script de uma linha: os de várias
+   * foram montados pelo painel — jog, extrusão, alvo de aquecedor — e o
+   * Klipper não fala nada sobre eles, que é justamente por isso que eles não
+   * entram no console.
+   */
+  private responderNoConsole(script: string): void {
+    const comando = script.trim();
+    if (comando.includes('\n')) return;
+    const nome = comando.split(/\s+/)[0].toUpperCase();
+
+    const resposta = RESPOSTAS_MOCK[nome];
+    if (resposta) return this.registrarLinha('resposta', resposta);
+    // o que não é G/M nem comando conhecido: o Klipper recusa com o nome dentro
+    if (!/^[GM]\d/.test(nome) && !MACROS.includes(nome) && !ACEITOS_MOCK.has(nome)) {
+      this.registrarLinha('resposta', `!! Unknown command:"${nome}"`);
+    }
   }
 }
 

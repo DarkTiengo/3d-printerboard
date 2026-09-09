@@ -69,6 +69,20 @@ function criarFormatador(idioma: Idioma) {
     return quando(iso, agora);
   }
 
+  /**
+   * Epoch em ms → '14:32:07'. Com segundos porque é o console: duas linhas do
+   * mesmo minuto são comuns, e a ordem entre elas é o que se está lendo.
+   */
+  function relogio(ms: number): string {
+    if (!Number.isFinite(ms)) return '--:--:--';
+    return new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: doze
+    }).format(new Date(ms));
+  }
+
   /** Bytes com o separador decimal do idioma. */
   function bytes(n: number | null | undefined): string {
     if (n == null || !Number.isFinite(n) || n < 0) return '0 B';
@@ -100,5 +114,5 @@ function criarFormatador(idioma: Idioma) {
     return `${m[2].padStart(2, '0')}:${m[1].padStart(2, '0')}`;
   }
 
-  return { duracao, quando, quandoCurto, bytes, numero, temperatura, horaDoCron, locale };
+  return { duracao, quando, quandoCurto, relogio, bytes, numero, temperatura, horaDoCron, locale };
 }

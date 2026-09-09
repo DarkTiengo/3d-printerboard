@@ -12,7 +12,7 @@ import {
 } from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
 import { nomeDePecaValido, type MoonrakerClient } from '../moonraker/client.js';
-import { mesaDePecas } from '../moonraker/normalize.js';
+import { historicoDeTemperatura, mesaDePecas } from '../moonraker/normalize.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
 import {
   acharPrinter,
@@ -242,6 +242,47 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
   );
 
   /**
+   * O console: o que a máquina disse, e o que foi mandado a ela daqui.
+   *
+   * `farm.cliente` e não `clienteVivo` de propósito — este é o único recurso do
+   * app que vale mais com a impressora fora do ar do que com ela de pé. As
+   * últimas linhas de uma máquina que caiu são a explicação da queda, e exigir
+   * conexão para lê-las seria esconder o diagnóstico exatamente na hora do
+   * diagnóstico.
+   */
+  app.get<{ Params: { id: string } }>(
+    '/api/printers/:id/console',
+    { preHandler: exigirLogin },
+    async (req, reply) => {
+      const cliente = farm.cliente(req.params.id);
+      if (!cliente) return reply.code(404).send({ erro: 'impressora não encontrada' });
+      return { linhas: cliente.linhasDoConsole() };
+    }
+  );
+
+  /**
+   * O aquecimento dos últimos minutos, para o gráfico.
+   *
+   * Vem do `server.temperature_store` do Moonraker, que já guarda um ponto por
+   * segundo por sensor — nada é gravado aqui para isto existir. Por isso exige
+   * a máquina no ar: o histórico mora nela, e um app reiniciado não perde nada.
+   */
+  app.get<{ Params: { id: string } }>(
+    '/api/printers/:id/temperaturas/historico',
+    { preHandler: exigirLogin },
+    async (req, reply) => {
+      const cliente = farm.clienteVivo(req.params.id);
+      if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
+      try {
+        const loja = await cliente.historicoBruto();
+        return historicoDeTemperatura(cliente.getEstado(), loja ?? {});
+      } catch (err) {
+        return reply.code(502).send({ erro: err instanceof Error ? err.message : 'falha ao ler o histórico' });
+      }
+    }
+  );
+
+  /**
    * O mapa da mesa: as peças rotuladas nesta impressão, com contorno, quem já
    * saiu e qual está em curso.
    *
@@ -338,6 +379,13 @@ export async function rotasPrinters(app: FastifyInstance): Promise<void> {
       if (!cliente) return reply.code(503).send({ erro: 'impressora offline' });
       const script = req.body?.script?.trim();
       if (!script) return reply.code(400).send({ erro: 'script vazio' });
+      /*
+       * Antes de mandar, e mesmo que falhe: é isto que faz o console ler como
+       * uma conversa, com a pergunta em cima da resposta. Um comando recusado
+       * pelo Klipper aparece com o `!!` dele embaixo — que é justamente o par
+       * que se quer ver junto.
+       */
+      cliente.registrarEnvio(script);
       try {
         await cliente.gcode(script);
         logger.info({ printer: req.params.id, por: req.sessao!.usuario, script }, 'gcode manual');

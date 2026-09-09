@@ -96,6 +96,8 @@ Em React usar `lucide-react`. Mapa dos ícones usados:
 | Extrudar / retrair | `arrow-down-to-line` / `arrow-up-from-line` |
 | Carregar / descarregar filamento | `download` / `upload` |
 | Rotação da câmera | `rotate-cw` |
+| Seção que se recolhe | `chevron-down` / `chevron-right` |
+| Enviar comando do console | `send-horizontal` |
 | Macro | `zap` |
 | Backup agora / restaurar | `download` / `upload` |
 | Resolver alerta | `check` |
@@ -178,9 +180,17 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
        Quem aquece mostra "atual / campo de alvo em °C" e o alvo é editável ali mesmo;
        quem só mede mostra a leitura, com o nome um tom abaixo (`--color-neutral-300`).
        No cabeçalho da seção, à direita, um botão `power` desliga todos os aquecedores.
-    5. Cabeça de impressão: jog pad 3×3 (38×32px, raio 8px, borda 1px) com X±, Y±, Z± e home,
+    5. Aquecimento: gráfico das curvas dos últimos 10 minutos, 128px de altura, fundo
+       `--color-neutral-900`. Uma linha cheia por aquecedor — bico em `--color-accent-500`,
+       mesa em `--color-neutral-300`, câmara em `--color-accent-300`, ventoinha em
+       `--color-neutral-500` — e a mesma cor tracejada para o alvo. Rótulos de mínima e
+       máxima flutuando nos cantos esquerdos em mono 9px, legenda embaixo com a leitura de
+       agora. Só quem aquece entra: o MCU marcando 40 °C constantes achataria as curvas que
+       interessam. O passado vem do `server.temperature_store` do Moonraker, buscado ao
+       abrir; dali em diante a curva anda com os valores que o SSE já traz.
+    6. Cabeça de impressão: jog pad 3×3 (38×32px, raio 8px, borda 1px) com X±, Y±, Z± e home,
        seletor de passo (0.1 / 1 / 10 / 100 — ativo em pílula vermelha) e posição atual em mono.
-    6. Extrusora: as mesmas teclas do jog (38×32px) para retrair e extrudar, e dois seletores
+    7. Extrusora: as mesmas teclas do jog (38×32px) para retrair e extrudar, e dois seletores
        lado a lado na mesma pílula do passo — quantidade (1 / 5 / 10 / 50 mm) e velocidade
        (1 / 2 / 5 / 10 mm/s). Embaixo, duas pílulas largas de carregar e descarregar filamento,
        com ícone `download` / `upload`, que chamam a macro da própria máquina — apagadas, com o
@@ -188,7 +198,18 @@ mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **pa
        Bloqueada com a impressão andando, com o bico abaixo do `min_extrude_temp` ou com o
        Klipper fora de 'ready' — sempre com o motivo escrito embaixo, em `--color-neutral-500`.
        A troca de filamento não trava com o bico frio: essas macros costumam começar aquecendo.
-    7. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.
+    8. Macros: grade 2 colunas de pílulas com ícone `zap` vermelho.
+    9. Console: caixa de 168px rolável em mono 11px, fundo `--color-neutral-900`, uma linha
+       por mensagem com a hora em `--color-neutral-700` à esquerda. A cor diz o tom: o `!!`
+       do Klipper em `--color-accent-400` e negrito, o `//` das macros em
+       `--color-neutral-300`, resposta comum em `--color-bg` e o que saiu daqui em
+       `--color-neutral-400` com `›` na frente. Embaixo, campo de comando com `send-horizontal`
+       — setas ↑/↓ percorrem o que já foi mandado. A caixa gruda no fim, menos quando alguém
+       rolou para cima para ler.
+
+**As duas seções compridas — aquecimento e console — se recolhem** pelo próprio cabeçalho,
+com `chevron-down`/`chevron-right` à esquerda do título e uma legenda em mono 10px à direita
+(a janela do gráfico, a contagem de linhas). Recolhida, a seção também deixa de buscar.
 
 **Regras dos controles:** *Pausar* habilitado quando imprimindo ou em atenção; *Continuar* apenas
 quando pausada (é a única ação em vermelho); *Cancelar* quando imprimindo, em atenção ou pausada.

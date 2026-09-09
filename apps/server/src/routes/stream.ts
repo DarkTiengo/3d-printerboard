@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { Printer, StreamEvent } from '@3dfarm/shared';
+import type { LinhaConsole, Printer, StreamEvent } from '@3dfarm/shared';
 import { farm } from '../services/farm.js';
 import { exigirLogin } from '../lib/guard.js';
 import { logger } from '../lib/logger.js';
@@ -71,6 +71,15 @@ export async function rotasStream(app: FastifyInstance): Promise<void> {
 export function ligarFarmAoHub(): void {
   farm.on('printer', (printer: Printer) => {
     hub.publicar({ tipo: 'printer', printer });
+  });
+  /*
+   * O console vai por evento próprio, e não dentro do `Printer`: o snapshot é
+   * republicado inteiro a cada mudança de campo, e um log ali dentro seria
+   * reenviado a 4 Hz para sempre. Assim, uma máquina calada não custa byte
+   * nenhum — e uma que fala custa só o que ela falou.
+   */
+  farm.on('console', (printerId: string, linhas: LinhaConsole[]) => {
+    hub.publicar({ tipo: 'console', printerId, linhas });
   });
   farm.on('removida', () => {
     hub.publicar({ tipo: 'printers', printers: farm.printers() });

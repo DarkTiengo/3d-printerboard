@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Printer, PrinterConfig } from '@3dfarm/shared';
+import type { LinhaConsole, Printer, PrinterConfig } from '@3dfarm/shared';
 import { MoonrakerClient } from '../moonraker/client.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
 import { normalizar } from '../moonraker/normalize.js';
@@ -60,6 +60,7 @@ export class Farm extends EventEmitter {
       const cliente = this.criarCliente(cfg);
       cliente.on('estado', () => this.marcar(cfg.id));
       cliente.on('evento', (metodo: string, params: unknown) => this.emit('evento', cfg.id, metodo, params));
+      cliente.on('console', (linhas: LinhaConsole[]) => this.emit('console', cfg.id, linhas));
       cliente.on('log', (nivel: 'info' | 'warn' | 'error', msg: string) => logger[nivel](msg));
       this.clientes.set(cfg.id, cliente);
       cliente.iniciar();

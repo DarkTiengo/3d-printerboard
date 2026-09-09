@@ -1,4 +1,5 @@
 import type {
+  HistoricoDeTemperatura,
   MesaDePecas,
   PecaDaMesa,
   Printer,
@@ -6,8 +7,10 @@ import type {
   Temperatura,
   TipoSensor,
   Posicao,
-  PrinterConfig
+  PrinterConfig,
+  SerieDeTemperatura
 } from '@3dfarm/shared';
+import { HISTORICO_JANELA_S, HISTORICO_PONTOS } from '@3dfarm/shared';
 import { PREFIXOS_DE_SENSOR, type EstadoBruto } from './client.js';
 
 /**
@@ -256,4 +259,74 @@ export function mesaDePecas(bruto: EstadoBruto): MesaDePecas {
     : null;
 
   return { limites, pecas };
+}
+
+
+// ── O aquecimento, fora do snapshot ─────────────────────────────────────────
+
+/** Uma casa decimal é o que um termistor de impressora resolve de verdade. */
+function arredondar(v: unknown): number | null {
+  return Number.isFinite(v) ? Math.round((v as number) * 10) / 10 : null;
+}
+
+/**
+ * As curvas de temperatura dos últimos minutos, prontas para desenhar.
+ *
+ * A matéria-prima é o `server.temperature_store` do Moonraker: um ponto por
+ * segundo por sensor. Aqui ela é recortada na janela, reamostrada e casada com
+ * os sensores que o snapshot conhece — é isso que dá tipo e rótulo a cada
+ * curva, e que garante que o que sai daqui usa a mesma `chave` que a lista de
+ * temperaturas ao lado.
+ *
+ * Só entra quem aquece. Um `temperature_sensor` marcando 38 °C constantes no
+ * mesmo eixo de um bico a 250 achataria as duas curvas que interessam contra o
+ * topo do desenho, e o MCU não tem aquecimento para mostrar.
+ *
+ * As séries saem alinhadas pela direita: o último ponto de todas é agora. Uma
+ * série mais curta — um aquecedor que o Moonraker começou a seguir depois —
+ * ganha `null` no começo em vez de ser esticada, senão ela apareceria com uma
+ * história que não teve.
+ */
+export function historicoDeTemperatura(
+  bruto: EstadoBruto,
+  loja: Record<string, { temperatures?: number[]; targets?: number[] }>,
+  janela = HISTORICO_JANELA_S,
+  pontos = HISTORICO_PONTOS
+): HistoricoDeTemperatura {
+  /* O Moonraker devolve as chaves como o Klipper as escreve em minúsculas; o
+     objeto assinado preserva o que a pessoa pôs no printer.cfg. */
+  const porChave = new Map(Object.entries(loja).map(([k, v]) => [k.toLowerCase(), v]));
+
+  const candidatas = temperaturasDe(bruto)
+    .filter((t) => t.tipo !== 'sensor')
+    .map((t) => ({ temp: t, dados: porChave.get(t.chave.toLowerCase()) }))
+    .filter((c): c is { temp: Temperatura; dados: { temperatures?: number[]; targets?: number[] } } => !!c.dados);
+
+  const disponivel = Math.min(
+    janela,
+    Math.max(0, ...candidatas.map((c) => c.dados.temperatures?.length ?? 0))
+  );
+  if (disponivel === 0) return { intervalo: 1, fim: Date.now(), series: [] };
+
+  /* Um passo só para todas as séries: é o que faz o índice i valer o mesmo
+     instante em qualquer curva do gráfico. */
+  const passo = Math.max(1, Math.ceil(disponivel / pontos));
+  const n = Math.ceil(disponivel / passo);
+
+  const amostrar = (valores?: number[]): (number | null)[] =>
+    Array.from({ length: n }, (_, i) => {
+      if (!valores) return null;
+      const idx = valores.length - 1 - (n - 1 - i) * passo;
+      return idx >= 0 ? arredondar(valores[idx]) : null;
+    });
+
+  const series: SerieDeTemperatura[] = candidatas.map(({ temp, dados }) => ({
+    chave: temp.chave,
+    rotulo: temp.rotulo,
+    tipo: temp.tipo,
+    atuais: amostrar(dados.temperatures),
+    alvos: dados.targets ? amostrar(dados.targets) : null
+  }));
+
+  return { intervalo: passo, fim: Date.now(), series };
 }

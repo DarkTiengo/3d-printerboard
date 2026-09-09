@@ -17,6 +17,13 @@ type UiState = {
   passoExtrusao: number;
   /** com que rapidez ele move, em mm/s */
   velocidadeExtrusao: number;
+  /*
+   * As duas seções compridas do painel. Ficam abertas por padrão — quem pediu
+   * um console e um gráfico quer vê-los, não procurá-los — mas quem fecha uma
+   * não a encontra aberta de novo ao trocar de impressora.
+   */
+  graficoAberto: boolean;
+  consoleAberto: boolean;
 
   irPara: (tela: Tela) => void;
   selecionar: (id: string | null) => void;
@@ -25,6 +32,8 @@ type UiState = {
   definirPasso: (p: string) => void;
   definirPassoExtrusao: (mm: number) => void;
   definirVelocidadeExtrusao: (mms: number) => void;
+  alternarGrafico: () => void;
+  alternarConsole: () => void;
   /** vem da tela de Alertas: "abrir impressora" leva ao painel já selecionado */
   abrirImpressora: (id: string) => void;
 };
@@ -37,6 +46,8 @@ export const useUi = create<UiState>((set) => ({
   passo: '1',
   passoExtrusao: 10,
   velocidadeExtrusao: EXTRUSAO_MM_S_PADRAO,
+  graficoAberto: true,
+  consoleAberto: true,
 
   irPara: (tela) => set({ tela }),
   selecionar: (sel) => set({ sel }),
@@ -45,5 +56,7 @@ export const useUi = create<UiState>((set) => ({
   definirPasso: (passo) => set({ passo }),
   definirPassoExtrusao: (passoExtrusao) => set({ passoExtrusao }),
   definirVelocidadeExtrusao: (velocidadeExtrusao) => set({ velocidadeExtrusao }),
+  alternarGrafico: () => set((s) => ({ graficoAberto: !s.graficoAberto })),
+  alternarConsole: () => set((s) => ({ consoleAberto: !s.consoleAberto })),
   abrirImpressora: (id) => set({ tela: 'dash', sel: id })
 }));

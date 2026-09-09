@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { lookupComMdns } from '../lib/mdns.js';
-import type { Desligamento, EstadoKlippy, PrinterConfig, TipoSensor } from '@3dfarm/shared';
+import { CONSOLE_MAX_LINHAS } from '@3dfarm/shared';
+import type { Desligamento, EstadoKlippy, LinhaConsole, PrinterConfig, TipoSensor } from '@3dfarm/shared';
 
 export type { EstadoKlippy };
 
@@ -186,6 +187,23 @@ const GRACA_DESLIGAMENTO_MS = 2 * 60_000;
  */
 const FECHOU_DIREITO = new Set([1000, 1001, 1005]);
 
+/**
+ * Quanto tempo as linhas novas esperam antes de sair para os navegadores.
+ *
+ * Uma macro que fala muito manda dez linhas no mesmo instante, e dez eventos
+ * SSE seguidos seriam dez acordadas de todas as abas para escrever dez linhas
+ * de texto. Um quarto de segundo junta a rajada num evento só e ainda parece
+ * instantâneo para quem está olhando.
+ */
+const CONSOLE_FLUSH_MS = 250;
+
+/**
+ * Quantas linhas do passado se pede ao Moonraker ao conectar. Ele guarda as
+ * suas próprias — e são elas que trazem o que a máquina disse enquanto este
+ * app não estava de pé, ou o que foi digitado no Mainsail.
+ */
+const CONSOLE_SEMENTE = 100;
+
 /** Chamada que não voltou a tempo. Distinta de "voltou com erro". */
 export class TimeoutRpc extends Error {
   constructor(metodo: string) {
@@ -200,6 +218,7 @@ export class TimeoutRpc extends Error {
  * Emite:
  *  - 'estado'  (EstadoBruto)  a cada mudança relevante
  *  - 'evento'  (metodo, params) para notificações do Moonraker
+ *  - 'console' (LinhaConsole[]) com as linhas novas, em rajadas
  *  - 'log'     (nivel, msg)
  */
 export class MoonrakerClient extends EventEmitter {
@@ -211,6 +230,10 @@ export class MoonrakerClient extends EventEmitter {
   private tentativas = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private desligamentoTimer: NodeJS.Timeout | null = null;
+  /** Anel do console: as últimas `CONSOLE_MAX_LINHAS` desta máquina. */
+  private console: LinhaConsole[] = [];
+  private consolePendente: LinhaConsole[] = [];
+  private consoleTimer: NodeJS.Timeout | null = null;
   /** Fomos nós que fechamos, para reconectar noutro endereço. */
   private trocandoEndereco = false;
   private parado = false;
@@ -294,6 +317,85 @@ export class MoonrakerClient extends EventEmitter {
     this.desligamentoTimer = null;
   }
 
+  // ── console ───────────────────────────────────────────────────────────────
+
+  /** O que esta máquina disse, da linha mais antiga para a mais nova. */
+  linhasDoConsole(): LinhaConsole[] {
+    return this.console;
+  }
+
+  /**
+   * Registra o que saiu daqui para a máquina.
+   *
+   * Chamado pela rota de G-code — o que alguém digita no console e o que uma
+   * macro clicada manda. O jog, a extrusão e os alvos de temperatura não passam
+   * por aqui de propósito: são gestos repetidos dezenas de vezes seguidas, e
+   * encher o console com o `SAVE_GCODE_STATE` de cada clique de seta afogaria
+   * justamente o que se abre o console para ler.
+   */
+  registrarEnvio(script: string): void {
+    for (const linha of script.split('\n')) {
+      const texto = linha.trim();
+      if (texto) this.registrarLinha('comando', texto);
+    }
+  }
+
+  /**
+   * Põe uma linha no anel e agenda a rajada.
+   *
+   * `em` vem de fora só na semeadura, em que as linhas têm a hora que o
+   * Moonraker guardou — e não a de agora.
+   */
+  protected registrarLinha(tipo: LinhaConsole['tipo'], texto: string, em = Date.now()): void {
+    const limpo = texto.replace(/\s+$/, '');
+    if (!limpo) return;
+    const linha: LinhaConsole = { em, tipo, texto: limpo.slice(0, 500) };
+
+    this.console.push(linha);
+    if (this.console.length > CONSOLE_MAX_LINHAS) {
+      this.console.splice(0, this.console.length - CONSOLE_MAX_LINHAS);
+    }
+
+    this.consolePendente.push(linha);
+    if (this.consolePendente.length > CONSOLE_MAX_LINHAS) {
+      this.consolePendente.splice(0, this.consolePendente.length - CONSOLE_MAX_LINHAS);
+    }
+    if (this.consoleTimer) return;
+    this.consoleTimer = setTimeout(() => {
+      this.consoleTimer = null;
+      const linhas = this.consolePendente;
+      this.consolePendente = [];
+      if (linhas.length) this.emit('console', linhas);
+    }, CONSOLE_FLUSH_MS);
+    this.consoleTimer.unref();
+  }
+
+  /**
+   * Traz do Moonraker o que ele guardou do console.
+   *
+   * É o que dá conteúdo à primeira abertura: o app pode ter subido agora, mas
+   * a máquina está falando há horas — e o que interessa costuma ser a última
+   * coisa que ela disse antes de parar. Só entra o que é mais novo que a última
+   * linha que já temos, senão cada reconexão duplicaria o histórico.
+   */
+  protected async semearConsole(): Promise<void> {
+    try {
+      const r = await this.chamar<{ gcode_store?: { message?: string; time?: number; type?: string }[] }>(
+        'server.gcode_store',
+        { count: CONSOLE_SEMENTE }
+      );
+      const desde = this.console.length ? this.console[this.console.length - 1].em : 0;
+      for (const e of r?.gcode_store ?? []) {
+        const em = Math.round((e.time ?? 0) * 1000);
+        if (em <= desde) continue;
+        this.registrarLinha(e.type === 'command' ? 'comando' : 'resposta', String(e.message ?? ''), em);
+      }
+    } catch {
+      // sem histórico o console começa vazio e vai enchendo — não é motivo
+      // para o handshake inteiro falhar
+    }
+  }
+
   iniciar(): void {
     this.parado = false;
     this.conectar();
@@ -302,6 +404,8 @@ export class MoonrakerClient extends EventEmitter {
   parar(): void {
     this.parado = true;
     this.limparTimerDeDesligamento();
+    if (this.consoleTimer) clearTimeout(this.consoleTimer);
+    this.consoleTimer = null;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     this.ws?.close();
@@ -396,6 +500,13 @@ export class MoonrakerClient extends EventEmitter {
       const info = await this.chamar<{ state: EstadoKlippy; state_message?: string }>('printer.info');
       const klippy = info.state ?? 'ready';
       this.definirEstado({ klippy, mensagemKlippy: motivoDoKlipper(klippy, info.state_message) });
+
+      /*
+       * Antes do teste do Klipper, e não depois: o console é do Moonraker, que
+       * continua respondendo com o firmware caído — e é exatamente aí que as
+       * últimas linhas dizem o que aconteceu.
+       */
+      await this.semearConsole();
 
       if (klippy !== 'ready') {
         // Com o Klipper parado, subscribe e objects.list respondem erro. O que
@@ -500,6 +611,14 @@ export class MoonrakerClient extends EventEmitter {
     switch (metodo) {
       case 'notify_status_update':
         this.mesclarObjetos(params?.[0] ?? {});
+        break;
+      /*
+       * A fala da máquina: erros de G-code, `RESPOND` de macro, o resultado de
+       * um `BED_MESH_CALIBRATE`. É a mesma fonte que o Mainsail mostra no
+       * console dele — e a única em que o Klipper explica o que recusou.
+       */
+      case 'notify_gcode_response':
+        this.registrarLinha('resposta', String(params?.[0] ?? ''));
         break;
       case 'notify_klippy_ready':
         this.definirEstado({ klippy: 'ready', ultimoErro: null, mensagemKlippy: null });
@@ -685,6 +804,21 @@ export class MoonrakerClient extends EventEmitter {
    */
   excluirPeca(nome: string) {
     return this.gcode(`EXCLUDE_OBJECT NAME=${paraParametro(nome)}`);
+  }
+
+  /**
+   * A série de temperatura que o Moonraker já guarda — um ponto por segundo
+   * por sensor, dos últimos vinte minutos.
+   *
+   * Ninguém grava nada aqui para isto existir: o Moonraker mantém o
+   * `temperature_store` de qualquer jeito, e pedir a ele é mais honesto do que
+   * montar um histórico paralelo que começaria vazio a cada reinício do app e
+   * teria a resolução do nosso SSE, não a do Klipper.
+   */
+  historicoBruto() {
+    return this.chamar<Record<string, { temperatures?: number[]; targets?: number[] }>>(
+      'server.temperature_store'
+    );
   }
 
   /**
