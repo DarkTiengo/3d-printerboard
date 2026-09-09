@@ -65,6 +65,20 @@ function migrarSeveridadeCritica(db: DB): void {
     .get() as { sql: string } | undefined;
   if (!atual || atual.sql.includes("'critica'")) return;
 
+  /*
+   * `codigo` também entrou depois do esquema inicial, e antes da severidade
+   * crítica. Num banco daquela época a coluna não existe, e copiá-la pelo nome
+   * fazia o SELECT estourar com "no such column: codigo" — dentro do
+   * abrirBanco(), ou seja, antes de o servidor subir. O app não voltava mais,
+   * e nada no erro dizia que a causa era a idade do banco.
+   *
+   * Onde ela falta, entra string vazia, que é o default da coluna no esquema
+   * novo. O alerta antigo perde o código e fica com o título que o servidor
+   * escreveu na época — que é exatamente o que o front usa como reserva.
+   */
+  const colunas = db.prepare('PRAGMA table_info(alerts)').all() as { name: string }[];
+  const origemCodigo = colunas.some((c) => c.name === 'codigo') ? 'codigo' : "''";
+
   db.exec(`
     PRAGMA foreign_keys = OFF;
     BEGIN;
@@ -86,7 +100,7 @@ function migrarSeveridadeCritica(db: DB): void {
     );
     INSERT INTO alerts (id, printer_id, printer_name, severity, codigo, title, detail,
                         frame_label, frame_path, dedupe_key, created_at, resolved_at, resolved_by)
-      SELECT id, printer_id, printer_name, severity, codigo, title, detail,
+      SELECT id, printer_id, printer_name, severity, ${origemCodigo}, title, detail,
              frame_label, frame_path, dedupe_key, created_at, resolved_at, resolved_by
       FROM alerts_antiga;
     -- os índices seguiram a tabela no RENAME e morrem com ela

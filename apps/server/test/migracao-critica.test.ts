@@ -45,9 +45,18 @@ CREATE UNIQUE INDEX idx_alerts_dedupe
   ON alerts(dedupe_key) WHERE dedupe_key IS NOT NULL AND resolved_at IS NULL;
 `;
 
+/**
+ * O esquema de antes de `codigo` existir — mais velho ainda que o de cima.
+ *
+ * É o banco que travava o boot para sempre: a migração copiava a coluna pelo
+ * nome, o SELECT estourava dentro de abrirBanco(), e o container entrava em
+ * loop de reinício sem nada dizer que a causa era a idade do arquivo.
+ */
+const ESQUEMA_SEM_CODIGO = ESQUEMA_ANTIGO.replace("  codigo       TEXT NOT NULL DEFAULT '',\n", '');
+
 let dir: string | null = null;
 
-function bancoAntigo(): void {
+function bancoAntigo(esquema: string = ESQUEMA_ANTIGO): void {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gridfarm-mig-'));
   for (const chave of ['dataDir', 'backupsDir', 'framesDir', 'thumbsDir', 'blobsDir'] as const) {
     (config as any)[chave] = path.join(dir, chave);
@@ -55,11 +64,18 @@ function bancoAntigo(): void {
   (config as any).dbPath = path.join(dir, 'app.db');
 
   const db = new Database(config.dbPath);
-  db.exec(ESQUEMA_ANTIGO);
-  db.prepare(
-    `INSERT INTO alerts (id, printer_name, severity, codigo, title, detail, dedupe_key, resolved_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(7, 'Voron 0.2', 'alta', 'erro_impressao', 'Impressão interrompida', 'detalhe', 'erro:P05', null);
+  db.exec(esquema);
+  if (esquema.includes('codigo')) {
+    db.prepare(
+      `INSERT INTO alerts (id, printer_name, severity, codigo, title, detail, dedupe_key, resolved_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(7, 'Voron 0.2', 'alta', 'erro_impressao', 'Impressão interrompida', 'detalhe', 'erro:P05', null);
+  } else {
+    db.prepare(
+      `INSERT INTO alerts (id, printer_name, severity, title, detail, dedupe_key, resolved_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(7, 'Voron 0.2', 'alta', 'Impressão interrompida', 'detalhe', 'erro:P05', null);
+  }
   db.close();
 }
 
@@ -135,5 +151,47 @@ describe('migração da severidade crítica', () => {
     const db = abrirBanco();
     expect(db.prepare("SELECT COUNT(*) c FROM alerts").get()).toMatchObject({ c: 1 });
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'alerts_antiga'").get()).toBeUndefined();
+  });
+});
+
+/**
+ * O caso que a suíte não cobria, e que apareceu num banco de verdade: o
+ * esquema anterior a `codigo`. O "banco antigo" testado acima já tinha a
+ * coluna, então a migração nunca foi exercitada contra o arquivo que ela
+ * precisava justamente salvar.
+ */
+describe('banco anterior à coluna do código', () => {
+  it('sobe em vez de travar o boot', () => {
+    bancoAntigo(ESQUEMA_SEM_CODIGO);
+    expect(() => abrirBanco()).not.toThrow();
+  });
+
+  it('o alerta antigo sobrevive, com código vazio', () => {
+    bancoAntigo(ESQUEMA_SEM_CODIGO);
+    const db = abrirBanco();
+
+    // sem código, o front cai no título que o servidor escreveu na época
+    expect(db.prepare('SELECT * FROM alerts WHERE id = 7').get()).toMatchObject({
+      id: 7,
+      printer_name: 'Voron 0.2',
+      severity: 'alta',
+      codigo: '',
+      title: 'Impressão interrompida',
+      dedupe_key: 'erro:P05'
+    });
+  });
+
+  it('e passa a aceitar alerta crítico, que era o ponto da migração', () => {
+    bancoAntigo(ESQUEMA_SEM_CODIGO);
+    const db = abrirBanco();
+
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO alerts (printer_name, severity, codigo, title)
+           VALUES ('Voron 0.2', 'critica', 'falha_detectada', 'Possível falha')`
+        )
+        .run()
+    ).not.toThrow();
   });
 });
