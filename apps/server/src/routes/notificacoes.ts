@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import type { NotificacaoPrefs } from '@3dfarm/shared';
-import { CODIGOS_DE_ALERTA, SEGREDO_MASCARADO } from '@3dfarm/shared';
+import type { NotificacaoPrefs } from '@gridfarm/shared';
+import { CODIGOS_DE_ALERTA, SEGREDO_MASCARADO } from '@gridfarm/shared';
 
 import { exigirPermissao } from '../lib/guard.js';
 import { logger } from '../lib/logger.js';

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Fan, Power, Thermometer } from 'lucide-react';
-import type { Temperatura } from '@3dfarm/shared';
-import { nomeBonito } from '@3dfarm/shared';
+import type { Temperatura } from '@gridfarm/shared';
+import { nomeBonito } from '@gridfarm/shared';
 import type { Dicionario } from '../i18n/pt';
 import { Confirm } from '../components/Confirm';
 import { IconButton } from '../components/IconButton';

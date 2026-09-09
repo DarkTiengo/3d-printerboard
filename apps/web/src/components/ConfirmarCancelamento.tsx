@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { Printer } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
 import { Confirm } from './Confirm';
 import { useT } from '../i18n';
 

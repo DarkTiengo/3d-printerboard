@@ -1,4 +1,4 @@
-# 3D Printerboard
+# GridFarm
 
 Run your 3D print farm from one screen — remotely, from your own server.
 Live cameras, print control, a G-code library with a queue, alerts, and the
@@ -60,6 +60,31 @@ that, change the password in the app — editing `.env` has no effect.
 Keep `NETWORK_MODE=host`. The container needs to see your LAN directly:
 multicast does not cross Docker's default bridge, and without it `.local`
 addresses and camera discovery stop working.
+
+<details>
+<summary>Coming from <b>3D Printerboard</b>? One extra step.</summary>
+
+This project was called 3D Printerboard until September 2026. The name was too
+close to the controller boards it talks to, so it became **GridFarm** — after
+the grid of cameras that is the whole point of the first screen.
+
+Your data is untouched: same `./data` volume, same database, same printers. Two
+things do change, and both are one-time.
+
+Stop the old container **before** the first `up`, because it is a different
+name now and Docker would otherwise leave you with two of them fighting over
+port 8080:
+
+```bash
+docker stop printerboard && docker rm printerboard
+docker compose up --build -d
+```
+
+And everyone gets signed out once — the session cookie is named after the
+project, so the old one no longer matches. Sign in again and that is the end of
+it; the language each person picked is carried over automatically.
+
+</details>
 
 ### Try it without hardware
 
@@ -446,7 +471,7 @@ Two capabilities that are powerful **on purpose**, and worth knowing about:
 
 ```bash
 npm install
-npm run build -w @3dfarm/shared          # everything else depends on its dist
+npm run build -w @gridfarm/shared          # everything else depends on its dist
 MOCK_PRINTERS=true npm run dev:server    # API on :8080, data in ./data
 npm run dev:web                          # Vite on :5173, proxying the API
 

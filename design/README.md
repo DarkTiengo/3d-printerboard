@@ -1,4 +1,4 @@
-# Handoff: 3D Printerboard — gerenciador de fazenda de impressão 3D
+# Handoff: GridFarm — gerenciador de fazenda de impressão 3D
 
 ## Visão geral
 
@@ -125,7 +125,7 @@ Formatos:
 **Layout:** duas colunas em `100vh`.
 - **Esquerda (flex: 1)**, borda direita 2px, padding 56px, fundo listrado a 45° (`#2b2928`/`#232120`,
   faixas de 10px) — placeholder de foto; em produção, uma fotografia em preto e branco (wrapper `.grayscale`).
-  Três blocos empilhados com `space-between`: marca (quadrado vermelho 12px + "3D PRINTERBOARD" 20px/800);
+  Três blocos empilhados com `space-between`: marca (quadrado vermelho 12px + "GRIDFARM" 20px/800);
   chamada `h1` 64px, `line-height: 1.02`, `letter-spacing: -.02em`, máx. 620px, com parágrafo 16px
   `--color-neutral-300` de até 480px; e uma faixa de três números (rótulo mono 10px + valor 26px/800)
   em células de `gap: 2px` sobre `--color-neutral-700`, borda 2px.
@@ -149,7 +149,7 @@ botão e persistir sessão quando "manter conectado" estiver ligado.
 ### 2. Painel (tela inicial após o login)
 
 **Barra superior** (altura ~72px, borda inferior 2px, padding 16×22px, `gap: 16px`, `flex-wrap`):
-marca "3D PRINTERBOARD" 19px/800; cinco abas redondas 40×40px só com ícone (ativa = fundo vermelho, ícone
+marca "GRIDFARM" 19px/800; cinco abas redondas 40×40px só com ícone (ativa = fundo vermelho, ícone
 claro; inativa = transparente, ícone `--color-neutral-300`, hover `--color-neutral-900`); resumo em
 mono 11px ("N ativas · fila 7 · N atenção"); botão redondo vermelho de **parada de emergência**.
 
@@ -343,8 +343,8 @@ Substituir por streams e fotos reais; fotografias em preto e branco, sem tingime
 
 ## Arquivos deste pacote
 
-- `3D Printerboard.dc.html` — o design final (login + as cinco telas), com todos os estados interativos.
-- `3D Printerboard opcoes.dc.html` — explorações anteriores de layout (rail lateral, painel estilo Mainsail).
+- `GridFarm.dc.html` — o design final (login + as cinco telas), com todos os estados interativos.
+- `GridFarm opcoes.dc.html` — explorações anteriores de layout (rail lateral, painel estilo Mainsail).
 - `ds-styles.css` — os tokens do Modernist (cores, rampas, tipografia, espaçamento).
 
-Para ver o design rodando, abrir `3D Printerboard.dc.html` em um navegador.
+Para ver o design rodando, abrir `GridFarm.dc.html` em um navegador.

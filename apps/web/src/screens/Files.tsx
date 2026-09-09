@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Send } from 'lucide-react';
-import type { GcodeFile, Printer, User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
+import type { GcodeFile, Printer, User } from '@gridfarm/shared';
+import { pode } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Ponto } from '../components/Tag';

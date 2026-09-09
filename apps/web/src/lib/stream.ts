@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { StreamEvent } from '@3dfarm/shared';
+import type { StreamEvent } from '@gridfarm/shared';
 import { usePrinters } from '../store/printers';
 import { urlDaApi } from './api';
 

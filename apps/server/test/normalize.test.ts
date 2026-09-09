@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { PrinterConfig } from '@gridfarm/shared';
 import { motivoDoKlipper, type EstadoBruto } from '../src/moonraker/client.js';
 import { camadaDe, normalizar, progressoDe, restanteSegundos, statusDe, temperaturasDe } from '../src/moonraker/normalize.js';
 

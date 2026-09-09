@@ -1,6 +1,6 @@
-import type { Printer } from '@3dfarm/shared';
-import { alvo, duracao, nomeBonito, semExtensao, temperatura } from '@3dfarm/shared';
-import type { Temperatura } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
+import { alvo, duracao, nomeBonito, semExtensao, temperatura } from '@gridfarm/shared';
+import type { Temperatura } from '@gridfarm/shared';
 
 import { logger } from '../lib/logger.js';
 import { farm } from './farm.js';
@@ -121,7 +121,7 @@ function rotuloDoSensor(t: Temperatura): string {
 }
 
 const AJUDA = [
-  '🖨 <b>3D Printerboard</b>',
+  '🖨 <b>GridFarm</b>',
   '',
   '/status — como está a fazenda inteira',
   '/status &lt;impressora&gt; — uma máquina, com a foto da câmera',

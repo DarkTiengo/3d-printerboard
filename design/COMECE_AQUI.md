@@ -1,4 +1,4 @@
-# Começando a programar — 3D Printerboard (React)
+# Começando a programar — GridFarm (React)
 
 Leia \`README.md\` antes: ele tem o sistema visual, as seis telas com medidas e o mapeamento
 para as APIs do Moonraker. Este arquivo é só o caminho prático do zero até a primeira tela rodando.
@@ -8,8 +8,8 @@ para as APIs do Moonraker. Este arquivo é só o caminho prático do zero até a
 | Arquivo | Para que serve |
 | --- | --- |
 | \`README.md\` | Especificação de design completa — a fonte da verdade |
-| \`3D Printerboard.dc.html\` | Design final rodando (login + 5 telas). Abra no navegador |
-| \`3D Printerboard opcoes.dc.html\` | Explorações de layout descartadas, como referência |
+| \`GridFarm.dc.html\` | Design final rodando (login + 5 telas). Abra no navegador |
+| \`GridFarm opcoes.dc.html\` | Explorações de layout descartadas, como referência |
 | \`ds-styles.css\` | Tokens do design system Modernist (cores, rampas, tipografia, espaçamento) |
 | \`support.js\` | Runtime do protótipo. **Não vai para produção** |
 
@@ -32,7 +32,7 @@ recriar a paleta.
 
 ## Passo a passo
 
-1. \`npm create vite@latest printerboard -- --template react-ts\`
+1. \`npm create vite@latest gridfarm -- --template react-ts\`
 2. Copie \`ds-styles.css\` para \`src/styles/\` e importe em \`main.tsx\`.
 3. Carregue Archivo (Google Fonts, pesos 400 e 800) no \`index.html\`.
 4. Reset global: \`body { margin: 0; background: var(--color-text); color: var(--color-bg); font-family: var(--font-body); }\`
@@ -87,7 +87,7 @@ src/
 Na raiz do projeto novo, com esta pasta acessível:
 
 \`\`\`
-Leia design_handoff_3d_printerboard/README.md e COMECE_AQUI.md.
+Leia design_handoff_gridfarm/README.md e COMECE_AQUI.md.
 Implemente a tela de login e o painel em React + TypeScript seguindo a especificação,
 usando os tokens de ds-styles.css e ícones do lucide-react. Use dados falsos por enquanto.
 \`\`\`

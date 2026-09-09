@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import type { LinhaConsole, PrinterConfig } from '@3dfarm/shared';
-import { CONSOLE_MAX_LINHAS, tomDaLinha } from '@3dfarm/shared';
+import type { LinhaConsole, PrinterConfig } from '@gridfarm/shared';
+import { CONSOLE_MAX_LINHAS, tomDaLinha } from '@gridfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from '../src/moonraker/client.js';
 import { historicoDeTemperatura } from '../src/moonraker/normalize.js';
 

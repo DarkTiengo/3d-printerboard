@@ -1,12 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { Role, User } from '@3dfarm/shared';
+import type { Role, User } from '@gridfarm/shared';
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';
 
 const CUSTO_BCRYPT = 12;
-export const COOKIE_SESSAO = 'printerboard_sessao';
+export const COOKIE_SESSAO = 'gridfarm_sessao';
 
 type UserRow = { id: number; username: string; password_hash: string; role: Role };
 

@@ -1,4 +1,4 @@
-import type { User } from '@3dfarm/shared';
+import type { User } from '@gridfarm/shared';
 import { usePrintersVisiveis } from '../store/printers';
 import { useUi } from '../store/ui';
 import { CameraTile } from '../components/CameraTile';

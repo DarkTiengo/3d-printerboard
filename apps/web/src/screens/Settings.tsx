@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plug, Plus, RotateCw, Trash2, X } from 'lucide-react';
-import type { PrinterConfig, RotacaoCamera } from '@3dfarm/shared';
-import { ROTACOES } from '@3dfarm/shared';
+import type { PrinterConfig, RotacaoCamera } from '@gridfarm/shared';
+import { ROTACOES } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Confirm } from '../components/Confirm';

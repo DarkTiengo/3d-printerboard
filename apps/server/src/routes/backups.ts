@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import type { FastifyInstance } from 'fastify';
-import type { BackupPrefsInput, RestorePayload } from '@3dfarm/shared';
+import type { BackupPrefsInput, RestorePayload } from '@gridfarm/shared';
 import {
   aplicarRetencaoDeTodas,
   cardsDeBackup,

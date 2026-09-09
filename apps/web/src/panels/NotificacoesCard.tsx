@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Send, X } from 'lucide-react';
-import type { NotificacaoPrefs, Severidade } from '@3dfarm/shared';
-import { CODIGOS_DE_ALERTA, SEGREDO_MASCARADO } from '@3dfarm/shared';
+import type { NotificacaoPrefs, Severidade } from '@gridfarm/shared';
+import { CODIGOS_DE_ALERTA, SEGREDO_MASCARADO } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { CORES_SEVERIDADE } from '../lib/status';
 import { Ponto } from '../components/Tag';

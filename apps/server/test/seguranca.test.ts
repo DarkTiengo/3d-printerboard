@@ -14,7 +14,7 @@ vi.mock('../src/lib/logger.js', () => ({
 }));
 
 const { _caminhoSeguro } = await import('../src/services/backup.js');
-const { pode } = await import('@3dfarm/shared');
+const { pode } = await import('@gridfarm/shared');
 
 describe('caminhoSeguro (travessia de diretório na restauração)', () => {
   const raiz = '/data/.tmp-restore/config';

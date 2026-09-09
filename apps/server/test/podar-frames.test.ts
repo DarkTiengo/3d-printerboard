@@ -23,7 +23,7 @@ const { podarFrames } = await import('../src/services/alerts.js');
 let dir: string | null = null;
 
 function bancoLimpo() {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'printerboard-frames-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gridfarm-frames-'));
   for (const chave of ['dataDir', 'backupsDir', 'framesDir', 'thumbsDir', 'blobsDir'] as const) {
     (config as any)[chave] = path.join(dir, chave);
   }

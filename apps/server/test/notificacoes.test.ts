@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Alert } from '@3dfarm/shared';
+import type { Alert } from '@gridfarm/shared';
 
 /**
  * As regras de quem vira mensagem e de quantas mensagens saem.

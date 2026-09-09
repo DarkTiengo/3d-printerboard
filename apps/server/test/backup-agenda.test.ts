@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Printer, Status } from '@3dfarm/shared';
+import type { Printer, Status } from '@gridfarm/shared';
 
 /**
  * A agenda é a única camada que decide *quando* um backup pode acontecer.

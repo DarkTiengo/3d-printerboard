@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { VideoOff } from 'lucide-react';
-import type { RotacaoCamera } from '@3dfarm/shared';
+import type { RotacaoCamera } from '@gridfarm/shared';
 import { urlCamera, urlSnapshot } from '../lib/api';
 import { estiloDaImagem, estiloDoQuadro } from '../lib/rotacao';
 import { useT } from '../i18n';

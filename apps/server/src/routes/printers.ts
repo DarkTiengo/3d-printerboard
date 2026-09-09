@@ -9,7 +9,7 @@ import {
   type HeaterPayload,
   type JogPayload,
   type PrinterConfigInput
-} from '@3dfarm/shared';
+} from '@gridfarm/shared';
 import { farm } from '../services/farm.js';
 import { nomeDePecaValido, type MoonrakerClient } from '../moonraker/client.js';
 import { historicoDeTemperatura, mesaDePecas } from '../moonraker/normalize.js';

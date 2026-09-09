@@ -1,4 +1,4 @@
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { PrinterConfig } from '@gridfarm/shared';
 import { agenteDaFazenda } from '../lib/http-agent.js';
 
 /**

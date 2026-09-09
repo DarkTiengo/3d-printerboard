@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { LinhaConsole, Printer, PrinterConfig } from '@3dfarm/shared';
+import type { LinhaConsole, Printer, PrinterConfig } from '@gridfarm/shared';
 import { MoonrakerClient } from '../moonraker/client.js';
 import { MoonrakerHttp } from '../moonraker/http.js';
 import { normalizar } from '../moonraker/normalize.js';

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { User } from '@3dfarm/shared';
+import type { User } from '@gridfarm/shared';
 import { api, definirMensagensDaApi } from './lib/api';
 import { useStream } from './lib/stream';
 import { usePrinters } from './store/printers';

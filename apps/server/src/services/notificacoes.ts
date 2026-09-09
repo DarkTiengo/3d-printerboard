@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
-import type { Alert, NotificacaoConfig, NotificacaoEstado, NotificacaoPrefs } from '@3dfarm/shared';
-import { CODIGOS_DE_ALERTA, CODIGOS_PADRAO } from '@3dfarm/shared';
+import type { Alert, NotificacaoConfig, NotificacaoEstado, NotificacaoPrefs } from '@gridfarm/shared';
+import { CODIGOS_DE_ALERTA, CODIGOS_PADRAO } from '@gridfarm/shared';
 
 import { config } from '../config.js';
 import { getSetting, setSetting } from '../db/index.js';
@@ -291,7 +291,7 @@ export function ligarNotificacoes(): void {
 /** Manda uma mensagem avulsa agora, sem fila. É o botão de teste da tela. */
 export async function enviarTeste(tokenTeste: string, chatId: string): Promise<void> {
   await fabricaDeTelegram(tokenTeste, chatId).enviarTexto(
-    '✅ <b>3D Printerboard</b>\n\nSe você está lendo isto, as notificações da fazenda estão funcionando.'
+    '✅ <b>GridFarm</b>\n\nSe você está lendo isto, as notificações da fazenda estão funcionando.'
   );
 }
 

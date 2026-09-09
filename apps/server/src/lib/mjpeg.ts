@@ -48,7 +48,7 @@ export class MjpegDemuxer {
   }
 }
 
-export const BOUNDARY = 'quadro3dfarm';
+export const BOUNDARY = 'quadrogridfarm';
 
 export function cabecalhoMultipart(): string {
   return `multipart/x-mixed-replace; boundary=${BOUNDARY}`;

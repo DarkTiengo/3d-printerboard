@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { PrinterConfig } from '@gridfarm/shared';
 import { MoonrakerClient } from '../src/moonraker/client.js';
 import { normalizar } from '../src/moonraker/normalize.js';
 import { criarClienteMock } from '../src/moonraker/mock.js';

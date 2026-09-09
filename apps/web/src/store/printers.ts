@@ -8,8 +8,8 @@ import type {
   QueueJob,
   Status,
   StreamEvent
-} from '@3dfarm/shared';
-import { CONSOLE_MAX_LINHAS } from '@3dfarm/shared';
+} from '@gridfarm/shared';
+import { CONSOLE_MAX_LINHAS } from '@gridfarm/shared';
 
 /**
  * Espelho local do estado da fazenda, alimentado pelo SSE.

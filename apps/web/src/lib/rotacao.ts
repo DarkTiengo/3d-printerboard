@@ -1,4 +1,4 @@
-import type { RotacaoCamera } from '@3dfarm/shared';
+import type { RotacaoCamera } from '@gridfarm/shared';
 
 /**
  * Girar a imagem de uma câmera montada de lado — sem tocar no quadro.

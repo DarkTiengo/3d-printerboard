@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { PrinterConfig } from '@gridfarm/shared';
 import { MoonrakerClient, nomeDoSensor, sensoresDaLista } from '../src/moonraker/client.js';
 
 const cfg: PrinterConfig = {

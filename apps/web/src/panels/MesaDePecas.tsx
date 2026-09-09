@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PackageX } from 'lucide-react';
-import type { MesaDePecas as Mesa, PecaDaMesa } from '@3dfarm/shared';
+import type { MesaDePecas as Mesa, PecaDaMesa } from '@gridfarm/shared';
 import { Confirm } from '../components/Confirm';
 import { api } from '../lib/api';
 import { useT } from '../i18n';

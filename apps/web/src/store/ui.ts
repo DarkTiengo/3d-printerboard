@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { EXTRUSAO_MM_S_PADRAO } from '@3dfarm/shared';
+import { EXTRUSAO_MM_S_PADRAO } from '@gridfarm/shared';
 
 export type Tela = 'dash' | 'cams' | 'files' | 'backup' | 'alerts' | 'config';
 

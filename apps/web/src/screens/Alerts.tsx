@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Check, TriangleAlert, Video } from 'lucide-react';
-import type { Alert, RotacaoCamera, User } from '@3dfarm/shared';
-import { pode, porGravidade } from '@3dfarm/shared';
+import type { Alert, RotacaoCamera, User } from '@gridfarm/shared';
+import { pode, porGravidade } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { usePrinters } from '../store/printers';
 import { useUi } from '../store/ui';

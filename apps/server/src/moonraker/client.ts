@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events';
 import WebSocket from 'ws';
 import { lookupComMdns } from '../lib/mdns.js';
-import { CONSOLE_MAX_LINHAS } from '@3dfarm/shared';
-import type { Desligamento, EstadoKlippy, LinhaConsole, PrinterConfig, TipoSensor } from '@3dfarm/shared';
+import { CONSOLE_MAX_LINHAS } from '@gridfarm/shared';
+import type { Desligamento, EstadoKlippy, LinhaConsole, PrinterConfig, TipoSensor } from '@gridfarm/shared';
 
 export type { EstadoKlippy };
 

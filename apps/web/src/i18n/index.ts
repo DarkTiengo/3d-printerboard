@@ -5,6 +5,7 @@ import { en } from './en';
 import { es } from './es';
 import { fr } from './fr';
 import { it } from './it';
+import { gravarGuardado, lerGuardado } from '../lib/guardado';
 
 export type Idioma = 'en' | 'pt' | 'es' | 'fr' | 'it';
 
@@ -17,16 +18,12 @@ const LOCALES: Record<Idioma, string> = {
   fr: 'fr-FR',
   it: 'it-IT'
 };
-const CHAVE = 'printerboard.idioma';
+const CHAVE = 'idioma';
 
 /** Primeira escolha: o que já foi salvo; depois, o idioma do navegador. */
 function idiomaInicial(): Idioma {
-  try {
-    const salvo = localStorage.getItem(CHAVE) as Idioma | null;
-    if (salvo && salvo in DICIONARIOS) return salvo;
-  } catch {
-    /* modo privado sem storage */
-  }
+  const salvo = lerGuardado(CHAVE) as Idioma | null;
+  if (salvo && salvo in DICIONARIOS) return salvo;
   // o navegador manda em ordem de preferência; a primeira que conhecemos vence
   const preferidas = typeof navigator !== 'undefined' ? (navigator.languages ?? [navigator.language]) : [];
   for (const tag of preferidas) {
@@ -44,11 +41,7 @@ type Estado = {
 export const useIdioma = create<Estado>((set) => ({
   idioma: idiomaInicial(),
   definirIdioma: (idioma) => {
-    try {
-      localStorage.setItem(CHAVE, idioma);
-    } catch {
-      /* segue sem persistir */
-    }
+    gravarGuardado(CHAVE, idioma);
     set({ idioma });
   }
 }));

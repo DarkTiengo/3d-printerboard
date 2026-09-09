@@ -1,4 +1,4 @@
-import { rotacaoValida, type PrinterConfig, type PrinterConfigInput } from '@3dfarm/shared';
+import { rotacaoValida, type PrinterConfig, type PrinterConfigInput } from '@gridfarm/shared';
 import { getDb } from '../db/index.js';
 
 type Row = {

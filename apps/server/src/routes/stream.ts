@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { LinhaConsole, Printer, StreamEvent } from '@3dfarm/shared';
+import type { LinhaConsole, Printer, StreamEvent } from '@gridfarm/shared';
 import { farm } from '../services/farm.js';
 import { exigirLogin } from '../lib/guard.js';
 import { logger } from '../lib/logger.js';

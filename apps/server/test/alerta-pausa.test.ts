@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { Alert, Printer } from '@3dfarm/shared';
-import { CODIGOS_DE_ALERTA, CODIGOS_PADRAO } from '@3dfarm/shared';
+import type { Alert, Printer } from '@gridfarm/shared';
+import { CODIGOS_DE_ALERTA, CODIGOS_PADRAO } from '@gridfarm/shared';
 
 /**
  * Impressão pausada vira alerta.

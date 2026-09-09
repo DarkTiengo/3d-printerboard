@@ -1,4 +1,4 @@
-import type { Printer, QueueJob, QueueStatus } from '@3dfarm/shared';
+import type { Printer, QueueJob, QueueStatus } from '@gridfarm/shared';
 import { getDb } from '../db/index.js';
 import { farm } from './farm.js';
 import { acharPrinter, listarPrinters } from './printers.repo.js';

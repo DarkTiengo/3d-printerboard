@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Archive, Clock, Download, HardDriveDownload, SlidersHorizontal, Upload } from 'lucide-react';
-import type { BackupCard, BackupPadroes, BackupSecao, User } from '@3dfarm/shared';
-import { BACKUP_SECOES, pode } from '@3dfarm/shared';
+import type { BackupCard, BackupPadroes, BackupSecao, User } from '@gridfarm/shared';
+import { BACKUP_SECOES, pode } from '@gridfarm/shared';
 import { api, urlDownloadBackup } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Tag } from '../components/Tag';

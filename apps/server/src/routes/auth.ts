@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { LoginPayload, Role } from '@3dfarm/shared';
+import type { LoginPayload, Role } from '@gridfarm/shared';
 import { config } from '../config.js';
 import {
   COOKIE_SESSAO,

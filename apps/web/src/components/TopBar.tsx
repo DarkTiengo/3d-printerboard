@@ -10,8 +10,8 @@ import {
   TriangleAlert,
   Video
 } from 'lucide-react';
-import type { User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
+import type { User } from '@gridfarm/shared';
+import { pode } from '@gridfarm/shared';
 import { useUi, type Tela } from '../store/ui';
 import { useT } from '../i18n';
 import { SeletorIdioma } from './SeletorIdioma';
@@ -88,7 +88,7 @@ export function TopBar({ usuario, aoSair }: { usuario: User; aoSair: () => void 
         }}
       >
         <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 19, letterSpacing: '0.02em' }}>
-          3D PRINTERBOARD
+          GRIDFARM
         </span>
 
         <nav aria-label={t.barra.painel} style={{ display: 'flex', gap: 4 }}>

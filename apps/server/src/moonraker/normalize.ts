@@ -9,8 +9,8 @@ import type {
   Posicao,
   PrinterConfig,
   SerieDeTemperatura
-} from '@3dfarm/shared';
-import { HISTORICO_JANELA_S, HISTORICO_PONTOS } from '@3dfarm/shared';
+} from '@gridfarm/shared';
+import { HISTORICO_JANELA_S, HISTORICO_PONTOS } from '@gridfarm/shared';
 import { PREFIXOS_DE_SENSOR, type EstadoBruto } from './client.js';
 
 /**

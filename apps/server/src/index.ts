@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   // ── servidor ─────────────────────────────────────────────────────────────
   const app = await criarApp();
   await app.listen({ port: config.port, host: config.host });
-  logger.info(`3D Printerboard no ar em http://${config.host}:${config.port}`);
+  logger.info(`GridFarm no ar em http://${config.host}:${config.port}`);
 
   const encerrar = async (sinal: string) => {
     logger.info(`${sinal} recebido, encerrando…`);

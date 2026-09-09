@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import type { Printer } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
 
 // escolherImpressora consulta a ordem cadastrada da fazenda
 const ordemFake = vi.hoisted(() => ({ ids: ['P01', 'P02', 'P03'] }));

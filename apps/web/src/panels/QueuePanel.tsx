@@ -1,6 +1,6 @@
 import { Menu, X } from 'lucide-react';
-import type { User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
+import type { User } from '@gridfarm/shared';
+import { pode } from '@gridfarm/shared';
 import { usePrinters, usePrintersVisiveis } from '../store/printers';
 import { useT } from '../i18n';
 import { IconButton } from '../components/IconButton';

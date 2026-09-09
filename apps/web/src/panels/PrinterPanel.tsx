@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PackageX, Pause, Play, X } from 'lucide-react';
-import type { Printer, User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
+import type { Printer, User } from '@gridfarm/shared';
+import { pode } from '@gridfarm/shared';
 import { IconButton } from '../components/IconButton';
 import { ProgressBar } from '../components/ProgressBar';
 import { Ponto, Tag } from '../components/Tag';

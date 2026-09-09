@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight, Check, LoaderCircle } from 'lucide-react';
-import type { User } from '@3dfarm/shared';
+import type { User } from '@gridfarm/shared';
 import { ApiError, api } from '../lib/api';
+import { apagarGuardado, gravarGuardado, lerGuardado } from '../lib/guardado';
 import { Ponto } from '../components/Tag';
 import { useT } from '../i18n';
 import { SeletorIdioma } from '../components/SeletorIdioma';
@@ -9,17 +10,11 @@ import s from './Login.module.css';
 
 type Estatistica = { rotulo: string; valor: string };
 
-const CHAVE_USUARIO = 'printerboard.usuario';
+const CHAVE_USUARIO = 'usuario';
 
 export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
   const t = useT();
-  const [usuario, setUsuario] = useState(() => {
-    try {
-      return localStorage.getItem(CHAVE_USUARIO) ?? '';
-    } catch {
-      return '';
-    }
-  });
+  const [usuario, setUsuario] = useState(() => lerGuardado(CHAVE_USUARIO) ?? '');
   const [senha, setSenha] = useState('');
   const [lembrar, setLembrar] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -73,12 +68,8 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
     setEnviando(true);
     try {
       const { usuario: user } = await api.login(usuario.trim(), senha, lembrar);
-      try {
-        if (lembrar) localStorage.setItem(CHAVE_USUARIO, usuario.trim());
-        else localStorage.removeItem(CHAVE_USUARIO);
-      } catch {
-        /* sem storage, seguimos assim mesmo */
-      }
+      if (lembrar) gravarGuardado(CHAVE_USUARIO, usuario.trim());
+      else apagarGuardado(CHAVE_USUARIO);
       aoEntrar(user);
     } catch (err) {
       if (err instanceof ApiError && err.status === 0) {
@@ -101,7 +92,7 @@ export function Login({ aoEntrar }: { aoEntrar: (u: User) => void }) {
 
         <div className={`${s.camada} ${s.marca}`}>
           <span className={s.marcaQuadrado} aria-hidden />
-          <span className={s.marcaTexto}>3D PRINTERBOARD</span>
+          <span className={s.marcaTexto}>GRIDFARM</span>
         </div>
 
         <div className={`${s.camada} ${s.chamadaBloco}`}>

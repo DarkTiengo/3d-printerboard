@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Power, RotateCcw } from 'lucide-react';
-import type { Printer, User } from '@3dfarm/shared';
-import { pode } from '@3dfarm/shared';
+import type { Printer, User } from '@gridfarm/shared';
+import { pode } from '@gridfarm/shared';
 import { Confirm } from '../components/Confirm';
 import { api } from '../lib/api';
 import { useT } from '../i18n';

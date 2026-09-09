@@ -1,5 +1,5 @@
-import type { Printer } from '@3dfarm/shared';
-import { quando } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
+import { quando } from '@gridfarm/shared';
 import { config } from '../config.js';
 import { farm } from './farm.js';
 import { acharPrinter, listarPrinters } from './printers.repo.js';

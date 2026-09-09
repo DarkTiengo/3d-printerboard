@@ -18,7 +18,7 @@ import type {
   QueueJob,
   Role,
   User
-} from '@3dfarm/shared';
+} from '@gridfarm/shared';
 
 /**
  * Mensagens da camada de rede. Ficam aqui, e não no dicionário, porque este

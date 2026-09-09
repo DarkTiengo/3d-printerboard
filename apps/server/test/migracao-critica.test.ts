@@ -48,7 +48,7 @@ CREATE UNIQUE INDEX idx_alerts_dedupe
 let dir: string | null = null;
 
 function bancoAntigo(): void {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'printerboard-mig-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gridfarm-mig-'));
   for (const chave of ['dataDir', 'backupsDir', 'framesDir', 'thumbsDir', 'blobsDir'] as const) {
     (config as any)[chave] = path.join(dir, chave);
   }

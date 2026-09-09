@@ -1,4 +1,4 @@
-import type { Printer, Status } from '@3dfarm/shared';
+import type { Printer, Status } from '@gridfarm/shared';
 import type { Dicionario } from '../i18n/pt';
 import type { Formatador } from '../i18n/formato';
 

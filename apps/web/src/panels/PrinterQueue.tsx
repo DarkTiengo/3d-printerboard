@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Menu, Play, RotateCcw } from 'lucide-react';
-import type { Printer, QueueJob } from '@3dfarm/shared';
+import type { Printer, QueueJob } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { useT } from '../i18n';

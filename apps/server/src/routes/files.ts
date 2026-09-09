@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import path from 'node:path';
 import fs from 'node:fs';
-import type { EnqueuePayload } from '@3dfarm/shared';
+import type { EnqueuePayload } from '@gridfarm/shared';
 import { listarBiblioteca, listarArquivos } from '../services/files.js';
 import { cancelarJob, despacharJob, enfileirar, filaDaImpressora, listarFila } from '../services/queue.js';
 import { config } from '../config.js';

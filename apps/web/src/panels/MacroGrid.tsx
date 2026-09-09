@@ -1,5 +1,5 @@
 import { Zap } from 'lucide-react';
-import { MACROS_CARREGAR, MACROS_DESCARREGAR } from '@3dfarm/shared';
+import { MACROS_CARREGAR, MACROS_DESCARREGAR } from '@gridfarm/shared';
 import { api } from '../lib/api';
 import { useT } from '../i18n';
 

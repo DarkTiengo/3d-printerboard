@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bytes, duracao, nomeBonito, quando, quandoCurto, semExtensao, temperatura, alvo } from '@3dfarm/shared';
+import { bytes, duracao, nomeBonito, quando, quandoCurto, semExtensao, temperatura, alvo } from '@gridfarm/shared';
 
 describe('duracao', () => {
   it('formata como o design: 1h 14m', () => {

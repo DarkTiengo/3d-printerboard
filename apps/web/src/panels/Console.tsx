@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SendHorizontal } from 'lucide-react';
-import type { LinhaConsole, TomDaLinha } from '@3dfarm/shared';
-import { tomDaLinha } from '@3dfarm/shared';
+import type { LinhaConsole, TomDaLinha } from '@gridfarm/shared';
+import { tomDaLinha } from '@gridfarm/shared';
 import { Dobravel } from '../components/Dobravel';
 import { api } from '../lib/api';
 import { useT } from '../i18n';

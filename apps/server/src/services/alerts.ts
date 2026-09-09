@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import type { Alert, Printer, Severidade } from '@3dfarm/shared';
+import type { Alert, Printer, Severidade } from '@gridfarm/shared';
 
 import { getDb } from '../db/index.js';
 import { config } from '../config.js';

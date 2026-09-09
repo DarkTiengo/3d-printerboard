@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Printer } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
 
 /**
  * As respostas do bot e a regra de quem ele atende.
@@ -104,7 +104,7 @@ describe('/status da fazenda', () => {
   });
 
   it('num grupo, o Telegram entrega /status@meubot', async () => {
-    await bot.responder(tg, '/status@printerboard_bot');
+    await bot.responder(tg, '/status@gridfarm_bot');
     expect(enviados[0].conteudo).toContain('Fazenda');
   });
 });

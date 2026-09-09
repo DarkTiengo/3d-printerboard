@@ -1,8 +1,8 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import type { GcodeFile } from '@3dfarm/shared';
-import { duracao, semExtensao, filamentoGramas } from '@3dfarm/shared';
+import type { GcodeFile } from '@gridfarm/shared';
+import { duracao, semExtensao, filamentoGramas } from '@gridfarm/shared';
 import { farm } from './farm.js';
 import { config } from '../config.js';
 import { logger } from '../lib/logger.js';

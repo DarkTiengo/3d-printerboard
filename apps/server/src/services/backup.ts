@@ -17,8 +17,8 @@ import type {
   BackupSecao,
   BackupSnapshot,
   PrinterConfig
-} from '@3dfarm/shared';
-import { BACKUP_SECOES, bytes as fmtBytes } from '@3dfarm/shared';
+} from '@gridfarm/shared';
+import { BACKUP_SECOES, bytes as fmtBytes } from '@gridfarm/shared';
 import { getDb, getSetting, setSetting } from '../db/index.js';
 import { config } from '../config.js';
 import { farm } from './farm.js';

@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { pode } from '@3dfarm/shared';
-import type { Acao, Role } from '@3dfarm/shared';
+import { pode } from '@gridfarm/shared';
+import type { Acao, Role } from '@gridfarm/shared';
 import { COOKIE_SESSAO, acharUsuarioPorId, lerToken, type Sessao } from '../services/auth.js';
 
 declare module 'fastify' {

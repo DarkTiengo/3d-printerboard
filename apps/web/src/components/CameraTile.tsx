@@ -1,5 +1,5 @@
 import { Maximize2 } from 'lucide-react';
-import type { Printer } from '@3dfarm/shared';
+import type { Printer } from '@gridfarm/shared';
 import { CameraFeed } from './CameraFeed';
 import { ProgressBar } from './ProgressBar';
 import { Ponto } from './Tag';

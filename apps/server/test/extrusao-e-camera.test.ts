@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PrinterConfig } from '@3dfarm/shared';
+import type { PrinterConfig } from '@gridfarm/shared';
 import {
   acharMacro,
   EXTRUSAO_MAX_MM,
@@ -10,7 +10,7 @@ import {
   MACROS_DESCARREGAR,
   rotacaoValida,
   ROTACOES
-} from '@3dfarm/shared';
+} from '@gridfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from '../src/moonraker/client.js';
 import { normalizar } from '../src/moonraker/normalize.js';
 import { criarClienteMock } from '../src/moonraker/mock.js';

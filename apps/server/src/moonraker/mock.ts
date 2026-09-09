@@ -1,4 +1,4 @@
-import type { EstadoKlippy, PrinterConfig, RotacaoCamera } from '@3dfarm/shared';
+import type { EstadoKlippy, PrinterConfig, RotacaoCamera } from '@gridfarm/shared';
 import { MoonrakerClient, type EstadoBruto } from './client.js';
 import { MoonrakerHttp, type ArquivoMoonraker, type MetadadosGcode } from './http.js';
 import { criarPrinter, listarPrinters } from '../services/printers.repo.js';

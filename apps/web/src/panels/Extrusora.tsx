@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowDownToLine, ArrowUpFromLine, Download, Upload } from 'lucide-react';
-import type { Temperatura } from '@3dfarm/shared';
-import { EXTRUSAO_VELOCIDADES, MACROS_CARREGAR, MACROS_DESCARREGAR, acharMacro } from '@3dfarm/shared';
+import type { Temperatura } from '@gridfarm/shared';
+import { EXTRUSAO_VELOCIDADES, MACROS_CARREGAR, MACROS_DESCARREGAR, acharMacro } from '@gridfarm/shared';
 import { Tooltip } from '../components/Tooltip';
 import { useUi } from '../store/ui';
 import { api } from '../lib/api';

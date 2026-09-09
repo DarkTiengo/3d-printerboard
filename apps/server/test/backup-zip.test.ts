@@ -22,7 +22,7 @@ function temUnzip(): boolean {
   }
 }
 
-const raiz = fs.mkdtempSync(path.join(os.tmpdir(), '3dfarm-zip-'));
+const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'gridfarm-zip-'));
 process.env.DATA_DIR = raiz;
 
 vi.mock('../src/db/index.js', () => ({ getDb: () => ({}), getSetting: () => null, setSetting: () => {} }));

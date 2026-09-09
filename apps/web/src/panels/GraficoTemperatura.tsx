@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { HistoricoDeTemperatura, SerieDeTemperatura, Temperatura } from '@3dfarm/shared';
-import { HISTORICO_JANELA_S } from '@3dfarm/shared';
+import type { HistoricoDeTemperatura, SerieDeTemperatura, Temperatura } from '@gridfarm/shared';
+import { HISTORICO_JANELA_S } from '@gridfarm/shared';
 import { Dobravel } from '../components/Dobravel';
 import { api } from '../lib/api';
 import { useT } from '../i18n';
