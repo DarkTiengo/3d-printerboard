@@ -82,6 +82,15 @@ export type NovoAlerta = {
   dedupeKey?: string;
   /** Guarda o quadro da câmera no instante do alerta. */
   capturarFrame?: boolean;
+  /**
+   * O quadro a guardar, quando quem cria o alerta já o tem na mão.
+   *
+   * É o caso do detector de falhas: a foto que explica a decisão é a que a
+   * motivou, e recapturar aqui daria a máquina já pausada, com o bico
+   * estacionado noutro canto. Sem isto, vale o comportamento de sempre — pedir
+   * um quadro fresco à câmera.
+   */
+  frame?: Buffer;
 };
 
 /**
@@ -114,7 +123,7 @@ export async function criarAlerta(novo: NovoAlerta): Promise<Alert | null> {
 
   if (novo.capturarFrame && novo.printerId) {
     // fora do caminho crítico: se a câmera demorar, o alerta já existe
-    void capturarFrame(id, novo.printerId);
+    void capturarFrame(id, novo.printerId, novo.frame);
   }
 
   const alert = acharAlerta(id)!.alert;
@@ -123,10 +132,11 @@ export async function criarAlerta(novo: NovoAlerta): Promise<Alert | null> {
   return alert;
 }
 
-async function capturarFrame(alertaId: number, printerId: string): Promise<void> {
+async function capturarFrame(alertaId: number, printerId: string, pronto?: Buffer): Promise<void> {
   try {
-    // o frame do alerta precisa ser do instante do alerta, não um cacheado
-    const jpeg = await cameras.capturar(printerId, 1_000);
+    // o frame do alerta precisa ser do instante do alerta, não um cacheado —
+    // a menos que quem criou o alerta já tenha o quadro certo na mão
+    const jpeg = pronto ?? (await cameras.capturar(printerId, 1_000));
     if (!jpeg) return;
     const arquivo = path.join(config.framesDir, `alerta-${alertaId}.jpg`);
     await fs.writeFile(arquivo, jpeg);
@@ -245,6 +255,41 @@ const ESPERA_KLIPPY_MS = 10_000;
 const klippyPendente = new Map<string, NodeJS.Timeout>();
 
 /**
+ * Pausas que este servidor mesmo pediu, por impressora, com a hora.
+ *
+ * Existe pela mesma razão que `desligamento` existe: por fora, a pausa do
+ * detector de falhas e a do sensor de filamento são a mesma transição, e a
+ * diferença é se alguém — aqui dentro — pediu. Sem isto, uma falha detectada
+ * manda duas mensagens para o celular: o "possível falha na impressão", que
+ * explica tudo e leva a foto, e logo atrás um "impressão pausada" que não
+ * acrescenta nada e ainda por cima chega com a máquina já parada.
+ *
+ * A marca sai quando a máquina deixa de estar pausada — é o fim natural
+ * daquela pausa — e, de todo jeito, vale por no máximo um minuto. O teto existe
+ * porque o comando pode falhar e a máquina pode sumir no meio: nesses casos não
+ * há transição nenhuma para limpar a marca, e uma marca esquecida engoliria a
+ * *próxima* pausa de verdade, que é justamente a que ninguém pode perder.
+ *
+ * Consultar não consome. Ler e apagar deixaria a resposta dependendo de quantas
+ * vezes se perguntou, e a pergunta é sobre a pausa, não sobre quem perguntou.
+ */
+const pausasAutomaticas = new Map<string, number>();
+const VALIDADE_PAUSA_AUTOMATICA_MS = 60_000;
+
+/** Avisa que a pausa que está para acontecer partiu daqui. */
+export function marcarPausaAutomatica(printerId: string): void {
+  pausasAutomaticas.set(printerId, Date.now());
+}
+
+function foiPausaAutomatica(printerId: string): boolean {
+  const em = pausasAutomaticas.get(printerId);
+  if (em == null) return false;
+  if (Date.now() - em < VALIDADE_PAUSA_AUTOMATICA_MS) return true;
+  pausasAutomaticas.delete(printerId);
+  return false;
+}
+
+/**
  * A máquina foi desligada de propósito?
  *
  * Vale para o que está pendurado nela: a câmera do mesmo host cai junto, e um
@@ -315,6 +360,8 @@ function confirmarKlipperParado(printerId: string): void {
 export function _limparEsperas(): void {
   for (const t of klippyPendente.values()) clearTimeout(t);
   klippyPendente.clear();
+  // idem para a marca de pausa automática, que vale um minuto de relógio real
+  pausasAutomaticas.clear();
 }
 
 /**
@@ -342,6 +389,8 @@ export function ligarGeradorDeAlertas(): void {
     // retomar, cancelar ou terminar fecha a pausa: em todos, alguém já foi lá
     if (atual.status !== 'pausada' && (!anterior || anterior.status === 'pausada')) {
       resolverPorChave(`pausa:${atual.id}`);
+      // e aquela pausa acabou, então a marca de "fomos nós" acabou com ela
+      pausasAutomaticas.delete(atual.id);
     }
 
     // Criar alerta, ao contrário, exige transição: sem o estado anterior não dá
@@ -398,7 +447,7 @@ export function ligarGeradorDeAlertas(): void {
      * `statusDe` só devolve 'pausada' com o Klipper em 'ready', então não há
      * risco de confundir isto com o estado congelado de uma máquina caída.
      */
-    if (anterior.status !== 'pausada' && atual.status === 'pausada') {
+    if (anterior.status !== 'pausada' && atual.status === 'pausada' && !foiPausaAutomatica(atual.id)) {
       void criarAlerta({
         printerId: atual.id,
         printerNome: nomeCurto(atual),

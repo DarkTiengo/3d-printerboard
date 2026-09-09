@@ -88,6 +88,17 @@ CREATE TABLE IF NOT EXISTS backup_prefs (
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Detecção de falha pela câmera, por impressora. Linha ausente = desligada,
+-- que é o padrão: o recurso pausa impressão sozinho e só age onde foi pedido.
+CREATE TABLE IF NOT EXISTS deteccao_prefs (
+  printer_id TEXT PRIMARY KEY REFERENCES printers(id) ON DELETE CASCADE,
+  ligado     INTEGER NOT NULL DEFAULT 0,
+  -- NULL = herda o valor global
+  limiar     REAL,
+  acao       TEXT CHECK (acao IS NULL OR acao IN ('alertar','pausar','cancelar')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL

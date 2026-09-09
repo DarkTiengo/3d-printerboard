@@ -113,6 +113,7 @@ beforeEach(() => {
   banco.seq = 0;
   vistos = [];
   alerts._limparInscritos();
+  alerts._limparEsperas();
   alerts.aoCriarAlerta((a) => vistos.push(a));
   alerts.ligarGeradorDeAlertas();
 });
@@ -167,5 +168,44 @@ describe('impressão pausada', () => {
     // era este o sintoma: o alerta existia na tela e nunca virava mensagem
     expect(CODIGOS_PADRAO).toContain('impressao_pausada');
     expect(CODIGOS_DE_ALERTA.map((c) => c.codigo)).toContain('impressao_pausada');
+  });
+});
+
+/**
+ * O detector de falhas pausa a máquina e já manda o seu próprio alerta, com a
+ * foto e a explicação. Sem esta marca, a mesma falha faria o celular tocar
+ * duas vezes: uma dizendo o que aconteceu, e logo atrás um "impressão pausada"
+ * genérico que não acrescenta nada.
+ */
+describe('pausa pedida pelo próprio servidor', () => {
+  const imprimindo = impressora();
+  const pausada = impressora({ status: 'pausada' });
+
+  it('não vira alerta de pausa — quem avisa é quem pediu', () => {
+    alerts.marcarPausaAutomatica('P05');
+    farmFalso.emitir('printer', pausada, imprimindo);
+
+    expect(vistos.find((a) => a.codigo === 'impressao_pausada')).toBeUndefined();
+  });
+
+  it('a marca vale uma vez só: a pausa seguinte alerta como sempre', () => {
+    alerts.marcarPausaAutomatica('P05');
+    farmFalso.emitir('printer', pausada, imprimindo);
+    farmFalso.emitir('printer', imprimindo, pausada);
+    vistos = [];
+
+    // agora foi o sensor de filamento, e disso ninguém pode ficar sem saber
+    farmFalso.emitir('printer', pausada, imprimindo);
+
+    expect(vistos.find((a) => a.codigo === 'impressao_pausada')).toBeDefined();
+  });
+
+  it('a marca é de uma máquina só, não da fazenda', () => {
+    alerts.marcarPausaAutomatica('P05');
+
+    const outra = impressora({ id: 'P07', nome: 'Ender 3' });
+    farmFalso.emitir('printer', { ...outra, status: 'pausada' }, outra);
+
+    expect(vistos.find((a) => a.codigo === 'impressao_pausada')?.printerId).toBe('P07');
   });
 });

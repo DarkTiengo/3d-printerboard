@@ -281,6 +281,60 @@ that print carries on unwatched — it clears itself on reconnect), a print
 aborted with the firmware still healthy, filament running out, a camera that
 went dark, and the backup alerts described further down.
 
+### Watching for spaghetti
+
+Off by default, and worth turning on: the server can **look at the cameras
+itself** and stop a print that has come off the bed. Set `DETECCAO_ENABLED=true`,
+then Settings → **Failure detection**, download the model once, and tick the
+machines to watch.
+
+It is not a camera stream being analysed frame by frame. **One frame every 25
+seconds per printer, and only from printers that are actually printing** — and
+even then it costs nothing extra when someone has the camera wall open, because
+the frame comes from the cache that wall already fills. On top of that, only one
+analysis ever runs at a time in the whole farm, so the CPU peak is that of *one*
+inference, not eight. With eight machines all printing that is about 26% of one
+core on a Raspberry Pi 4, and the model is unloaded from memory after ten
+minutes with nothing to watch.
+
+**Nothing acts on one frame.** A nozzle crossing the lens, a blurry frame in the
+middle of a fast move, the light changing when someone walks into the workshop —
+each of those gets a high score from a classifier trained on clean photos. So the
+evidence has to be continuous: **three suspicious frames in a row**, about 75
+seconds, and any clean frame in between resets the count to zero. The first two
+minutes of a print are skipped as well, because the purge line and the skirt are
+exactly what the model was trained to call a tangle.
+
+On confirmation, per printer, one of three: **alert only**, **pause** (the
+default) or **cancel**. Pause is the default because it is the one that survives
+being wrong in both directions — a false positive costs you a click to resume, a
+real one gets the nozzle off the tangle without throwing away a print that might
+still be saved. The alert carries **the frame that convinced it**, not one taken
+afterwards: by then the print is paused and the toolhead is parked somewhere
+else, and the picture would explain less than the one that made the decision.
+It reaches Telegram with that photo, like any other alert. It acts **once per
+print** — resume after looking at the photo and it will not argue with you.
+
+The model is not in this repository and not in the image. It is fetched once
+into `<DATA_DIR>/modelos/`, checked against `DETECCAO_MODELO_SHA256`, and stays
+on the volume; an install with no internet can drop the `.onnx` in that folder
+by hand instead. Inference runs in WebAssembly inside the same process — the
+image is Alpine, so musl, and `onnxruntime-node` publishes no musl build. Same
+runtime, ~2× the time per frame, no new native dependency, and it behaves
+identically on x64 and arm64.
+
+Worth being straight about what it is:
+
+- It sees **spaghetti** — the print that let go and became a tangle. It does not
+  see under-extrusion, a layer shift, warping or a clogged nozzle.
+- It cannot see what the camera cannot see. A lens out of focus, the light off
+  inside an enclosure, a camera aimed at the back of the machine: no detection,
+  and no warning that there is no detection.
+- **It is not a safety device.** Thermal runaway is Klipper's job and stays
+  Klipper's job.
+- It will be wrong in both directions. That is the whole reason pause is the
+  default rather than cancel.
+
 ## Language
 
 The interface ships in **English, Brazilian Portuguese, Spanish, French and
@@ -451,7 +505,7 @@ MOCK_PRINTERS=true npm run dev:server    # API on :8080, data in ./data
 npm run dev:web                          # Vite on :5173, proxying the API
 
 npm test         # Vitest: normalizer, queue engine, backup schedule and packer,
-                 # MJPEG demuxer, mDNS codec, formatters
+                 # MJPEG demuxer, mDNS codec, formatters, failure detector
 npm run typecheck
 ```
 
@@ -460,7 +514,8 @@ Outside Docker the server reads `DATA_DIR` (default `./data`) and `WEB_DIR`
 
 ```
 packages/shared   types shared by both sides
-apps/server       Fastify, SQLite, Moonraker clients, backup, queue, alerts, mDNS
+apps/server       Fastify, SQLite, Moonraker clients, backup, queue, alerts,
+                  failure detection, mDNS
 apps/web          React + Vite, screens and components
 design/           the design package — README.md is the visual source of truth
 ```

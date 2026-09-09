@@ -374,6 +374,9 @@ export const CODIGOS_DE_ALERTA: { codigo: string; sev: Severidade }[] = [
      a máquina não precisa ser avisado de que ela desligou. */
   { codigo: 'impressora_desligada', sev: 'baixa' },
   { codigo: 'erro_impressao', sev: 'alta' },
+  /* O detector de falhas pela câmera. Alta, e não crítica: a máquina está
+     inteira e ninguém corre risco — o que está se perdendo é filamento. */
+  { codigo: 'falha_detectada', sev: 'alta' },
   { codigo: 'backup_falhou', sev: 'alta' },
   { codigo: 'impressao_pausada', sev: 'media' },
   { codigo: 'filamento_acabando', sev: 'media' },
@@ -393,6 +396,7 @@ export const CODIGOS_PADRAO = [
   'klipper_parado',
   'impressora_offline',
   'erro_impressao',
+  'falha_detectada',
   'backup_falhou',
   'impressao_pausada',
   'filamento_acabando',
@@ -483,6 +487,61 @@ export type BackupSnapshot = {
   gcodeArquivos: number;
   /** formato do arquivo guardado; `tar.gz` é de snapshots anteriores à mudança */
   formato: 'zip' | 'tar.gz';
+};
+
+// ── Detecção de falha pela câmera ───────────────────────────────────────────
+
+/**
+ * O que fazer quando a falha é confirmada.
+ *
+ * `pausar` é o padrão de propósito: é o único dos três que sobrevive ao erro
+ * nos dois sentidos. Um falso positivo custa um clique para retomar; um acerto
+ * tira o bico de cima do emaranhado sem jogar fora a impressão inteira, e a
+ * decisão de cancelar fica com quem olhou a foto.
+ */
+export type AcaoDeteccao = 'alertar' | 'pausar' | 'cancelar';
+export const ACOES_DETECCAO: AcaoDeteccao[] = ['alertar', 'pausar', 'cancelar'];
+
+export function acaoValida(v: unknown): v is AcaoDeteccao {
+  return typeof v === 'string' && (ACOES_DETECCAO as string[]).includes(v);
+}
+
+export type DeteccaoPrefs = {
+  printerId: string;
+  ligado: boolean;
+  /** null = usa o limiar global */
+  limiar: number | null;
+  /** null = usa a ação global */
+  acao: AcaoDeteccao | null;
+};
+
+export type DeteccaoPrefsInput = {
+  ligado?: boolean;
+  limiar?: number | null;
+  acao?: AcaoDeteccao | null;
+};
+
+/** Os valores globais que valem para quem não configurou os seus. */
+export type DeteccaoPadroes = {
+  /** o recurso inteiro, desligado por .env, não tem o que configurar */
+  disponivel: boolean;
+  limiar: number;
+  acao: AcaoDeteccao;
+  intervaloS: number;
+  confirmacoes: number;
+};
+
+/**
+ * Estado do arquivo do modelo. `ausente` é a situação normal antes de alguém
+ * ligar o recurso pela primeira vez — não é erro.
+ */
+export type EstadoModelo = {
+  estado: 'ausente' | 'baixando' | 'pronto' | 'erro';
+  bytes: number;
+  /** o que deu errado na última tentativa de baixar, se deu */
+  erro: string | null;
+  /** false quando não há DETECCAO_MODELO_URL configurada para buscar */
+  podeBaixar: boolean;
 };
 
 // ── Stream (SSE) ────────────────────────────────────────────────────────────

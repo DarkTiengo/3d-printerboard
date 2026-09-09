@@ -14,6 +14,7 @@ import { rotasFiles } from './routes/files.js';
 import { rotasAlerts } from './routes/alerts.js';
 import { rotasBackups } from './routes/backups.js';
 import { rotasNotificacoes } from './routes/notificacoes.js';
+import { rotasDeteccao } from './routes/deteccao.js';
 import { rotasStream } from './routes/stream.js';
 import { rotasResumo } from './routes/resumo.js';
 import { rotasMockCamera } from './routes/mock-camera.js';
@@ -82,6 +83,7 @@ export async function criarApp() {
   await app.register(rotasAlerts);
   await app.register(rotasBackups);
   await app.register(rotasNotificacoes);
+  await app.register(rotasDeteccao);
   await app.register(rotasStream);
   await app.register(rotasResumo);
 

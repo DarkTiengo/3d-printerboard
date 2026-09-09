@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { IconButton } from '../components/IconButton';
 import { Confirm } from '../components/Confirm';
 import { NotificacoesCard } from '../panels/NotificacoesCard';
+import { DeteccaoCard } from '../panels/DeteccaoCard';
 import { estiloDaImagem, estiloDoQuadro } from '../lib/rotacao';
 import { useT } from '../i18n';
 import type { Dicionario } from '../i18n/pt';
@@ -233,6 +234,9 @@ export function Settings() {
 
         {/* segunda seção da tela: para onde os alertas saem da fazenda */}
         <NotificacoesCard />
+
+        {/* terceira: o que a fazenda olha sozinha, e o que faz ao ver */}
+        <DeteccaoCard />
       </div>
 
       {editando && (

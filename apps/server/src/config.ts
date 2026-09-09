@@ -11,6 +11,13 @@ function int(v: string | undefined, padrao: number): number {
   return Number.isFinite(n) ? n : padrao;
 }
 
+/** Como `int`, mas guarda a parte fracionária — limiares vão de 0 a 1. */
+function num(v: string | undefined, padrao: number): number {
+  if (v == null || v === '') return padrao;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : padrao;
+}
+
 const dataDir = path.resolve(process.env.DATA_DIR ?? './data');
 
 export const config = {
@@ -84,6 +91,60 @@ export const config = {
   /** quadros por segundo do proxy MJPEG quando o cliente não pede nada */
   cameraFpsPadrao: int(process.env.CAMERA_FPS, 5),
   cameraTimeoutMs: int(process.env.CAMERA_TIMEOUT_MS, 60_000),
+
+  /**
+   * Detecção de falha pela câmera. Desligada por padrão: precisa baixar um
+   * modelo, e um recurso que pausa impressão sozinho não deve aparecer sem
+   * alguém ter pedido.
+   *
+   * O custo no Raspberry Pi vem de três escolhas, e não do modelo: só olha
+   * quem está imprimindo, uma inferência por vez na fazenda inteira, e um
+   * quadro a cada `intervaloS` por máquina.
+   */
+  deteccaoLigada: bool(process.env.DETECCAO_ENABLED, false),
+  /**
+   * Segundos entre duas análises da mesma impressora. Espaguete não aparece e
+   * some em dois segundos — quando aparece, fica — então olhar mais vezes
+   * gasta CPU sem enxergar nada de novo.
+   */
+  deteccaoIntervaloS: int(process.env.DETECCAO_INTERVALO_S, 25),
+  /** confiança mínima do modelo para a amostra contar como suspeita */
+  deteccaoLimiar: num(process.env.DETECCAO_LIMIAR, 0.55),
+  /**
+   * Quantas amostras suspeitas seguidas confirmam a falha. Com 3 e o intervalo
+   * padrão são ~75 s de evidência contínua: o bico passando na frente da
+   * câmera, um quadro borrado ou um reflexo não derrubam impressão nenhuma.
+   */
+  deteccaoConfirmacoes: int(process.env.DETECCAO_CONFIRMACOES, 3),
+  /**
+   * Quanto esperar depois de a impressão começar. A linha de purga e a saia
+   * são exatamente o que o modelo foi treinado a chamar de emaranhado.
+   */
+  deteccaoEsperaInicialS: int(process.env.DETECCAO_ESPERA_INICIAL_S, 120),
+  /** ação padrão de quem não escolheu a sua; veja AcaoDeteccao no shared */
+  deteccaoAcao: process.env.DETECCAO_ACAO ?? 'pausar',
+  /** threads do WASM; 1 num Pi que já esteja apertado */
+  deteccaoThreads: int(process.env.DETECCAO_THREADS, 2),
+  /**
+   * Índice da classe "espaguete" na saída do modelo. O padrão vale para o
+   * modelo que documentamos (spaghetti, stringing, zits); um modelo exportado
+   * com as classes noutra ordem só precisa deste número.
+   *
+   * As outras duas classes são ignoradas de propósito: numa webcam a dois
+   * metros, fiapo e bolinha estão abaixo do ruído e só serviriam de fábrica de
+   * alarme falso.
+   */
+  deteccaoClasse: int(process.env.DETECCAO_CLASSE, 0),
+  /** de onde baixar o .onnx na primeira vez, e o SHA-256 que ele deve ter */
+  deteccaoModeloUrl: process.env.DETECCAO_MODELO_URL ?? '',
+  deteccaoModeloSha256: (process.env.DETECCAO_MODELO_SHA256 ?? '').toLowerCase(),
+  modelosDir: path.join(dataDir, 'modelos'),
+  /**
+   * Só desenvolvimento: força a confiança devolvida pelo classificador, para
+   * percorrer o caminho inteiro — alerta, foto no Telegram, pausa — sem ter um
+   * espaguete de verdade na frente de uma câmera. Vazio desliga.
+   */
+  deteccaoSimularConf: process.env.DETECCAO_SIMULAR_CONF ?? '',
 
   /**
    * Telegram. Servem de valor inicial: o que estiver no banco (tela de gestão)

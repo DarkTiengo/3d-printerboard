@@ -21,6 +21,15 @@ RUN npm run build
 # só as dependências de produção do servidor seguem para a imagem final
 RUN npm prune --omit=dev
 
+# O onnxruntime-web publica 87 MB de dist: uma variante de WebAssembly para cada
+# combinação de navegador, WebGPU e treino. Em Node a cadeia usada é uma só —
+# ort.node.min.mjs → ort-wasm-simd-threaded.mjs → .wasm — e são 11 MB. O resto
+# nunca é carregado, então não tem por que viajar na imagem.
+RUN find node_modules/onnxruntime-web/dist -type f \
+      ! -name 'ort.node.min.mjs' ! -name 'ort.node.min.js' \
+      ! -name 'ort-wasm-simd-threaded.mjs' ! -name 'ort-wasm-simd-threaded.wasm' \
+      -delete
+
 # ── runtime ─────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
 

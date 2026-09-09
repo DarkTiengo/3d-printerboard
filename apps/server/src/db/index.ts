@@ -13,7 +13,14 @@ let db: DB | null = null;
 export function abrirBanco(): DB {
   if (db) return db;
 
-  for (const dir of [config.dataDir, config.backupsDir, config.framesDir, config.thumbsDir, config.blobsDir]) {
+  for (const dir of [
+    config.dataDir,
+    config.backupsDir,
+    config.framesDir,
+    config.thumbsDir,
+    config.blobsDir,
+    config.modelosDir
+  ]) {
     try {
       fs.mkdirSync(dir, { recursive: true });
     } catch (err) {

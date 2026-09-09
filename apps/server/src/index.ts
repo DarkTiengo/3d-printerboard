@@ -19,6 +19,7 @@ import { aoMudarBackup, cardsDeBackup, resumoDeBackup } from './services/backup.
 import { ligarAgendaDeBackup, rodarCicloCompleto } from './services/backup-agenda.js';
 import { ligarNotificacoes } from './services/notificacoes.js';
 import { ligarBot, pararBot } from './services/bot-telegram.js';
+import { ligarDetectorDeFalhas, pararDetectorDeFalhas } from './services/deteccao.js';
 import { criarClienteMock, criarHttpMock, semearImpressoras } from './moonraker/mock.js';
 import { farmPrinterNome } from './lib/util.js';
 
@@ -40,6 +41,7 @@ async function main(): Promise<void> {
   // ── fiação dos serviços ──────────────────────────────────────────────────
   ligarFarmAoHub();
   ligarGeradorDeAlertas();
+  ligarDetectorDeFalhas();
   ligarMotorDaFila();
   ligarAgendaDeBackup();
 
@@ -96,6 +98,7 @@ async function main(): Promise<void> {
     try {
       await app.close();
       pararBot();
+      pararDetectorDeFalhas();
       farm.parar();
       cameras.parar();
       fecharBanco();

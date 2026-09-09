@@ -7,6 +7,10 @@ import type {
   BackupPrefsInput,
   BackupResumo,
   BackupSnapshot,
+  DeteccaoPadroes,
+  DeteccaoPrefs,
+  DeteccaoPrefsInput,
+  EstadoModelo,
   GcodeFile,
   HistoricoDeTemperatura,
   LinhaConsole,
@@ -158,6 +162,13 @@ export const api = {
   // Telegram aparece ao lado do botão, não num catch
   testarNotificacoes: (p: { token?: string; chatId: string }) =>
     post<{ ok: boolean; erro?: string }>('/api/config/notificacoes/testar', p),
+
+  // detecção de falha pela câmera
+  modeloDeteccao: () => get<{ modelo: EstadoModelo; padroes: DeteccaoPadroes }>('/api/deteccao/modelo'),
+  baixarModeloDeteccao: () => post<{ ok: true; modelo: EstadoModelo }>('/api/deteccao/modelo'),
+  deteccao: (id: string) => get<{ prefs: DeteccaoPrefs; padroes: DeteccaoPadroes }>(`/api/printers/${id}/deteccao`),
+  salvarDeteccao: (id: string, prefs: DeteccaoPrefsInput) =>
+    put<{ ok: true; prefs: DeteccaoPrefs; padroes: DeteccaoPadroes }>(`/api/printers/${id}/deteccao`, prefs),
 
   testarPrinter: (p: Partial<PrinterConfig>) =>
     post<{
