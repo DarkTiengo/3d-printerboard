@@ -31,6 +31,32 @@ web app, and holds a persistent WebSocket to each Moonraker host.
 
 </details>
 
+## Contents
+
+- [What you need](#what-you-need)
+- [Getting started](#getting-started)
+  - [Day to day](#day-to-day)
+  - [One setting worth not changing](#one-setting-worth-not-changing)
+  - [Try it without hardware](#try-it-without-hardware)
+- [Adding your printers](#adding-your-printers)
+- [The screens](#the-screens)
+- [Failure detection](#failure-detection)
+  - [Turning it on, step by step](#turning-it-on-step-by-step)
+  - [Did it work?](#did-it-work)
+  - [When nothing happens](#when-nothing-happens)
+- [Nothing starts on its own](#nothing-starts-on-its-own)
+- [Backups](#backups)
+  - [Per printer: what, how often, how many](#per-printer-what-how-often-how-many)
+  - [Download](#download)
+  - [Idle printers only](#idle-printers-only)
+  - [Catch-up on reconnect](#catch-up-on-reconnect)
+  - [Restore](#restore)
+- [Cameras](#cameras)
+- [Roles](#roles)
+- [Security](#security)
+- [Language](#language)
+- [Development](#development)
+
 ## What you need
 
 - **A machine to host it**: anything that runs Docker on the same LAN as the
@@ -333,11 +359,13 @@ that print carries on unwatched — it clears itself on reconnect), a print
 aborted with the firmware still healthy, filament running out, a camera that
 went dark, and the backup alerts described further down.
 
-### Watching for spaghetti
+## Failure detection
 
 Off by default, and worth turning on: the server can **look at the cameras
 itself** and stop a print that has come off the bed. Getting it running is five
 steps, written out at the end of this section.
+
+![Failure detection — the model, and which machines are watched](docs/failure-detection.jpg)
 
 It is not a camera stream being analysed frame by frame. **One frame every 25
 seconds per printer, and only from printers that are actually printing** — and
@@ -392,7 +420,7 @@ Worth being straight about what it is:
 - It will be wrong in both directions. That is the whole reason pause is the
   default rather than cancel.
 
-#### Turning it on, step by step
+### Turning it on, step by step
 
 Only the first step is any work, and it is done once. Nothing here needs a GPU.
 
@@ -473,7 +501,7 @@ size. Then **Edit**, tick the printers you want watched, choose what each one
 does on confirmation, and save. A printer with no camera is shown greyed out
 with the reason — register its camera first.
 
-#### Did it work?
+### Did it work?
 
 The container log says so at startup:
 
@@ -498,7 +526,7 @@ even before step 1. Switch on detection for one of the eight fake printers and
 within a minute you get the alert, the photo, and the machine paused. Take the
 variable back out afterwards — left in, every frame is a failure.
 
-#### When nothing happens
+### When nothing happens
 
 This feature fails quietly by design — it would rather do nothing than stop a
 print by mistake — so the usual symptom is no symptom. In order of how often
@@ -512,18 +540,6 @@ each one is the answer:
 | A machine is ticked but never analysed | It has to be **printing**. Powered on and idle is not enough |
 | Printer greyed out in the list | No camera registered for it |
 | Errors in the log about the input shape | The model was exported at something other than `imgsz=320` |
-
-## Language
-
-The interface ships in **English, Brazilian Portuguese, Spanish, French and
-Italian**. The picker sits in the top bar and on the sign-in screen; the choice
-is remembered per browser, and the first visit follows your browser's language
-list. Dates, numbers, clock format and relative times follow the selected
-locale.
-
-Adding a language is one file: copy `apps/web/src/i18n/en.ts`, translate the
-values, and register it in `apps/web/src/i18n/index.ts`. The dictionary is typed
-against the Portuguese one, so the compiler tells you if a key is missing.
 
 ## Nothing starts on its own
 
@@ -544,17 +560,6 @@ When a print finishes **whole**, the printer's panel offers to run it again.
 The offer only appears after a real completion — after a cancel or an error,
 repeating the same thing blindly would just waste filament. It reads Klipper's
 own `print_stats.state`, so it also covers prints you started from Mainsail.
-
-## Roles
-
-| | read-only | operator | admin |
-| --- | --- | --- | --- |
-| See everything | ✓ | ✓ | ✓ |
-| Pause/resume/cancel, emergency stop, queue | | ✓ | ✓ |
-| Run a backup, download a stored copy | | ✓ | ✓ |
-| Restore a backup, change a printer's backup settings, manage printers and users | | | ✓ |
-
-Enforced on the server. The front end only mirrors it by disabling buttons.
 
 ## Backups
 
@@ -643,6 +648,17 @@ of them, leaving the event stream and the API itself queued behind. Only the
 focused feed stays live (the control panel, or the first quadrant on the
 Cameras screen).
 
+## Roles
+
+| | read-only | operator | admin |
+| --- | --- | --- | --- |
+| See everything | ✓ | ✓ | ✓ |
+| Pause/resume/cancel, emergency stop, queue | | ✓ | ✓ |
+| Run a backup, download a stored copy | | ✓ | ✓ |
+| Restore a backup, change a printer's backup settings, manage printers and users | | | ✓ |
+
+Enforced on the server. The front end only mirrors it by disabling buttons.
+
 ## Security
 
 The trust model is simple: **whoever signs in is trusted within their role, and
@@ -673,6 +689,18 @@ Two capabilities that are powerful **on purpose**, and worth knowing about:
 - An admin registers the URLs the server fetches (Moonraker and cameras), so an
   admin can point the server at any address reachable on the network. That is
   inherent to the product; `admin` is the highest-trust role.
+
+## Language
+
+The interface ships in **English, Brazilian Portuguese, Spanish, French and
+Italian**. The picker sits in the top bar and on the sign-in screen; the choice
+is remembered per browser, and the first visit follows your browser's language
+list. Dates, numbers, clock format and relative times follow the selected
+locale.
+
+Adding a language is one file: copy `apps/web/src/i18n/en.ts`, translate the
+values, and register it in `apps/web/src/i18n/index.ts`. The dictionary is typed
+against the Portuguese one, so the compiler tells you if a key is missing.
 
 ## Development
 
