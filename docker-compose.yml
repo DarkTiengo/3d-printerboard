@@ -8,6 +8,16 @@ services:
       - '${PORT:-8080}:8080'
     env_file:
       - .env
+    # Repassadas do shell só quando o shell as define — sem isso, o
+    # `MOCK_PRINTERS=true docker compose up` do README não chegava ao processo:
+    # a variável ficava no compose e o container seguia lendo o .env. Ausentes
+    # no shell, o Compose as omite e o env_file continua mandando.
+    environment:
+      - MOCK_PRINTERS
+      - DETECCAO_ENABLED
+      - DETECCAO_SIMULAR_CONF
+      - DETECCAO_INTERVALO_S
+      - DETECCAO_ESPERA_INICIAL_S
     # The process does not run as root. These must own ./data — keep the
     # defaults if your user is uid 1000, otherwise set them in .env
     # using `id -u` / `id -g`.

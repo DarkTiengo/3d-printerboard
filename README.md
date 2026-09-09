@@ -44,18 +44,64 @@ web app, and holds a persistent WebSocket to each Moonraker host.
 
 ## Getting started
 
+The only thing you need beforehand is **Docker** on the host machine. On
+Debian or Ubuntu that is `curl -fsSL https://get.docker.com | sh`; on a NAS it
+is usually one click in the admin UI; on a Raspberry Pi with Raspberry Pi OS,
+the same script as Debian. Everything below is copy-paste.
+
+**1. Get the code.**
+
+```bash
+git clone https://github.com/DarkTiengo/gridfarm.git
+cd gridfarm
+```
+
+**2. Make your own settings file.**
+
 ```bash
 cp .env.example .env
-# set ADMIN_PASSWORD and generate JWT_SECRET:
-openssl rand -hex 32
+```
 
-mkdir -p data                 # must exist and be yours — see PUID/PGID in .env
+**3. Fill in three things.** Open `.env` in any editor — `nano .env` if you have
+no preference — and set:
+
+| Line | What goes there |
+| --- | --- |
+| `ADMIN_PASSWORD=` | a password of your own, 8 characters or more. The server refuses to start while it is still the example value |
+| `JWT_SECRET=` | run `openssl rand -hex 32` and **paste the output here**. It is what signs your session cookie; leave it empty and every restart signs you out |
+| `PUID=` / `PGID=` | what `id -u` and `id -g` print. On most Linux desktops both are already `1000`, which is the default — on a NAS they usually are not |
+
+**4. Create the data folder and start it.**
+
+```bash
+mkdir -p data
 docker compose up --build -d
 ```
 
-Open `http://localhost:8080` and sign in with the `ADMIN_USER`/`ADMIN_PASSWORD`
-from your `.env`. That first admin is created only on the first boot; after
-that, change the password in the app — editing `.env` has no effect.
+The first run builds the image and takes a few minutes. After that, starting is
+seconds.
+
+**5. Open it.** On the machine itself, `http://localhost:8080`. From a laptop or
+phone on the same network, use the host's own address instead —
+`http://192.168.1.50:8080`, or `http://nas.local:8080`. Sign in with the
+`ADMIN_USER` and `ADMIN_PASSWORD` you just set.
+
+That first admin exists only because the database was empty; from then on the
+password lives in the app, and editing `.env` has no effect on it.
+
+### Day to day
+
+```bash
+docker compose logs -f      # what it is doing, live
+docker compose restart      # after changing .env — it is only read at startup
+docker compose down         # stop; your data folder stays untouched
+git pull && docker compose up --build -d    # update to a newer version
+```
+
+Everything that matters is in `data/`: the database, the backups, the alert
+frames. Copy that folder and you have copied the installation.
+
+### One setting worth not changing
 
 Keep `NETWORK_MODE=host`. The container needs to see your LAN directly:
 multicast does not cross Docker's default bridge, and without it `.local`
@@ -70,6 +116,12 @@ MOCK_PRINTERS=true docker compose up
 Brings up eight simulated printers in different states (printing, idle, paused,
 attention) with synthetic cameras, files and working backups. You can walk
 through all seven screens before registering a single real machine.
+
+One thing to know before you run it: **on an empty database it writes those
+eight fake printers in**, and they stay after you switch the flag back off — you
+would have to delete them by hand in Settings. It leaves a database that already
+has printers alone, so this only bites on a fresh install. If you want to try it
+and leave no trace, move `data/` aside first and move it back afterwards.
 
 ## Adding your printers
 
@@ -292,9 +344,15 @@ seconds per printer, and only from printers that are actually printing** — and
 even then it costs nothing extra when someone has the camera wall open, because
 the frame comes from the cache that wall already fills. On top of that, only one
 analysis ever runs at a time in the whole farm, so the CPU peak is that of *one*
-inference, not eight. With eight machines all printing that is about 26% of one
-core on a Raspberry Pi 4, and the model is unloaded from memory after ten
-minutes with nothing to watch.
+inference, not eight.
+
+One frame costs **26 ms** on two threads, or 45 ms on one — measured inside the
+container, on the same Alpine image that ships. That is a desktop; a Raspberry
+Pi 4 will be several times slower, so budget a few hundred milliseconds. Either
+way, at one frame per machine per 25 seconds, eight printers add up to a couple
+of percent of one core. The model is unloaded from memory after ten minutes with
+nothing to watch, which is the only part that costs anything while the farm
+sleeps: about 100 MB while it is loaded.
 
 **Nothing acts on one frame.** A nozzle crossing the lens, a blurry frame in the
 middle of a fast move, the light changing when someone walks into the workshop —
