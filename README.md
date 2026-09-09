@@ -284,9 +284,8 @@ went dark, and the backup alerts described further down.
 ### Watching for spaghetti
 
 Off by default, and worth turning on: the server can **look at the cameras
-itself** and stop a print that has come off the bed. Set `DETECCAO_ENABLED=true`,
-then Settings → **Failure detection**, download the model once, and tick the
-machines to watch.
+itself** and stop a print that has come off the bed. Getting it running is five
+steps, written out at the end of this section.
 
 It is not a camera stream being analysed frame by frame. **One frame every 25
 seconds per printer, and only from printers that are actually printing** — and
@@ -334,6 +333,127 @@ Worth being straight about what it is:
   Klipper's job.
 - It will be wrong in both directions. That is the whole reason pause is the
   default rather than cancel.
+
+#### Turning it on, step by step
+
+Only the first step is any work, and it is done once. Nothing here needs a GPU.
+
+**1. Build the model file.** The detector needs a trained model, and it is not
+in this repository: it is 10 MB, it only matters to people who switch this on,
+and its licence is not this project's to redistribute. You build it yourself
+from a public one, on **any computer with Python** — your laptop is fine, it
+does not have to be the machine running GridFarm.
+
+```bash
+python3 -m venv /tmp/yolo-export
+cd /tmp/yolo-export
+
+# the CPU index on purpose: the default torch drags in ~3 GB of CUDA libraries
+# you do not need to convert a model
+./bin/pip install torch --index-url https://download.pytorch.org/whl/cpu
+./bin/pip install ultralytics huggingface_hub
+
+cat > export.py <<'PY'
+import pathlib, shutil
+from huggingface_hub import hf_hub_download
+from ultralytics import YOLO
+
+baixado = hf_hub_download("ApatheticWithoutTheA/3D-Print-Failure-Detector",
+                          "yolov11-3d-print-failure-detection")
+
+# the file on Hugging Face has no extension, and Ultralytics picks the format
+# from the suffix
+pt = pathlib.Path("falhas.pt")
+shutil.copy(baixado, pt)
+
+m = YOLO(str(pt))
+print("CLASSES:", m.names)
+print("WROTE:", m.export(format="onnx", imgsz=320, simplify=True, opset=12))
+PY
+
+./bin/python export.py
+```
+
+Two things in that output matter. **`imgsz=320` is not optional** — the server
+feeds the model 320×320 and a model exported at any other size will refuse to
+run. And `CLASSES:` tells you which number `spaghetti` is; with the model above
+it is `0`, which is the default, so you can ignore it. If yours says anything
+else, put that number in `DETECCAO_CLASSE`.
+
+**2. Put the file where the server looks.**
+
+```bash
+mv falhas.onnx falhas-v1.onnx
+mkdir -p /path/to/gridfarm/data/modelos
+cp falhas-v1.onnx /path/to/gridfarm/data/modelos/
+```
+
+The name has to be exactly **`falhas-v1.onnx`**. Not `falhas.onnx`, and watch
+the double `n` — a typo here is not an error message, it is a server that says
+the model is missing and never looks at anything. The folder lives on the data
+volume, so it survives rebuilds.
+
+**3. One line in `.env`.**
+
+```bash
+DETECCAO_ENABLED=true
+```
+
+Everything else has a working default: a frame every 25 s, three suspicious ones
+in a row before acting, pause as the action. `.env` is read at startup only, so
+editing it while the container runs changes nothing.
+
+**4. Restart.**
+
+```bash
+docker compose up -d
+```
+
+**5. Tick the machines.** Settings (top bar, admin only) → **Failure detection**,
+at the bottom of the page. The card should say the model is **ready**, with its
+size. Then **Edit**, tick the printers you want watched, choose what each one
+does on confirmation, and save. A printer with no camera is shown greyed out
+with the reason — register its camera first.
+
+#### Did it work?
+
+The container log says so at startup:
+
+```
+detecção de falha ativa: um quadro a cada 25 s por máquina, 3 suspeitas seguidas para agir
+```
+
+After that, **expect silence**. Nothing is analysed until a watched printer has
+been printing for more than two minutes, and a healthy print produces no log
+lines at all. Silence is the normal state.
+
+If you want to see the whole thing happen without waiting for a real failure,
+bring the farm up simulated and force the score:
+
+```bash
+MOCK_PRINTERS=true DETECCAO_ENABLED=true DETECCAO_SIMULAR_CONF=0.93 \
+DETECCAO_INTERVALO_S=2 DETECCAO_ESPERA_INICIAL_S=0 docker compose up
+```
+
+`DETECCAO_SIMULAR_CONF` overrides what the model would have said, so this works
+even before step 1. Switch on detection for one of the eight fake printers and
+within a minute you get the alert, the photo, and the machine paused. Take the
+variable back out afterwards — left in, every frame is a failure.
+
+#### When nothing happens
+
+This feature fails quietly by design — it would rather do nothing than stop a
+print by mistake — so the usual symptom is no symptom. In order of how often
+each one is the answer:
+
+| What you see | What it usually is |
+| --- | --- |
+| Card says the model is missing | The filename. It must be `falhas-v1.onnx`, in `data/modelos/` |
+| Card is greyed out entirely | `DETECCAO_ENABLED` is not `true`, or the container was not restarted after the edit |
+| Model loads, nothing is ever flagged | The class index. Check `CLASSES:` from step 1 against `DETECCAO_CLASSE` |
+| A machine is ticked but never analysed | It has to be **printing**. Powered on and idle is not enough |
+| Printer greyed out in the list | No camera registered for it |
+| Errors in the log about the input shape | The model was exported at something other than `imgsz=320` |
 
 ## Language
 
